@@ -44,11 +44,13 @@ export default function Home() {
   const [stepMode, setStepMode] = useState(false);
   const [reverbDetail, setReverbDetail] = useState(false);
   const [toneDetail, setToneDetail] = useState(false);
+  const [satDetail, setSatDetail] = useState(false);
 
   const rate = 1.0 + params.speed;
   const semitones = 12 * Math.log2(rate);
   const reverbPct = Math.round(params.reverb * 100);
   const toneLabel = params.tone === 0 ? "FLAT" : params.tone < 0 ? "DARK" : "BRIGHT";
+  const satPct = Math.round((params.saturation ?? 0) * 100);
 
   const expanded = expandParams(params);
 
@@ -95,6 +97,7 @@ export default function Home() {
                 <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "80px" }}>SPEED:</span> {rate.toFixed(2)}X</div>
                 <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "80px" }}>REVERB:</span> {reverbPct}%</div>
                 <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "80px" }}>TONE:</span> {toneLabel}</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "80px" }}>SAT:</span> {satPct}%</div>
               </div>
             </div>
 
@@ -112,7 +115,7 @@ export default function Home() {
 
             {/* Effects */}
             <div className="zone-engraved relative">
-              <div className="grid grid-cols-3 gap-4 pt-2" style={{ justifyItems: "center" }}>
+              <div className="grid grid-cols-4 gap-3 pt-2" style={{ justifyItems: "center" }}>
                 {/* Speed slider */}
                 <div className="flex flex-col items-center gap-2">
                   <div className="relative h-[140px] w-[40px] flex justify-center">
@@ -185,6 +188,32 @@ export default function Home() {
                   <button
                     onClick={() => setToneDetail(!toneDetail)}
                     className={detailBtnClass(toneDetail)}
+                    style={detailBtnStyle}
+                  >
+                    DETAIL
+                  </button>
+                </div>
+
+                {/* Saturation slider */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[140px] w-[40px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={params.saturation ?? 0}
+                      onChange={(e) => setParam("saturation", parseFloat(e.target.value))}
+                      className="absolute h-full"
+                      style={faderStyle}
+                    />
+                  </div>
+                  <div className="label">SATURATE</div>
+                  <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{satPct}%</span>
+                  <button
+                    onClick={() => setSatDetail(!satDetail)}
+                    className={detailBtnClass(satDetail)}
                     style={detailBtnStyle}
                   >
                     DETAIL
@@ -357,6 +386,71 @@ export default function Home() {
                   </div>
                   <div className="label">PEAK</div>
                   <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{(params.eqBumpGainOverride ?? expanded.eqBumpGain).toFixed(1)}DB</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Saturation Detail Panel */}
+          {satDetail && (
+            <div className="zone-inset boot-stagger">
+              <div className="label" style={{ fontSize: "12px", marginBottom: "12px", marginTop: 0 }}>SATURATION DETAIL</div>
+              <div className="grid grid-cols-3 gap-6" style={{ justifyItems: "center" }}>
+                {/* Drive */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[100px] w-[40px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="1"
+                      max="50"
+                      step="0.5"
+                      value={params.satDriveOverride ?? expanded.satDrive}
+                      onChange={(e) => setParam("satDriveOverride", parseFloat(e.target.value))}
+                      className="absolute h-full"
+                      style={faderStyle}
+                    />
+                  </div>
+                  <div className="label">DRIVE</div>
+                  <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{(params.satDriveOverride ?? expanded.satDrive).toFixed(1)}</span>
+                </div>
+
+                {/* Mix */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[100px] w-[40px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={params.satMixOverride ?? expanded.satMix}
+                      onChange={(e) => setParam("satMixOverride", parseFloat(e.target.value))}
+                      className="absolute h-full"
+                      style={faderStyle}
+                    />
+                  </div>
+                  <div className="label">MIX</div>
+                  <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{Math.round((params.satMixOverride ?? expanded.satMix) * 100)}%</span>
+                </div>
+
+                {/* Tone (post-sat lowpass) */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[100px] w-[40px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="1000"
+                      max="20000"
+                      step="100"
+                      value={params.satToneOverride ?? expanded.satTone}
+                      onChange={(e) => setParam("satToneOverride", parseFloat(e.target.value))}
+                      className="absolute h-full"
+                      style={faderStyle}
+                    />
+                  </div>
+                  <div className="label">TONE</div>
+                  <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{Math.round((params.satToneOverride ?? expanded.satTone) / 1000)}KHZ</span>
                 </div>
               </div>
             </div>

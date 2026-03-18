@@ -16,6 +16,10 @@ interface AudioNodes {
   peaking: BiquadFilterNode;
   highShelf: BiquadFilterNode;
   bump: BiquadFilterNode;
+  waveshaper: WaveShaperNode;
+  satFilter: BiquadFilterNode;
+  satDry: GainNode;
+  satWet: GainNode;
   convolver: ConvolverNode;
   dryGain: GainNode;
   wetGain: GainNode;
@@ -66,6 +70,17 @@ interface AppStore {
   fetchPlaylist: () => Promise<void>;
   eject: () => void;
   clearError: () => void;
+}
+
+function makeSaturationCurve(drive: number): Float32Array<ArrayBuffer> {
+  const samples = 44100;
+  const buffer = new ArrayBuffer(samples * 4);
+  const curve = new Float32Array(buffer);
+  for (let i = 0; i < samples; i++) {
+    const x = (i * 2) / samples - 1;
+    curve[i] = Math.tanh(x * drive);
+  }
+  return curve;
 }
 
 function generateIR(ctx: AudioContext, duration: number, decay: number): AudioBuffer {
@@ -156,6 +171,26 @@ function buildGraph(
   bump.Q.value = 1.5;
   bump.gain.value = expanded.eqBumpGain;
 
+  // Saturation
+  const waveshaper = ctx.createWaveShaper();
+  waveshaper.curve = makeSaturationCurve(expanded.satDrive);
+  waveshaper.oversample = "4x";
+
+  const satFilter = ctx.createBiquadFilter();
+  satFilter.type = "lowpass";
+  satFilter.frequency.value = expanded.satTone;
+  satFilter.Q.value = 0.707;
+
+  const satDry = ctx.createGain();
+  satDry.gain.value = 1 - expanded.satMix;
+
+  const satWet = ctx.createGain();
+  satWet.gain.value = expanded.satMix;
+
+  const satMerger = ctx.createGain();
+  satMerger.gain.value = 1;
+
+  // Reverb
   const convolver = ctx.createConvolver();
   convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
 
@@ -172,12 +207,23 @@ function buildGraph(
   const merger = ctx.createGain();
   merger.gain.value = 1;
 
+  // Signal chain: source → EQ → saturation → reverb → output
   source.connect(lowShelf);
   lowShelf.connect(peaking);
   peaking.connect(highShelf);
   highShelf.connect(bump);
-  bump.connect(dryGain);
-  bump.connect(convolver);
+
+  // Saturation dry/wet
+  bump.connect(satDry);
+  bump.connect(waveshaper);
+  waveshaper.connect(satFilter);
+  satFilter.connect(satWet);
+  satDry.connect(satMerger);
+  satWet.connect(satMerger);
+
+  // Reverb dry/wet
+  satMerger.connect(dryGain);
+  satMerger.connect(convolver);
   convolver.connect(wetGain);
   dryGain.connect(merger);
   wetGain.connect(merger);
@@ -187,7 +233,7 @@ function buildGraph(
   source.onended = onEnded;
   source.start(0, offset);
 
-  return { source, lowShelf, peaking, highShelf, bump, convolver, dryGain, wetGain, analyser };
+  return { source, lowShelf, peaking, highShelf, bump, waveshaper, satFilter, satDry, satWet, convolver, dryGain, wetGain, analyser };
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -278,6 +324,14 @@ export const useStore = create<AppStore>((set, get) => ({
       nodes.wetGain.gain.value = expanded.reverbWet;
       const ctx = getAudioContext();
       nodes.convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
+    }
+
+    const satKeys: (keyof SimpleParams)[] = ["saturation", "satDriveOverride", "satMixOverride", "satToneOverride"];
+    if (satKeys.includes(key)) {
+      nodes.waveshaper.curve = makeSaturationCurve(expanded.satDrive);
+      nodes.satFilter.frequency.value = expanded.satTone;
+      nodes.satDry.gain.value = 1 - expanded.satMix;
+      nodes.satWet.gain.value = expanded.satMix;
     }
   },
 
@@ -435,6 +489,7 @@ export const useStore = create<AppStore>((set, get) => ({
       speed: -0.5 + Math.random() * 1.0,
       reverb: Math.random(),
       tone: -1 + Math.random() * 2,
+      saturation: Math.random() * 0.6,
     };
     get().setParams(newParams);
   },

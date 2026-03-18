@@ -62,6 +62,31 @@ export async function renderOffline(input: RenderInput): Promise<{
   bump.Q.value = 1.5;
   bump.gain.value = params.eqBumpGain;
 
+  // Saturation (waveshaper with tanh soft-clipping)
+  const waveshaper = offlineCtx.createWaveShaper();
+  const curveLen = 44100;
+  const curve = new Float32Array(curveLen);
+  for (let i = 0; i < curveLen; i++) {
+    const x = (i * 2) / curveLen - 1;
+    curve[i] = Math.tanh(x * params.satDrive);
+  }
+  waveshaper.curve = curve;
+  waveshaper.oversample = "4x";
+
+  const satFilter = offlineCtx.createBiquadFilter();
+  satFilter.type = "lowpass";
+  satFilter.frequency.value = params.satTone;
+  satFilter.Q.value = 0.707;
+
+  const satDry = offlineCtx.createGain();
+  satDry.gain.value = 1 - params.satMix;
+
+  const satWet = offlineCtx.createGain();
+  satWet.gain.value = params.satMix;
+
+  const satMerger = offlineCtx.createGain();
+  satMerger.gain.value = 1;
+
   // Reverb
   const irData = generateImpulseResponse(
     sampleRate,
@@ -81,14 +106,23 @@ export async function renderOffline(input: RenderInput): Promise<{
   const wetGain = offlineCtx.createGain();
   wetGain.gain.value = params.reverbWet;
 
-  // Connect signal chain
+  // Connect signal chain: source → EQ → saturation → reverb → output
   source.connect(lowShelf);
   lowShelf.connect(peaking);
   peaking.connect(highShelf);
   highShelf.connect(bump);
 
-  bump.connect(dryGain);
-  bump.connect(convolver);
+  // Saturation dry/wet
+  bump.connect(satDry);
+  bump.connect(waveshaper);
+  waveshaper.connect(satFilter);
+  satFilter.connect(satWet);
+  satDry.connect(satMerger);
+  satWet.connect(satMerger);
+
+  // Reverb dry/wet
+  satMerger.connect(dryGain);
+  satMerger.connect(convolver);
   convolver.connect(wetGain);
 
   dryGain.connect(offlineCtx.destination);

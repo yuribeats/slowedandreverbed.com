@@ -8,6 +8,9 @@ export interface ProcessingParams {
   eqHigh: number;
   eqBumpFreq: number;
   eqBumpGain: number;
+  satDrive: number;      // waveshaper curve aggressiveness 1–50
+  satMix: number;        // dry/wet blend 0–1
+  satTone: number;       // post-saturation lowpass cutoff 1000–20000 Hz
 }
 
 export interface SimpleParams {
@@ -23,6 +26,10 @@ export interface SimpleParams {
   eqHighOverride?: number;         // -20 to +20 dB
   eqBumpFreqOverride?: number;     // 100–10000 Hz
   eqBumpGainOverride?: number;     // 0–15 dB
+  saturation?: number;             // 0–1 (0 = clean, 1 = heavy)
+  satDriveOverride?: number;       // 1–50
+  satMixOverride?: number;         // 0–1
+  satToneOverride?: number;        // 1000–20000 Hz
 }
 
 export interface EQBand {
@@ -35,6 +42,7 @@ export const SIMPLE_DEFAULTS: SimpleParams = {
   speed: -0.15,    // slightly slowed (~0.85x)
   reverb: 0.5,
   tone: -0.3,
+  saturation: 0,   // clean by default
 };
 
 export function expandParams(s: SimpleParams): ProcessingParams {
@@ -55,6 +63,12 @@ export function expandParams(s: SimpleParams): ProcessingParams {
     : 800 - toneMag * 600;     // dark: 800Hz → 200Hz
   const bumpGain = Math.pow(toneMag, 0.6) * 12; // up to 12dB resonant peak
 
+  // Saturation: drive increases with saturation, tone darkens with more saturation
+  const sat = s.saturation ?? 0;
+  const satDrive = 1 + sat * 30;
+  const satMix = sat;
+  const satTone = 20000 - sat * 15000; // 20kHz → 5kHz
+
   return {
     rate,
     reverbWet: s.reverbWetOverride ?? reverbCurve * 0.8,
@@ -65,6 +79,9 @@ export function expandParams(s: SimpleParams): ProcessingParams {
     eqHigh: s.eqHighOverride ?? toneAmount,
     eqBumpFreq: s.eqBumpFreqOverride ?? bumpFreq,
     eqBumpGain: s.eqBumpGainOverride ?? bumpGain,
+    satDrive: s.satDriveOverride ?? satDrive,
+    satMix: s.satMixOverride ?? satMix,
+    satTone: s.satToneOverride ?? satTone,
   };
 }
 
