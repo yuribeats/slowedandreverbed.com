@@ -2,206 +2,256 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  border-radius: 0;
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap');
+
+:root {
+  --bg-page: #1a1a1a;
+  --panel-base: #9c9786;
+  --panel-light: #a8a392;
+  --panel-dark: #8c8776;
+  --panel-shadow: #6b6758;
+  --engrave-dark: #5a5648;
+  --engrave-light: #b0ab9b;
+  --control-base: #333333;
+  --control-face: #262626;
+  --control-highlight: #4a4a4a;
+  --screen-bezel: #222222;
+  --crt-bg: #1e2e1a;
+  --crt-grid: #2c4225;
+  --crt-bright: #75cc46;
+  --crt-dim: #4a822c;
+  --led-green-off: #2a4a1c;
+  --led-green-on: #75cc46;
+  --led-red-off: #5a1c1c;
+  --led-red-on: #c92a2a;
+  --led-orange: #e08c26;
+  --text-dark: #111111;
+  --font-tech: 'Chakra Petch', var(--font-ibm-plex-mono), sans-serif;
 }
+
+* { box-sizing: border-box; }
 
 body {
-  background: #0e0a07;
-  color: #F5F5DC;
-  font-family: var(--font-ibm-plex-mono), monospace;
+  background-color: var(--bg-page);
+  background-image: radial-gradient(circle at 50% 50%, #2a2a2a 0%, #111 100%);
+  font-family: var(--font-tech);
+  color: var(--text-dark);
 }
 
-/* Rosewood wood grain texture */
-.wood-grain {
-  background:
-    repeating-linear-gradient(
-      2deg,
-      transparent,
-      transparent 3px,
-      rgba(0,0,0,0.08) 3px,
-      rgba(0,0,0,0.08) 4px
-    ),
-    repeating-linear-gradient(
-      178deg,
-      transparent,
-      transparent 7px,
-      rgba(0,0,0,0.05) 7px,
-      rgba(0,0,0,0.05) 8px
-    ),
-    linear-gradient(180deg, #5C3D1E 0%, #4a3020 30%, #3D2817 70%, #4a3020 100%);
+/* Console wrapper */
+.console {
+  background: linear-gradient(135deg, var(--panel-light) 0%, var(--panel-base) 40%, var(--panel-dark) 100%);
+  border-radius: 20px;
+  box-shadow: 0 30px 50px rgba(0,0,0,0.8), inset 2px 2px 5px rgba(255,255,255,0.2), inset -5px -5px 15px rgba(0,0,0,0.3);
+  position: relative;
+  padding: 25px;
 }
 
-/* Wood side panels — vertical grain */
-.wood-panel-left {
-  width: 40px;
-  flex-shrink: 0;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      transparent,
-      transparent 4px,
-      rgba(0,0,0,0.06) 4px,
-      rgba(0,0,0,0.06) 5px
-    ),
-    repeating-linear-gradient(
-      175deg,
-      transparent,
-      transparent 8px,
-      rgba(255,200,120,0.04) 8px,
-      rgba(255,200,120,0.04) 9px
-    ),
-    linear-gradient(90deg, #3D2817 0%, #5C3D1E 40%, #4a3020 70%, #3D2817 100%);
-  box-shadow:
-    inset -2px 0 6px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    inset 0 -1px 0 rgba(0,0,0,0.5);
-  border-radius: 3px 0 0 3px;
-}
-
-.wood-panel-right {
-  width: 40px;
-  flex-shrink: 0;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      transparent,
-      transparent 4px,
-      rgba(0,0,0,0.06) 4px,
-      rgba(0,0,0,0.06) 5px
-    ),
-    repeating-linear-gradient(
-      185deg,
-      transparent,
-      transparent 8px,
-      rgba(255,200,120,0.04) 8px,
-      rgba(255,200,120,0.04) 9px
-    ),
-    linear-gradient(90deg, #3D2817 0%, #4a3020 30%, #5C3D1E 60%, #3D2817 100%);
-  box-shadow:
-    inset 2px 0 6px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    inset 0 -1px 0 rgba(0,0,0,0.5);
-  border-radius: 0 3px 3px 0;
-}
-
-/* Brushed aluminum faceplate */
-.brushed-aluminum {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 1px,
-      rgba(255,255,255,0.03) 1px,
-      rgba(255,255,255,0.03) 2px
-    ),
-    linear-gradient(180deg, #C0C0C0 0%, #A8A8A8 50%, #909090 100%);
-}
-
-/* Dark faceplate section */
-.dark-faceplate {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 1px,
-      rgba(255,255,255,0.02) 1px,
-      rgba(255,255,255,0.02) 2px
-    ),
-    linear-gradient(180deg, #3a3a3e 0%, #2a2a2e 50%, #222226 100%);
-}
-
-/* Tinted glass display */
-.tinted-glass {
-  background: linear-gradient(180deg, #080808 0%, #0d0d0d 50%, #080808 100%);
-  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), inset 0 -1px 0 rgba(255,255,255,0.03);
-}
-
-/* Chrome knob sunburst */
-.chrome-knob {
-  background: conic-gradient(
-    from 0deg,
-    #c8c8c8, #f0f0f0 10deg, #a8a8a8 20deg,
-    #d8d8d8 30deg, #f0f0f0 40deg, #a8a8a8 50deg,
-    #c8c8c8 60deg, #f0f0f0 70deg, #a0a0a0 80deg,
-    #d0d0d0 90deg, #f0f0f0 100deg, #a8a8a8 110deg,
-    #c8c8c8 120deg, #f0f0f0 130deg, #a0a0a0 140deg,
-    #d8d8d8 150deg, #f0f0f0 160deg, #a8a8a8 170deg,
-    #c8c8c8 180deg, #f0f0f0 190deg, #a0a0a0 200deg,
-    #d0d0d0 210deg, #f0f0f0 220deg, #a8a8a8 230deg,
-    #c8c8c8 240deg, #f0f0f0 250deg, #a0a0a0 260deg,
-    #d8d8d8 270deg, #f0f0f0 280deg, #a8a8a8 290deg,
-    #c8c8c8 300deg, #f0f0f0 310deg, #a0a0a0 320deg,
-    #d0d0d0 330deg, #f0f0f0 340deg, #a8a8a8 350deg,
-    #c8c8c8 360deg
-  );
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.5),
-    0 1px 0 rgba(255,255,255,0.3),
-    inset 0 1px 3px rgba(255,255,255,0.4);
-}
-
-/* Screw head */
-.panel-screw {
-  background: radial-gradient(circle at 35% 35%, #666, #333 60%, #222);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05);
-}
-
-/* Tape counter LCD display */
-.tape-counter {
-  background: linear-gradient(180deg, #1a1e0a 0%, #1c2010 50%, #1a1e0a 100%);
-  border: 1px solid #333;
-  box-shadow: inset 0 1px 4px rgba(0,0,0,0.8);
-  color: #b8cc40;
-  text-shadow: 0 0 6px rgba(184, 204, 64, 0.4);
-  font-family: var(--font-ibm-plex-mono), monospace;
-}
-
-/* LED indicator */
-.led {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
-  transition: background 0.2s, box-shadow 0.2s;
-}
-.led-off { background: #331a1a; }
-.led-on-red { background: #ff3333; box-shadow: 0 0 6px rgba(255,51,51,0.6); }
-.led-on-amber { background: #D4AF37; box-shadow: 0 0 6px rgba(212,175,55,0.6); }
-.led-on-green { background: #44bb44; box-shadow: 0 0 6px rgba(68,187,68,0.6); }
-
-/* Panel seam */
-.panel-seam {
-  height: 1px;
-  background: #444;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.04);
-}
-
-/* Mechanical transport button */
-.transport-btn {
-  background: linear-gradient(180deg, #c8c8c8 0%, #a0a0a0 40%, #888 100%);
-  border: 1px solid #666;
-  box-shadow:
-    0 3px 6px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.5),
-    inset 0 -1px 2px rgba(0,0,0,0.2);
-  transition: transform 0.05s, box-shadow 0.05s;
-}
-.transport-btn:active {
-  transform: translateY(2px);
-  box-shadow:
-    0 1px 2px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(0,0,0,0.3);
-}
-.transport-btn:disabled {
-  opacity: 0.5;
-}
-
-/* Vignette overlay for ambient lighting feel */
-.vignette::after {
+/* Corner screws */
+.console::before, .console::after {
   content: '';
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%);
+  width: 16px;
+  height: 16px;
+  background: #222;
+  border-radius: 50%;
+  top: 15px;
+  box-shadow: inset 0 -2px 4px rgba(255,255,255,0.3), 0 2px 3px rgba(0,0,0,0.5);
 }
+.console::before { left: 15px; }
+.console::after { right: 15px; }
+
+/* Engraved labels */
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Zone styles */
+.zone-inset {
+  background: var(--panel-dark);
+  border-radius: 12px;
+  box-shadow: inset 3px 3px 8px rgba(0,0,0,0.4), inset -2px -2px 5px rgba(255,255,255,0.1), 0 1px 1px rgba(255,255,255,0.2);
+  padding: 20px;
+}
+
+.zone-engraved {
+  border: 2px solid transparent;
+  border-top-color: var(--engrave-dark);
+  border-left-color: var(--engrave-dark);
+  border-bottom-color: var(--engrave-light);
+  border-right-color: var(--engrave-light);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+}
+
+/* CRT screen */
+.crt {
+  background: radial-gradient(circle at center, #2e4722 0%, var(--crt-bg) 100%);
+  border-radius: 8px;
+  box-shadow: inset 0 5px 20px rgba(0,0,0,0.9);
+  position: relative;
+  overflow: hidden;
+}
+
+.crt::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.2) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+
+.crt-grid {
+  background-image: linear-gradient(var(--crt-grid) 1px, transparent 1px), linear-gradient(90deg, var(--crt-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Display bezel */
+.display-bezel {
+  background: var(--screen-bezel);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+}
+
+/* Knob - dark with knurled ring */
+.knob-ring {
+  background: repeating-conic-gradient(from 0deg, var(--text-dark) 0deg 2deg, transparent 2deg 20deg);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.knob-ring::before {
+  content: '';
+  position: absolute;
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+  background: var(--panel-base);
+  border-radius: 50%;
+}
+
+.knob-body {
+  background: linear-gradient(to bottom, #444, #1a1a1a);
+  border-radius: 50%;
+  box-shadow: 0 6px 10px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.knob-face {
+  background: var(--control-face);
+  border-radius: 50%;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+  position: relative;
+}
+
+.knob-indicator {
+  width: 6px;
+  height: 6px;
+  background: var(--led-orange);
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 4px var(--led-orange);
+}
+
+/* Rocker switch */
+.rocker-switch {
+  width: 40px;
+  height: 56px;
+  background: var(--control-base);
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1), inset 0 -15px 10px rgba(0,0,0,0.5);
+  border: 2px solid #1a1a1a;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 5px;
+}
+.rocker-switch:active {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 -2px 0 rgba(255,255,255,0.1), inset 0 15px 10px rgba(0,0,0,0.5);
+  transform: translateY(2px);
+}
+
+/* LED indicators */
+.led-cutout {
+  background: #111;
+  padding: 2px;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+}
+.led-rect { width: 12px; height: 6px; border-radius: 1px; }
+.led-green { background: var(--led-green-off); }
+.led-green-on { background: var(--led-green-on); box-shadow: 0 0 8px var(--led-green-on); }
+.led-red { background: var(--led-red-off); }
+.led-red-on { background: var(--led-red-on); box-shadow: 0 0 8px var(--led-red-on); }
+
+/* Vertical slider */
+.slider-track {
+  width: 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+}
+
+.slider-handle {
+  width: 32px;
+  height: 20px;
+  background: var(--control-base);
+  border-radius: 3px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2);
+  border: 1px solid #111;
+}
+
+.slider-grip {
+  width: 20px;
+  height: 2px;
+  background: #111;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.1);
+}
+
+/* Tactical inputs */
+.tactical-input {
+  background: var(--crt-bg);
+  border: 4px solid var(--screen-bezel);
+  border-radius: 6px;
+  color: var(--crt-bright);
+  font-family: var(--font-tech);
+  padding: 10px;
+  font-size: 14px;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+  outline: none;
+}
+
+.tactical-button {
+  background: var(--control-base);
+  color: var(--panel-light);
+  border: 2px solid #1a1a1a;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-family: var(--font-tech);
+  font-weight: 700;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1);
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.tactical-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(255,255,255,0.1);
+}
+.tactical-button:disabled { opacity: 0.5; }

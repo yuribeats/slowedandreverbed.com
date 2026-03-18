@@ -3,8 +3,7 @@
 import { useRef, useCallback } from "react";
 import { useStore } from "../lib/store";
 
-const btnBase =
-  "transport-btn flex items-center justify-center";
+const btnBase = "rocker-switch";
 
 export default function Transport() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
@@ -36,58 +35,60 @@ export default function Transport() {
   );
 
   return (
-    <div className="flex items-center gap-1">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="audio/*"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
-      <button
-        onClick={rewind}
-        disabled={off}
-        className={`${btnBase} w-11 h-11 text-[#333]`}
-        title="REWIND"
-      >
-        <span className="text-sm leading-none">&#9198;</span>
-      </button>
+    <div className="flex items-center gap-4 flex-wrap justify-center">
+      <input ref={inputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileSelect} />
 
-      {isPlaying ? (
+      {/* Play/Stop */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isPlaying ? "STOP" : "PLAY"}</span>
+          <div className="led-cutout">
+            <div className={`led-rect ${isPlaying ? "led-green-on" : "led-green"}`} />
+          </div>
+        </div>
         <button
-          onClick={stop}
-          className={`${btnBase} w-11 h-11 text-[#333]`}
-          title="STOP"
+          onClick={isPlaying ? stop : play}
+          disabled={!isPlaying && off}
+          className={btnBase}
         >
-          <span className="text-xs leading-none">&#9632;</span>
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
         </button>
-      ) : (
-        <button
-          onClick={play}
-          disabled={off}
-          className={`${btnBase} w-11 h-11 text-[#333]`}
-          title="PLAY"
-        >
-          <span className="text-sm leading-none">&#9654;</span>
+      </div>
+
+      {/* Rewind */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>REW</span>
+          <div className="led-cutout"><div className="led-rect led-green" /></div>
+        </div>
+        <button onClick={rewind} disabled={off} className={btnBase}>
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
         </button>
-      )}
+      </div>
 
-      <button
-        onClick={fastForward}
-        disabled={off}
-        className={`${btnBase} w-11 h-11 text-[#333]`}
-        title="FAST FORWARD"
-      >
-        <span className="text-sm leading-none">&#9197;</span>
-      </button>
+      {/* Fast Forward */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>FWD</span>
+          <div className="led-cutout"><div className="led-rect led-green" /></div>
+        </div>
+        <button onClick={fastForward} disabled={off} className={btnBase}>
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+        </button>
+      </div>
 
-      <button
-        onClick={handleEject}
-        className={`${btnBase} w-11 h-11 text-[#333] ml-2`}
-        title="EJECT"
-      >
-        <span className="text-sm leading-none">&#9167;</span>
-      </button>
+      {/* Eject */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>EJECT</span>
+          <div className="led-cutout">
+            <div className={`led-rect ${sourceBuffer ? "led-red-on" : "led-red"}`} />
+          </div>
+        </div>
+        <button onClick={handleEject} className={btnBase}>
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+        </button>
+      </div>
     </div>
   );
 }

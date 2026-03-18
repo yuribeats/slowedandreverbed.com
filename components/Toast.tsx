@@ -16,10 +16,10 @@ export default function Toast() {
   if (!error) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 dark-faceplate border border-dw-danger px-4 py-3 text-dw-danger text-xs uppercase tracking-wider max-w-sm">
+    <div className="fixed bottom-4 left-4 z-50 zone-inset border-2 border-[var(--led-red-on)] px-4 py-3 text-xs uppercase tracking-wider max-w-sm" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
       <div className="flex justify-between gap-4">
         <span>{error}</span>
-        <button onClick={clearError} className="text-dw-muted hover:text-dw-text">
+        <button onClick={clearError} style={{ color: "var(--panel-light)" }}>
           X
         </button>
       </div>

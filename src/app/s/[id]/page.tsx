@@ -14,55 +14,152 @@ export default function SharePage({ params }: { params: { id: string } }) {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const sourceFilename = useStore((s) => s.sourceFilename);
   const isLoading = useStore((s) => s.isLoading);
+  const storeParams = useStore((s) => s.params);
+  const setParam = useStore((s) => s.setParam);
+  const isPlaying = useStore((s) => s.isPlaying);
+
+  const rate = 1.0 + storeParams.speed;
+  const reverbPct = Math.round(storeParams.reverb * 100);
+  const toneLabel = storeParams.tone === 0 ? "FLAT" : storeParams.tone < 0 ? "DARK" : "BRIGHT";
 
   useEffect(() => {
     loadShare(params.id);
   }, [params.id, loadShare]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 sm:p-8 relative vignette">
-      <div className="flex max-w-[960px] w-full">
-        <div className="wood-panel-left hidden sm:block" />
-
-        <div className="flex-1 flex flex-col gap-1 min-w-0">
-          <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-6 py-3 flex items-center justify-between">
-            <a href="/" className="text-sm text-[#333] uppercase tracking-[0.2em] font-bold">
-              THE SLOWED AND REVERB MACHINE
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-[1000px] flex flex-col gap-5">
+        <div className="console flex flex-col gap-5">
+          {/* Header */}
+          <div className="flex items-center gap-4 px-3">
+            <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
+              <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
+            </div>
+            <a href="/" className="text-xl font-bold tracking-[2px] uppercase" style={{ color: "var(--text-dark)" }}>
+              AUDIO PROCESSOR
             </a>
             {sourceFilename && (
-              <span className="text-[10px] text-[#555] uppercase tracking-[0.1em]">
+              <span className="text-[10px] uppercase tracking-[0.1em] ml-auto" style={{ color: "var(--text-dark)" }}>
                 {sourceFilename}
               </span>
             )}
           </div>
 
           {isLoading && (
-            <div className="dark-faceplate border border-[#444] p-10 text-center">
-              <p className="text-dw-gold uppercase tracking-[0.15em] text-xs">
+            <div className="zone-inset text-center py-10">
+              <p className="text-xs uppercase tracking-[0.15em]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
                 LOADING SHARED TRACK...
               </p>
             </div>
           )}
 
-          <SpectrumAnalyzer />
-          <Controls />
+          {/* Display panel */}
+          <div className="display-bezel grid grid-cols-[200px_1fr] gap-5">
+            {/* Status CRT */}
+            <div className="crt flex flex-col" style={{ height: "180px" }}>
+              <div className="px-2 py-1 flex justify-between text-[10px] border-b z-10" style={{ color: "var(--crt-bright)", borderColor: "var(--crt-grid)" }}>
+                <span>SYS STATUS</span>
+                <span>{isPlaying ? "PLAYING" : "READY"}</span>
+              </div>
+              <div className="crt-grid flex-1 p-2 text-[12px] leading-[1.8] z-10" style={{ color: "var(--crt-bright)" }}>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>MODE:</span> SHARED</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>INPUT:</span> {sourceFilename ? sourceFilename.slice(0, 12).toUpperCase() : "NONE"}</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>SPEED:</span> {rate.toFixed(2)}X</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>REVERB:</span> {reverbPct}%</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>TONE:</span> {toneLabel}</div>
+              </div>
+            </div>
 
+            {/* Visualizer CRT */}
+            <SpectrumAnalyzer />
+          </div>
+
+          {/* Control deck - 3 columns */}
+          <div className="grid grid-cols-3 gap-5">
+            {/* Time Engine */}
+            <div className="zone-engraved">
+              <Controls />
+              <div className="label" style={{ marginTop: "16px", fontSize: "14px" }}>TIME ENGINE</div>
+            </div>
+
+            {/* Transport */}
+            <div className="zone-inset">
+              <Transport />
+              <div className="label" style={{ fontSize: "14px", color: "var(--text-dark)" }}>TRANSPORT</div>
+            </div>
+
+            {/* Reverb Unit */}
+            <div className="zone-engraved relative">
+              <div className="label" style={{ position: "absolute", top: "10px", width: "calc(100% - 40px)", fontSize: "14px" }}>REVERB UNIT</div>
+              <div className="flex justify-around pt-6">
+                {/* Reverb slider */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[120px] w-[32px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={storeParams.reverb}
+                      onChange={(e) => setParam("reverb", parseFloat(e.target.value))}
+                      className="absolute w-[120px] h-[32px]"
+                      style={{
+                        transform: "rotate(-90deg)",
+                        transformOrigin: "center",
+                        top: "44px",
+                        left: "-44px",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                        background: "transparent",
+                      }}
+                    />
+                  </div>
+                  <div className="label">DECAY</div>
+                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{reverbPct}%</span>
+                </div>
+
+                {/* Tone slider */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[120px] w-[32px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="-1"
+                      max="1"
+                      step="0.01"
+                      value={storeParams.tone}
+                      onChange={(e) => setParam("tone", parseFloat(e.target.value))}
+                      className="absolute w-[120px] h-[32px]"
+                      style={{
+                        transform: "rotate(-90deg)",
+                        transformOrigin: "center",
+                        top: "44px",
+                        left: "-44px",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                        background: "transparent",
+                      }}
+                    />
+                  </div>
+                  <div className="label">TONE</div>
+                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{toneLabel}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Transport bar */}
           {sourceBuffer && (
-            <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-4 py-3 flex flex-col gap-2">
-              <div className="flex items-center gap-3">
-                <Transport />
-                <ProgressBar />
-              </div>
-              <div className="flex items-center justify-end">
-                <DownloadButton />
-              </div>
+            <div className="zone-inset flex items-center gap-4">
+              <div className="flex-1"><ProgressBar /></div>
+              <DownloadButton />
             </div>
           )}
         </div>
 
-        <div className="wood-panel-right hidden sm:block" />
+        <Toast />
       </div>
-      <Toast />
     </main>
   );
 }

@@ -10,54 +10,142 @@ import Playlist from "../../components/Playlist";
 import Toast from "../../components/Toast";
 import { useStore } from "../../lib/store";
 
-const btnClass =
-  "bg-gradient-to-b from-[#c0c0c0] via-[#a0a0a0] to-[#888] border border-[#666] text-[#333] px-4 py-3 text-xs uppercase tracking-[0.15em] shadow-[0_2px_4px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] hover:from-[#d0d0d0] hover:to-[#999] hover:text-[#111] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] active:translate-y-[1px] font-mono disabled:opacity-50 transition-transform duration-75";
-
 export default function Home() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const randomize = useStore((s) => s.randomize);
+  const isPlaying = useStore((s) => s.isPlaying);
+  const sourceFilename = useStore((s) => s.sourceFilename);
+  const params = useStore((s) => s.params);
+  const setParam = useStore((s) => s.setParam);
+
+  const rate = 1.0 + params.speed;
+  const reverbPct = Math.round(params.reverb * 100);
+  const toneLabel = params.tone === 0 ? "FLAT" : params.tone < 0 ? "DARK" : "BRIGHT";
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 sm:p-8 relative vignette">
-      <div className="flex max-w-[960px] w-full">
-        {/* Left rosewood panel */}
-        <div className="wood-panel-left hidden sm:block" />
-
-        {/* Central silver panel */}
-        <div className="flex-1 flex flex-col gap-1 min-w-0">
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-[1000px] flex flex-col gap-5">
+        <div className="console flex flex-col gap-5">
           {/* Header */}
-          <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-6 py-3 flex items-center justify-between">
-            <h1 className="text-sm text-[#333] uppercase tracking-[0.2em] font-bold">
-              THE SLOWED AND REVERB MACHINE
-            </h1>
-            <Uploader />
+          <div className="flex items-center gap-4 px-3">
+            <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
+              <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
+            </div>
+            <span className="text-xl font-bold tracking-[2px] uppercase" style={{ color: "var(--text-dark)" }}>
+              AUDIO PROCESSOR
+            </span>
           </div>
 
-          <SpectrumAnalyzer />
-          <Controls />
+          {/* Display panel */}
+          <div className="display-bezel grid grid-cols-[200px_1fr] gap-5">
+            {/* Status CRT */}
+            <div className="crt flex flex-col" style={{ height: "180px" }}>
+              <div className="px-2 py-1 flex justify-between text-[10px] border-b z-10" style={{ color: "var(--crt-bright)", borderColor: "var(--crt-grid)" }}>
+                <span>SYS STATUS</span>
+                <span>{isPlaying ? "PLAYING" : "READY"}</span>
+              </div>
+              <div className="crt-grid flex-1 p-2 text-[12px] leading-[1.8] z-10" style={{ color: "var(--crt-bright)" }}>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>MODE:</span> PROCESS</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>INPUT:</span> {sourceFilename ? sourceFilename.slice(0, 12).toUpperCase() : "NONE"}</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>SPEED:</span> {rate.toFixed(2)}X</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>REVERB:</span> {reverbPct}%</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>TONE:</span> {toneLabel}</div>
+              </div>
+            </div>
 
-          {/* Transport bar */}
-          <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-4 py-3 flex flex-col gap-2">
-            <div className="flex items-center gap-3">
+            {/* Visualizer CRT */}
+            <SpectrumAnalyzer />
+          </div>
+
+          {/* Control deck - 3 columns */}
+          <div className="grid grid-cols-3 gap-5">
+            {/* Time Engine */}
+            <div className="zone-engraved">
+              <Controls />
+              <div className="label" style={{ marginTop: "16px", fontSize: "14px" }}>TIME ENGINE</div>
+            </div>
+
+            {/* Transport */}
+            <div className="zone-inset">
               <Transport />
-              <ProgressBar />
+              <div className="label" style={{ fontSize: "14px", color: "var(--text-dark)" }}>TRANSPORT</div>
             </div>
-            <div className="flex items-center gap-3">
-              <button onClick={randomize} disabled={!sourceBuffer} className={btnClass}>
-                RANDOM
-              </button>
-              <div className="flex-1" />
-              <DownloadButton />
+
+            {/* Reverb Unit */}
+            <div className="zone-engraved relative">
+              <div className="label" style={{ position: "absolute", top: "10px", width: "calc(100% - 40px)", fontSize: "14px" }}>REVERB UNIT</div>
+              <div className="flex justify-around pt-6">
+                {/* Reverb slider */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[120px] w-[32px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={params.reverb}
+                      onChange={(e) => setParam("reverb", parseFloat(e.target.value))}
+                      className="absolute w-[120px] h-[32px]"
+                      style={{
+                        transform: "rotate(-90deg)",
+                        transformOrigin: "center",
+                        top: "44px",
+                        left: "-44px",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                        background: "transparent",
+                      }}
+                    />
+                  </div>
+                  <div className="label">DECAY</div>
+                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{reverbPct}%</span>
+                </div>
+
+                {/* Tone slider */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative h-[120px] w-[32px] flex justify-center">
+                    <div className="slider-track h-full" />
+                    <input
+                      type="range"
+                      min="-1"
+                      max="1"
+                      step="0.01"
+                      value={params.tone}
+                      onChange={(e) => setParam("tone", parseFloat(e.target.value))}
+                      className="absolute w-[120px] h-[32px]"
+                      style={{
+                        transform: "rotate(-90deg)",
+                        transformOrigin: "center",
+                        top: "44px",
+                        left: "-44px",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                        background: "transparent",
+                      }}
+                    />
+                  </div>
+                  <div className="label">TONE</div>
+                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{toneLabel}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <Playlist />
+          {/* Input panel */}
+          <div className="zone-inset flex items-center gap-4">
+            <Uploader />
+            <div className="flex-1"><ProgressBar /></div>
+            <button onClick={randomize} disabled={!sourceBuffer} className="tactical-button disabled:opacity-50" style={{ fontFamily: "var(--font-tech)" }}>
+              RDM
+            </button>
+            <DownloadButton />
+          </div>
         </div>
 
-        {/* Right rosewood panel */}
-        <div className="wood-panel-right hidden sm:block" />
+        <Playlist />
+        <Toast />
       </div>
-      <Toast />
     </main>
   );
 }

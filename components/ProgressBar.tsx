@@ -58,24 +58,25 @@ export default function ProgressBar() {
 
   return (
     <div className="flex items-center gap-3 flex-1">
-      <div className="tape-counter px-2 py-1 text-[11px] font-mono w-14 text-center">
+      <div className="px-2 py-1 text-[11px] font-[family-name:var(--font-tech)] w-14 text-center" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
         {formatTime(elapsed)}
       </div>
       <div
         ref={barRef}
-        className="flex-1 h-[6px] bg-[#222] border border-[#444] relative"
+        className="flex-1 h-[6px] relative"
+        style={{ background: "var(--crt-bg)", border: "1px solid var(--crt-grid)" }}
         onClick={handleClick}
       >
         <div
           className="absolute top-0 left-0 h-full"
           style={{
             width: `${progress * 100}%`,
-            background: "linear-gradient(90deg, #8a7023, #D4AF37)",
-            boxShadow: "0 0 4px rgba(212, 175, 55, 0.3)",
+            background: "linear-gradient(90deg, var(--crt-dim), var(--crt-bright))",
+            boxShadow: "0 0 6px var(--crt-bright)",
           }}
         />
       </div>
-      <div className="tape-counter px-2 py-1 text-[11px] font-mono w-14 text-center">
+      <div className="px-2 py-1 text-[11px] font-[family-name:var(--font-tech)] w-14 text-center" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
         {formatTime(duration)}
       </div>
     </div>

@@ -29,47 +29,33 @@ export default function Playlist() {
     a.click();
   };
 
-  const btnStyle =
-    "text-[9px] uppercase tracking-[0.1em] font-mono px-2 py-1 border border-[#555] text-dw-muted hover:text-dw-gold hover:border-dw-gold";
+  const btnStyle = "tactical-button text-[9px] !px-2 !py-1";
 
   return (
-    <div className="wood-grain p-[6px]">
-      <div className="dark-faceplate border border-[#444] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-        <div className="px-4 py-2 border-b border-[#333]">
-          <span className="text-[10px] text-dw-muted uppercase tracking-[0.15em]">
-            PLAYLIST
-          </span>
-        </div>
-        <div className="max-h-48 overflow-y-auto">
-          {playlist.map((item) => (
-            <div
-              key={item.id}
-              className="px-4 py-2 flex items-center justify-between border-b border-[#333] last:border-0"
-            >
-              <span className="text-[11px] text-dw-text font-mono uppercase tracking-wider truncate flex-1">
-                {item.name}
+    <div className="zone-inset mt-4">
+      <div className="px-4 py-2 border-b border-[#6b6758]">
+        <span className="label" style={{ margin: 0 }}>PLAYLIST</span>
+      </div>
+      <div className="max-h-48 overflow-y-auto">
+        {playlist.map((item) => (
+          <div key={item.id} className="px-4 py-2 flex items-center justify-between border-b border-[#6b6758] last:border-0">
+            <span className="text-[11px] uppercase tracking-wider truncate flex-1" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-tech)" }}>
+              {item.name}
+            </span>
+            <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+              <span className="text-[9px] font-mono mr-2" style={{ color: "var(--crt-dim)" }}>
+                {new Date(item.createdAt).toLocaleDateString()}
               </span>
-              <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                <span className="text-[9px] text-dw-muted font-mono mr-2">
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </span>
-                {item.url && (
-                  <>
-                    <button onClick={() => handlePlay(item)} className={btnStyle}>
-                      PLAY
-                    </button>
-                    <button onClick={() => loadPlaylistItem(item)} className={btnStyle}>
-                      LOAD
-                    </button>
-                    <button onClick={() => handleDownload(item)} className={btnStyle}>
-                      DL
-                    </button>
-                  </>
-                )}
-              </div>
+              {item.url && (
+                <>
+                  <button onClick={() => handlePlay(item)} className={btnStyle}>PLAY</button>
+                  <button onClick={() => loadPlaylistItem(item)} className={btnStyle}>LOAD</button>
+                  <button onClick={() => handleDownload(item)} className={btnStyle}>DL</button>
+                </>
+              )}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
