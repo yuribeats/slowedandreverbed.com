@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { useRemixStore } from "../../../lib/remix-store";
 import { getAudioContext } from "../../../lib/audio-context";
 import MiniSpectrum from "../../../components/MiniSpectrum";
@@ -197,6 +197,219 @@ function Deck({ id }: { id: DeckId }) {
   );
 }
 
+function MasterBus() {
+  const masterBus = useRemixStore((s) => s.masterBus);
+  const setMasterBus = useRemixStore((s) => s.setMasterBus);
+  const [showCompDetail, setShowCompDetail] = useState(false);
+
+  const compPct = Math.round(masterBus.compAmount * 100);
+
+  // Compute displayed compressor values
+  const amt = masterBus.compAmount;
+  const threshold = masterBus.compThreshold ?? (amt * -40);
+  const ratio = masterBus.compRatio ?? (1 + amt * 11);
+  const attack = masterBus.compAttack ?? 0.01;
+  const release = masterBus.compRelease ?? 0.15;
+  const knee = masterBus.compKnee ?? 10;
+  const makeup = masterBus.compMakeup ?? (amt * 12);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span
+          className="text-sm tracking-[2px] uppercase"
+          style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
+        >
+          OUTPUT
+        </span>
+      </div>
+
+      {/* EQ + Comp faders */}
+      <div className="zone-engraved">
+        <div className="grid grid-cols-4 gap-2" style={{ justifyItems: "center" }}>
+          {/* Low */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="relative h-[100px] w-[36px] flex justify-center">
+              <div className="slider-track h-full" />
+              <input
+                type="range" min="-20" max="20" step="0.5"
+                value={masterBus.eqLow}
+                onChange={(e) => setMasterBus("eqLow", parseFloat(e.target.value))}
+                className="absolute h-full"
+                style={{ ...faderStyle, width: "36px" }}
+              />
+            </div>
+            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>LOW</div>
+            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqLow > 0 ? "+" : ""}{masterBus.eqLow.toFixed(1)}</span>
+          </div>
+
+          {/* Mid */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="relative h-[100px] w-[36px] flex justify-center">
+              <div className="slider-track h-full" />
+              <input
+                type="range" min="-20" max="20" step="0.5"
+                value={masterBus.eqMid}
+                onChange={(e) => setMasterBus("eqMid", parseFloat(e.target.value))}
+                className="absolute h-full"
+                style={{ ...faderStyle, width: "36px" }}
+              />
+            </div>
+            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>MID</div>
+            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqMid > 0 ? "+" : ""}{masterBus.eqMid.toFixed(1)}</span>
+          </div>
+
+          {/* High */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="relative h-[100px] w-[36px] flex justify-center">
+              <div className="slider-track h-full" />
+              <input
+                type="range" min="-20" max="20" step="0.5"
+                value={masterBus.eqHigh}
+                onChange={(e) => setMasterBus("eqHigh", parseFloat(e.target.value))}
+                className="absolute h-full"
+                style={{ ...faderStyle, width: "36px" }}
+              />
+            </div>
+            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>HIGH</div>
+            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqHigh > 0 ? "+" : ""}{masterBus.eqHigh.toFixed(1)}</span>
+          </div>
+
+          {/* Comp */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="relative h-[100px] w-[36px] flex justify-center">
+              <div className="slider-track h-full" />
+              <input
+                type="range" min="0" max="1" step="0.01"
+                value={masterBus.compAmount}
+                onChange={(e) => setMasterBus("compAmount", parseFloat(e.target.value))}
+                className="absolute h-full"
+                style={{ ...faderStyle, width: "36px" }}
+              />
+            </div>
+            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>COMP</div>
+            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{compPct}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Comp detail toggle */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowCompDetail(!showCompDetail)}
+          className="text-[9px] uppercase tracking-[0.15em] px-2 py-0.5 border border-[#555]"
+          style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+        >
+          {showCompDetail ? "HIDE" : "DETAIL"}
+        </button>
+      </div>
+
+      {/* Comp detail panel */}
+      {showCompDetail && (
+        <div className="zone-engraved">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2" style={{ justifyItems: "center" }}>
+            {/* Threshold */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="-60" max="0" step="1"
+                  value={threshold}
+                  onChange={(e) => setMasterBus("compThreshold", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>THRESH</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{threshold.toFixed(0)}dB</span>
+            </div>
+
+            {/* Ratio */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="1" max="20" step="0.5"
+                  value={ratio}
+                  onChange={(e) => setMasterBus("compRatio", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>RATIO</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{ratio.toFixed(1)}:1</span>
+            </div>
+
+            {/* Attack */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="0.001" max="0.5" step="0.001"
+                  value={attack}
+                  onChange={(e) => setMasterBus("compAttack", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>ATK</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(attack * 1000).toFixed(0)}ms</span>
+            </div>
+
+            {/* Release */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="0.01" max="1" step="0.01"
+                  value={release}
+                  onChange={(e) => setMasterBus("compRelease", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>REL</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(release * 1000).toFixed(0)}ms</span>
+            </div>
+
+            {/* Knee */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="0" max="40" step="1"
+                  value={knee}
+                  onChange={(e) => setMasterBus("compKnee", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>KNEE</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{knee.toFixed(0)}dB</span>
+            </div>
+
+            {/* Makeup */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="0" max="24" step="0.5"
+                  value={makeup}
+                  onChange={(e) => setMasterBus("compMakeup", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>GAIN</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>+{makeup.toFixed(1)}dB</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RemixPage() {
   const crossfader = useRemixStore((s) => s.crossfader);
   const setCrossfader = useRemixStore((s) => s.setCrossfader);
@@ -262,6 +475,11 @@ export default function RemixPage() {
               <span className="label" style={{ margin: 0, fontSize: "10px", minWidth: "20px" }}>B</span>
             </div>
             <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>CROSSFADER</div>
+          </div>
+
+          {/* Master output bus */}
+          <div className="zone-inset boot-stagger boot-delay-4">
+            <MasterBus />
           </div>
         </div>
 
