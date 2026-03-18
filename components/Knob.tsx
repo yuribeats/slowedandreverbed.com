@@ -129,7 +129,7 @@ export default function Knob({
           left: `${x}px`,
           top: `${y}px`,
           transform: `translate(-50%, -50%) rotate(${tickAngle}deg)`,
-          background: i === 0 || i === ticks - 1 ? "#e89030" : "#888",
+          background: i === 0 || i === ticks - 1 ? "#D4AF37" : "#888",
         }}
       />
     );
@@ -159,7 +159,7 @@ export default function Knob({
             {/* Pointer notch */}
             <div
               className="absolute top-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[14px]"
-              style={{ background: "#e89030", boxShadow: "0 0 4px rgba(232,144,48,0.5)" }}
+              style={{ background: "#D4AF37", boxShadow: "0 0 4px rgba(212,175,55,0.5)" }}
             />
             {/* Center cap */}
             <div
@@ -172,7 +172,7 @@ export default function Knob({
           </div>
         </div>
       </div>
-      <span className="text-[11px] text-dw-amber font-mono tracking-wider">
+      <span className="text-[11px] text-dw-gold font-mono tracking-wider">
         {valueDisplay}
       </span>
     </div>

@@ -20,9 +20,11 @@ export default function SharePage({ params }: { params: { id: string } }) {
   }, [params.id, loadShare]);
 
   return (
-    <main className="min-h-screen wood-grain p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto flex flex-col gap-1">
-        <div className="wood-grain p-[6px]">
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-8 relative vignette">
+      <div className="flex max-w-[960px] w-full">
+        <div className="wood-panel-left hidden sm:block" />
+
+        <div className="flex-1 flex flex-col gap-1 min-w-0">
           <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-6 py-3 flex items-center justify-between">
             <a href="/" className="text-sm text-[#333] uppercase tracking-[0.2em] font-bold">
               THE SLOWED AND REVERB MACHINE
@@ -33,23 +35,19 @@ export default function SharePage({ params }: { params: { id: string } }) {
               </span>
             )}
           </div>
-        </div>
 
-        {isLoading && (
-          <div className="wood-grain p-[6px]">
+          {isLoading && (
             <div className="dark-faceplate border border-[#444] p-10 text-center">
-              <p className="text-dw-amber uppercase tracking-[0.15em] text-xs">
+              <p className="text-dw-gold uppercase tracking-[0.15em] text-xs">
                 LOADING SHARED TRACK...
               </p>
             </div>
-          </div>
-        )}
+          )}
 
-        <SpectrumAnalyzer />
-        <Controls />
+          <SpectrumAnalyzer />
+          <Controls />
 
-        {sourceBuffer && (
-          <div className="wood-grain p-[6px]">
+          {sourceBuffer && (
             <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-4 py-3 flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 <Transport />
@@ -59,11 +57,12 @@ export default function SharePage({ params }: { params: { id: string } }) {
                 <DownloadButton />
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <Toast />
+        <div className="wood-panel-right hidden sm:block" />
       </div>
+      <Toast />
     </main>
   );
 }

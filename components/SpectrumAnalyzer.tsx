@@ -33,8 +33,8 @@ export default function SpectrumAnalyzer() {
     ctx.fillStyle = "#080808";
     ctx.fillRect(0, 0, width, height);
 
-    // Subtle amber grid lines
-    ctx.strokeStyle = "rgba(232, 144, 48, 0.04)";
+    // Subtle warm grid lines
+    ctx.strokeStyle = "rgba(212, 175, 55, 0.03)";
     ctx.lineWidth = 1;
     for (let y = 0; y < height; y += 12) {
       ctx.beginPath();
@@ -65,20 +65,30 @@ export default function SpectrumAnalyzer() {
         const segY = height - (s + 1) * (segmentHeight + segmentGap);
         const ratio = s / totalSegments;
 
-        // Amber color scheme: dim amber → bright amber → hot amber/white
+        // VU meter color scheme: green → yellow → orange → red
         let r, g, b;
-        if (ratio < 0.5) {
-          r = 160 + ratio * 140;
-          g = 80 + ratio * 80;
-          b = 20;
-        } else if (ratio < 0.8) {
-          r = 232;
-          g = 144;
-          b = 30 + (ratio - 0.5) * 60;
-        } else {
+        if (ratio < 0.4) {
+          // Green zone
+          r = 30 + ratio * 120;
+          g = 140 + ratio * 200;
+          b = 30;
+        } else if (ratio < 0.65) {
+          // Yellow zone
+          const t = (ratio - 0.4) / 0.25;
+          r = 80 + t * 175;
+          g = 220 - t * 30;
+          b = 30;
+        } else if (ratio < 0.85) {
+          // Orange zone
+          const t = (ratio - 0.65) / 0.2;
           r = 255;
-          g = 170 + (ratio - 0.8) * 200;
-          b = 60 + (ratio - 0.8) * 200;
+          g = 190 - t * 100;
+          b = 20;
+        } else {
+          // Red zone
+          r = 255;
+          g = 90 - (ratio - 0.85) * 300;
+          b = 20;
         }
 
         ctx.fillStyle = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
@@ -95,7 +105,7 @@ export default function SpectrumAnalyzer() {
       const peakSegment = Math.floor(peaksRef.current[i] * totalSegments);
       if (peakSegment > 0) {
         const peakY = height - peakSegment * (segmentHeight + segmentGap);
-        ctx.fillStyle = "rgb(255, 200, 100)";
+        ctx.fillStyle = "rgb(255, 60, 40)";
         ctx.fillRect(x, peakY, barWidth, segmentHeight);
       }
     }

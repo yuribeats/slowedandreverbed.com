@@ -31,8 +31,8 @@ export default function Uploader() {
         disabled={isLoading}
         className="text-sm uppercase tracking-[0.2em] font-bold disabled:opacity-50"
         style={{
-          color: sourceFilename ? "#555" : "#e89030",
-          textShadow: sourceFilename ? "none" : "0 0 8px rgba(232,144,48,0.4)",
+          color: sourceFilename ? "#555" : "#D4AF37",
+          textShadow: sourceFilename ? "none" : "0 0 8px rgba(212,175,55,0.4)",
         }}
       >
         {isLoading ? "LOADING..." : sourceFilename || "LOAD SONG"}

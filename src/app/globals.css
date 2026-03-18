@@ -7,12 +7,12 @@
 }
 
 body {
-  background: #1a120b;
-  color: #e8e0d0;
+  background: #0e0a07;
+  color: #F5F5DC;
   font-family: var(--font-ibm-plex-mono), monospace;
 }
 
-/* Walnut wood grain texture */
+/* Rosewood wood grain texture */
 .wood-grain {
   background:
     repeating-linear-gradient(
@@ -29,7 +29,60 @@ body {
       rgba(0,0,0,0.05) 7px,
       rgba(0,0,0,0.05) 8px
     ),
-    linear-gradient(180deg, #4a3425 0%, #3d2b1f 30%, #2a1a10 70%, #3d2b1f 100%);
+    linear-gradient(180deg, #5C3D1E 0%, #4a3020 30%, #3D2817 70%, #4a3020 100%);
+}
+
+/* Wood side panels — vertical grain */
+.wood-panel-left {
+  width: 40px;
+  flex-shrink: 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent,
+      transparent 4px,
+      rgba(0,0,0,0.06) 4px,
+      rgba(0,0,0,0.06) 5px
+    ),
+    repeating-linear-gradient(
+      175deg,
+      transparent,
+      transparent 8px,
+      rgba(255,200,120,0.04) 8px,
+      rgba(255,200,120,0.04) 9px
+    ),
+    linear-gradient(90deg, #3D2817 0%, #5C3D1E 40%, #4a3020 70%, #3D2817 100%);
+  box-shadow:
+    inset -2px 0 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+  border-radius: 3px 0 0 3px;
+}
+
+.wood-panel-right {
+  width: 40px;
+  flex-shrink: 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent,
+      transparent 4px,
+      rgba(0,0,0,0.06) 4px,
+      rgba(0,0,0,0.06) 5px
+    ),
+    repeating-linear-gradient(
+      185deg,
+      transparent,
+      transparent 8px,
+      rgba(255,200,120,0.04) 8px,
+      rgba(255,200,120,0.04) 9px
+    ),
+    linear-gradient(90deg, #3D2817 0%, #4a3020 30%, #5C3D1E 60%, #3D2817 100%);
+  box-shadow:
+    inset 2px 0 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+  border-radius: 0 3px 3px 0;
 }
 
 /* Brushed aluminum faceplate */
@@ -42,7 +95,7 @@ body {
       rgba(255,255,255,0.03) 1px,
       rgba(255,255,255,0.03) 2px
     ),
-    linear-gradient(180deg, #a0a0a0 0%, #909090 15%, #888888 50%, #909090 85%, #a0a0a0 100%);
+    linear-gradient(180deg, #C0C0C0 0%, #A8A8A8 50%, #909090 100%);
 }
 
 /* Dark faceplate section */
@@ -60,7 +113,7 @@ body {
 
 /* Tinted glass display */
 .tinted-glass {
-  background: linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 50%, #0a0a0a 100%);
+  background: linear-gradient(180deg, #080808 0%, #0d0d0d 50%, #080808 100%);
   box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), inset 0 -1px 0 rgba(255,255,255,0.03);
 }
 
@@ -92,4 +145,63 @@ body {
 .panel-screw {
   background: radial-gradient(circle at 35% 35%, #666, #333 60%, #222);
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* Tape counter LCD display */
+.tape-counter {
+  background: linear-gradient(180deg, #1a1e0a 0%, #1c2010 50%, #1a1e0a 100%);
+  border: 1px solid #333;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.8);
+  color: #b8cc40;
+  text-shadow: 0 0 6px rgba(184, 204, 64, 0.4);
+  font-family: var(--font-ibm-plex-mono), monospace;
+}
+
+/* LED indicator */
+.led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.led-off { background: #331a1a; }
+.led-on-red { background: #ff3333; box-shadow: 0 0 6px rgba(255,51,51,0.6); }
+.led-on-amber { background: #D4AF37; box-shadow: 0 0 6px rgba(212,175,55,0.6); }
+.led-on-green { background: #44bb44; box-shadow: 0 0 6px rgba(68,187,68,0.6); }
+
+/* Panel seam */
+.panel-seam {
+  height: 1px;
+  background: #444;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* Mechanical transport button */
+.transport-btn {
+  background: linear-gradient(180deg, #c8c8c8 0%, #a0a0a0 40%, #888 100%);
+  border: 1px solid #666;
+  box-shadow:
+    0 3px 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -1px 2px rgba(0,0,0,0.2);
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+.transport-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.4),
+    inset 0 2px 4px rgba(0,0,0,0.3);
+}
+.transport-btn:disabled {
+  opacity: 0.5;
+}
+
+/* Vignette overlay for ambient lighting feel */
+.vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%);
 }

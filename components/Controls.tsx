@@ -64,9 +64,9 @@ export default function Controls() {
                 onClick={() => setStepMode(!stepMode)}
                 className={`mt-1 text-[8px] uppercase tracking-[0.15em] font-mono px-2 py-0.5 border ${
                   stepMode
-                    ? "text-dw-amber border-dw-amber"
+                    ? "text-dw-gold border-dw-gold"
                     : "text-[#666] border-[#666]"
-                } hover:text-dw-amber`}
+                } hover:text-dw-gold`}
               >
                 STEP
               </button>

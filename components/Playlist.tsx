@@ -30,7 +30,7 @@ export default function Playlist() {
   };
 
   const btnStyle =
-    "text-[9px] uppercase tracking-[0.1em] font-mono px-2 py-1 border border-[#555] text-dw-muted hover:text-dw-amber hover:border-dw-amber";
+    "text-[9px] uppercase tracking-[0.1em] font-mono px-2 py-1 border border-[#555] text-dw-muted hover:text-dw-gold hover:border-dw-gold";
 
   return (
     <div className="wood-grain p-[6px]">

@@ -58,9 +58,9 @@ export default function ProgressBar() {
 
   return (
     <div className="flex items-center gap-3 flex-1">
-      <span className="text-[10px] text-dw-amber font-mono w-10 text-right">
+      <div className="tape-counter px-2 py-1 text-[11px] font-mono w-14 text-center">
         {formatTime(elapsed)}
-      </span>
+      </div>
       <div
         ref={barRef}
         className="flex-1 h-[6px] bg-[#222] border border-[#444] relative"
@@ -70,14 +70,14 @@ export default function ProgressBar() {
           className="absolute top-0 left-0 h-full"
           style={{
             width: `${progress * 100}%`,
-            background: "linear-gradient(90deg, #a06020, #e89030)",
-            boxShadow: "0 0 4px rgba(232, 144, 48, 0.3)",
+            background: "linear-gradient(90deg, #8a7023, #D4AF37)",
+            boxShadow: "0 0 4px rgba(212, 175, 55, 0.3)",
           }}
         />
       </div>
-      <span className="text-[10px] text-dw-muted font-mono w-10">
+      <div className="tape-counter px-2 py-1 text-[11px] font-mono w-14 text-center">
         {formatTime(duration)}
-      </span>
+      </div>
     </div>
   );
 }
