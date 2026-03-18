@@ -2,6 +2,7 @@
 
 import { useRef, useCallback } from "react";
 import { useStore } from "../lib/store";
+import { warmUpAudio } from "../lib/audio-context";
 
 const btnBase = "rocker-switch";
 
@@ -21,6 +22,7 @@ export default function Transport() {
   const off = !sourceBuffer;
 
   const handleLoad = useCallback(() => {
+    warmUpAudio(); // Unlock AudioContext on this user gesture
     if (sourceBuffer) {
       eject();
     }
@@ -66,7 +68,7 @@ export default function Transport() {
           </div>
         </div>
         <button
-          onClick={isPlaying ? stop : play}
+          onClick={() => { warmUpAudio(); if (isPlaying) { stop(); } else { play(); } }}
           disabled={!isPlaying && off}
           className={btnBase}
         >

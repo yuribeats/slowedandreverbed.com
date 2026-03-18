@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Chakra_Petch } from "next/font/google";
+import AudioWarmup from "../../components/AudioWarmup";
 import "./globals.css";
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -49,6 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${ibmPlexMono.variable} ${chakraPetch.variable} antialiased`}>
+        <AudioWarmup />
         {children}
       </body>
     </html>
