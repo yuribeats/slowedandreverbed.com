@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Chakra_Petch } from "next/font/google";
+import { IBM_Plex_Mono, Audiowide, VT323 } from "next/font/google";
 import AudioWarmup from "../../components/AudioWarmup";
 import "./globals.css";
 
@@ -9,10 +9,16 @@ const ibmPlexMono = IBM_Plex_Mono({
   variable: "--font-ibm-plex-mono",
 });
 
-const chakraPetch = Chakra_Petch({
+const audiowide = Audiowide({
   subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-chakra",
+  weight: "400",
+  variable: "--font-audiowide",
+});
+
+const vt323 = VT323({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-vt323",
 });
 
 export const metadata: Metadata = {
@@ -49,7 +55,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${ibmPlexMono.variable} ${chakraPetch.variable} antialiased`}>
+      <body className={`${ibmPlexMono.variable} ${audiowide.variable} ${vt323.variable} antialiased`}>
         <AudioWarmup />
         {children}
       </body>

@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap');
-
 :root {
   --bg-page: #1a1a1a;
   --panel-base: #9c9786;
@@ -26,42 +24,112 @@
   --led-red-on: #c92a2a;
   --led-orange: #FF7300;
   --text-dark: #111111;
-  --font-tech: 'Chakra Petch', var(--font-ibm-plex-mono), sans-serif;
+  --font-display: var(--font-audiowide), sans-serif;
+  --font-crt: var(--font-vt323), monospace;
+  --font-tech: var(--font-ibm-plex-mono), monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
-  background-color: var(--bg-page);
-  background-image: radial-gradient(circle at 50% 50%, #2a2a2a 0%, #111 100%);
+  background-color: #0d0d0d;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(60,55,45,0.25) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, #1e1e1e 0%, #0a0a0a 100%);
   font-family: var(--font-tech);
   color: var(--text-dark);
+  overflow-x: hidden;
 }
 
-/* Console wrapper */
+/* Subtle film grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ─── Animations ─── */
+
+@keyframes bootUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes phosphorPulse {
+  0%, 100% { text-shadow: 0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim); }
+  50% { text-shadow: 0 0 8px var(--crt-bright), 0 0 18px var(--crt-dim), 0 0 28px rgba(117,204,70,0.06); }
+}
+
+@keyframes vhsTracking {
+  0% { top: -2px; opacity: 0; }
+  3% { opacity: 1; }
+  97% { opacity: 1; }
+  100% { top: calc(100% + 2px); opacity: 0; }
+}
+
+@keyframes ledBreathe {
+  0%, 100% { box-shadow: 0 0 8px var(--led-green-on); }
+  50% { box-shadow: 0 0 14px var(--led-green-on), 0 0 22px rgba(117,204,70,0.15); }
+}
+
+/* Boot stagger classes */
+.boot-stagger {
+  animation: bootUp 0.5s ease-out both;
+}
+.boot-delay-1 { animation-delay: 0.05s; }
+.boot-delay-2 { animation-delay: 0.15s; }
+.boot-delay-3 { animation-delay: 0.3s; }
+.boot-delay-4 { animation-delay: 0.45s; }
+.boot-delay-5 { animation-delay: 0.6s; }
+
+/* CRT phosphor text glow */
+.crt-text {
+  animation: phosphorPulse 3.5s ease-in-out infinite;
+}
+
+/* ─── Console wrapper ─── */
 .console {
-  background: linear-gradient(135deg, var(--panel-light) 0%, var(--panel-base) 40%, var(--panel-dark) 100%);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 100px,
+      rgba(0,0,0,0.015) 100px,
+      rgba(0,0,0,0.015) 101px
+    ),
+    linear-gradient(180deg, var(--panel-light) 0%, var(--panel-base) 30%, var(--panel-dark) 100%);
   border-radius: 20px;
-  box-shadow: 0 30px 50px rgba(0,0,0,0.8), inset 2px 2px 5px rgba(255,255,255,0.2), inset -5px -5px 15px rgba(0,0,0,0.3);
+  box-shadow:
+    0 60px 120px rgba(0,0,0,0.6),
+    0 25px 50px rgba(0,0,0,0.4),
+    0 0 80px rgba(0,0,0,0.3),
+    inset 2px 2px 6px rgba(255,255,255,0.25),
+    inset -4px -4px 12px rgba(0,0,0,0.3);
   position: relative;
   padding: 25px;
+  animation: bootUp 0.6s ease-out both;
 }
 
-/* Corner screws */
+/* Corner screws — subtle metallic */
 .console::before, .console::after {
   content: '';
   position: absolute;
   width: 16px;
   height: 16px;
-  background: #222;
+  background: radial-gradient(circle at 40% 35%, #444, #1a1a1a);
   border-radius: 50%;
   top: 15px;
-  box-shadow: inset 0 -2px 4px rgba(255,255,255,0.3), 0 2px 3px rgba(0,0,0,0.5);
+  box-shadow: inset 0 -2px 4px rgba(255,255,255,0.25), 0 2px 3px rgba(0,0,0,0.6);
 }
 .console::before { left: 15px; }
 .console::after { right: 15px; }
 
-/* Engraved labels */
+/* ─── Labels — engraved into panel ─── */
 .label {
   font-size: 11px;
   font-weight: 700;
@@ -70,9 +138,10 @@ body {
   letter-spacing: 0.5px;
   text-align: center;
   margin-top: 8px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.12);
 }
 
-/* Zone styles */
+/* ─── Zone styles ─── */
 .zone-inset {
   background: var(--panel-dark);
   border-radius: 12px;
@@ -91,21 +160,42 @@ body {
   position: relative;
 }
 
-/* CRT screen */
+/* ─── CRT screen ─── */
 .crt {
   background: radial-gradient(circle at center, #2e4722 0%, var(--crt-bg) 100%);
   border-radius: 8px;
-  box-shadow: inset 0 5px 20px rgba(0,0,0,0.9);
+  box-shadow: inset 0 5px 20px rgba(0,0,0,0.9), 0 0 20px rgba(30,46,26,0.4);
   position: relative;
   overflow: hidden;
 }
 
+/* Scanlines */
 .crt::after {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.2) 50%);
+  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.15) 50%);
   background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 15;
+}
+
+/* VHS tracking line — slow sweep down the screen */
+.crt::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(117,204,70,0.06) 15%,
+    rgba(117,204,70,0.15) 50%,
+    rgba(117,204,70,0.06) 85%,
+    transparent 100%
+  );
+  z-index: 20;
+  animation: vhsTracking 7s linear infinite;
   pointer-events: none;
 }
 
@@ -114,15 +204,15 @@ body {
   background-size: 20px 20px;
 }
 
-/* Display bezel */
+/* ─── Display bezel ─── */
 .display-bezel {
   background: var(--screen-bezel);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.08);
 }
 
-/* Knob - dark with knurled ring */
+/* ─── Knobs ─── */
 .knob-ring {
   background: repeating-conic-gradient(from 0deg, var(--text-dark) 0deg 2deg, transparent 2deg 20deg);
   border-radius: 50%;
@@ -171,7 +261,7 @@ body {
   box-shadow: 0 0 4px var(--led-orange);
 }
 
-/* Rocker switch */
+/* ─── Rocker switch ─── */
 .rocker-switch {
   width: 60px;
   height: 80px;
@@ -183,13 +273,14 @@ body {
   justify-content: center;
   align-items: flex-end;
   padding-bottom: 5px;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
 }
 .rocker-switch:active {
   box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 -2px 0 rgba(255,255,255,0.1), inset 0 15px 10px rgba(0,0,0,0.5);
   transform: translateY(2px);
 }
 
-/* LED indicators */
+/* ─── LED indicators ─── */
 .led-cutout {
   background: #111;
   padding: 2px;
@@ -198,11 +289,14 @@ body {
 }
 .led-rect { width: 12px; height: 6px; border-radius: 1px; }
 .led-green { background: var(--led-green-off); }
-.led-green-on { background: var(--led-green-on); box-shadow: 0 0 8px var(--led-green-on); }
+.led-green-on {
+  background: var(--led-green-on);
+  animation: ledBreathe 2s ease-in-out infinite;
+}
 .led-red { background: var(--led-red-off); }
 .led-red-on { background: var(--led-red-on); box-shadow: 0 0 8px var(--led-red-on); }
 
-/* Vertical fader */
+/* ─── Vertical fader ─── */
 .slider-track {
   width: 10px;
   background: linear-gradient(to right, #0a0a0a, #1a1a1a 30%, #1a1a1a 70%, #0a0a0a);
@@ -222,15 +316,15 @@ body {
   border-radius: 1px;
 }
 
-/* Tactical inputs */
+/* ─── Tactical inputs ─── */
 .tactical-input {
   background: var(--crt-bg);
   border: 4px solid var(--screen-bezel);
   border-radius: 6px;
   color: var(--crt-bright);
-  font-family: var(--font-tech);
+  font-family: var(--font-crt);
   padding: 10px;
-  font-size: 14px;
+  font-size: 16px;
   box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
   outline: none;
 }
@@ -246,6 +340,7 @@ body {
   box-shadow: 0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1);
   text-transform: uppercase;
   font-size: 12px;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
 }
 .tactical-button:active {
   transform: translateY(2px);
@@ -253,7 +348,7 @@ body {
 }
 .tactical-button:disabled { opacity: 0.5; }
 
-/* Fader thumb — console style with center line */
+/* ─── Fader thumb — console style with green center line ─── */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -274,7 +369,12 @@ input[type="range"]::-webkit-slider-thumb {
       #3a3e46 60%, #555a62 85%, #6a6e78 100%
     );
   border: 1px solid #111;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(255,255,255,0.1);
+  box-shadow:
+    0 3px 6px rgba(0,0,0,0.7),
+    0 1px 2px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(255,255,255,0.1),
+    0 0 8px rgba(117,204,70,0.06);
 }
 input[type="range"]::-moz-range-thumb {
   width: 36px;
@@ -294,5 +394,35 @@ input[type="range"]::-moz-range-thumb {
       #3a3e46 60%, #555a62 85%, #6a6e78 100%
     );
   border: 1px solid #111;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(255,255,255,0.1);
+  box-shadow:
+    0 3px 6px rgba(0,0,0,0.7),
+    0 1px 2px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(255,255,255,0.1),
+    0 0 8px rgba(117,204,70,0.06);
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 640px) {
+  .console {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  .console::before, .console::after {
+    width: 12px;
+    height: 12px;
+    top: 10px;
+  }
+  .console::before { left: 10px; }
+  .console::after { right: 10px; }
+  .zone-inset, .zone-engraved {
+    padding: 14px;
+  }
+  .display-bezel {
+    padding: 12px;
+  }
+  .rocker-switch {
+    width: 50px;
+    height: 65px;
+  }
 }

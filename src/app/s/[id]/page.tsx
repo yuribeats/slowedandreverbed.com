@@ -7,6 +7,18 @@ import Transport from "../../../../components/Transport";
 import ProgressBar from "../../../../components/ProgressBar";
 import Toast from "../../../../components/Toast";
 
+const faderStyle: React.CSSProperties = {
+  writingMode: "vertical-lr",
+  direction: "rtl",
+  WebkitAppearance: "none",
+  appearance: "none",
+  background: "transparent",
+  width: "40px",
+  top: 0,
+  left: "50%",
+  transform: "translateX(-50%)",
+};
+
 export default function SharePage({ params }: { params: { id: string } }) {
   const loadShare = useStore((s) => s.loadShare);
   const sourceBuffer = useStore((s) => s.sourceBuffer);
@@ -29,11 +41,15 @@ export default function SharePage({ params }: { params: { id: string } }) {
       <div className="w-full max-w-[1000px] flex flex-col gap-5">
         <div className="console flex flex-col gap-5">
           {/* Header */}
-          <div className="flex items-center gap-4 px-3">
+          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1">
             <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
               <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
             </div>
-            <a href="/" className="text-xl font-bold tracking-[2px] uppercase" style={{ color: "var(--text-dark)" }}>
+            <a
+              href="/"
+              className="text-lg sm:text-xl tracking-[2px] uppercase"
+              style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
+            >
               SLOWED AND REVERBED MACHINE
             </a>
             {sourceFilename && (
@@ -52,17 +68,23 @@ export default function SharePage({ params }: { params: { id: string } }) {
           )}
 
           {/* Display panel */}
-          <div className="display-bezel grid grid-cols-[200px_1fr] gap-5">
+          <div className="display-bezel grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-4 sm:gap-5 boot-stagger boot-delay-2">
             {/* Status CRT */}
             <div className="crt flex flex-col" style={{ height: "180px" }}>
-              <div className="px-2 py-1 flex justify-between text-[10px] border-b z-10" style={{ color: "var(--crt-bright)", borderColor: "var(--crt-grid)" }}>
+              <div
+                className="px-2 py-1 flex justify-between text-[10px] border-b z-10"
+                style={{ color: "var(--crt-bright)", borderColor: "var(--crt-grid)", fontFamily: "var(--font-crt)", fontSize: "13px" }}
+              >
                 <span>SYS STATUS</span>
                 {isPlaying && <span>PLAYING</span>}
               </div>
-              <div className="crt-grid flex-1 p-2 text-[12px] leading-[1.8] z-10" style={{ color: "var(--crt-bright)" }}>
-                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>SPEED:</span> {rate.toFixed(2)}X</div>
-                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>REVERB:</span> {reverbPct}%</div>
-                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>TONE:</span> {toneLabel}</div>
+              <div
+                className="crt-grid flex-1 p-2 leading-[2] z-10 crt-text"
+                style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "15px" }}
+              >
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "80px" }}>SPEED:</span> {rate.toFixed(2)}X</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "80px" }}>REVERB:</span> {reverbPct}%</div>
+                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "80px" }}>TONE:</span> {toneLabel}</div>
               </div>
             </div>
 
@@ -70,8 +92,8 @@ export default function SharePage({ params }: { params: { id: string } }) {
             <SpectrumAnalyzer />
           </div>
 
-          {/* Control deck - 2 columns */}
-          <div className="grid grid-cols-2 gap-5">
+          {/* Control deck */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 boot-stagger boot-delay-3">
             {/* Transport */}
             <div className="zone-inset">
               <Transport />
@@ -93,17 +115,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       value={storeParams.speed}
                       onChange={(e) => setParam("speed", parseFloat(e.target.value))}
                       className="absolute h-full"
-                      style={{
-                        writingMode: "vertical-lr",
-                        direction: "rtl",
-                        WebkitAppearance: "none",
-                        appearance: "none",
-                        background: "transparent",
-                        width: "40px",
-                        top: 0,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                      }}
+                      style={faderStyle}
                     />
                   </div>
                   <div className="label">SPEED</div>
@@ -122,17 +134,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       value={storeParams.reverb}
                       onChange={(e) => setParam("reverb", parseFloat(e.target.value))}
                       className="absolute h-full"
-                      style={{
-                        writingMode: "vertical-lr",
-                        direction: "rtl",
-                        WebkitAppearance: "none",
-                        appearance: "none",
-                        background: "transparent",
-                        width: "40px",
-                        top: 0,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                      }}
+                      style={faderStyle}
                     />
                   </div>
                   <div className="label">REVERB</div>
@@ -151,17 +153,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       value={storeParams.tone}
                       onChange={(e) => setParam("tone", parseFloat(e.target.value))}
                       className="absolute h-full"
-                      style={{
-                        writingMode: "vertical-lr",
-                        direction: "rtl",
-                        WebkitAppearance: "none",
-                        appearance: "none",
-                        background: "transparent",
-                        width: "40px",
-                        top: 0,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                      }}
+                      style={faderStyle}
                     />
                   </div>
                   <div className="label">TONE</div>

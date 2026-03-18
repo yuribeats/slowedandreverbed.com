@@ -39,7 +39,7 @@ export default function Playlist() {
       <div className="max-h-48 overflow-y-auto">
         {playlist.map((item) => (
           <div key={item.id} className="px-4 py-2 flex items-center justify-between border-b border-[#6b6758] last:border-0">
-            <span className="text-[11px] uppercase tracking-wider truncate flex-1" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-tech)" }}>
+            <span className="text-[11px] uppercase tracking-wider truncate flex-1" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}>
               {item.name}
             </span>
             <div className="flex items-center gap-2 ml-4 flex-shrink-0">
