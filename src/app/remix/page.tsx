@@ -152,9 +152,7 @@ function Deck({ id }: { id: DeckId }) {
       <WaveformDisplay
         audioBuffer={deck.sourceBuffer}
         isPlaying={deck.isPlaying}
-        startedAt={deck.startedAt}
         pauseOffset={deck.pauseOffset}
-        playbackRate={rate}
         regionStart={deck.regionStart}
         regionEnd={deck.regionEnd}
         onRegionChange={(s, e) => setRegion(id, s, e)}
