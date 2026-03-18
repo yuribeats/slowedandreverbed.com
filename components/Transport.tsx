@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useCallback } from "react";
 import { useStore } from "../lib/store";
 
 const btnBase =
@@ -13,11 +14,36 @@ export default function Transport() {
   const rewind = useStore((s) => s.rewind);
   const fastForward = useStore((s) => s.fastForward);
   const eject = useStore((s) => s.eject);
+  const loadFile = useStore((s) => s.loadFile);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const off = !sourceBuffer;
 
+  const handleEject = useCallback(() => {
+    if (sourceBuffer) {
+      eject();
+    }
+    inputRef.current?.click();
+  }, [sourceBuffer, eject]);
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) loadFile(file);
+      if (inputRef.current) inputRef.current.value = "";
+    },
+    [loadFile]
+  );
+
   return (
     <div className="flex items-center gap-1">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="audio/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
       <button
         onClick={rewind}
         disabled={off}
@@ -56,8 +82,7 @@ export default function Transport() {
       </button>
 
       <button
-        onClick={eject}
-        disabled={off}
+        onClick={handleEject}
         className={`${btnBase} w-10 h-10 text-[#333] hover:text-[#111] ml-2`}
         title="EJECT"
       >
