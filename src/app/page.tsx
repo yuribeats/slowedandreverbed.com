@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import SpectrumAnalyzer from "../../components/SpectrumAnalyzer";
 import Transport from "../../components/Transport";
 import ProgressBar from "../../components/ProgressBar";
@@ -7,16 +8,32 @@ import Playlist from "../../components/Playlist";
 import Toast from "../../components/Toast";
 import { useStore } from "../../lib/store";
 
+function snapToSemitone(speed: number): number {
+  const rate = 1.0 + speed;
+  const semitones = 12 * Math.log2(rate);
+  const snapped = Math.round(semitones);
+  return Math.pow(2, snapped / 12) - 1.0;
+}
+
 export default function Home() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const isPlaying = useStore((s) => s.isPlaying);
-  const sourceFilename = useStore((s) => s.sourceFilename);
   const params = useStore((s) => s.params);
   const setParam = useStore((s) => s.setParam);
+  const [stepMode, setStepMode] = useState(false);
 
   const rate = 1.0 + params.speed;
+  const semitones = 12 * Math.log2(rate);
   const reverbPct = Math.round(params.reverb * 100);
   const toneLabel = params.tone === 0 ? "FLAT" : params.tone < 0 ? "DARK" : "BRIGHT";
+
+  const handleSpeed = (v: number) => {
+    if (stepMode) {
+      setParam("speed", snapToSemitone(v));
+    } else {
+      setParam("speed", v);
+    }
+  };
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-8">
@@ -71,9 +88,9 @@ export default function Home() {
                       type="range"
                       min="-0.5"
                       max="0.5"
-                      step="0.01"
+                      step={stepMode ? 0.001 : 0.01}
                       value={params.speed}
-                      onChange={(e) => setParam("speed", parseFloat(e.target.value))}
+                      onChange={(e) => handleSpeed(parseFloat(e.target.value))}
                       className="absolute w-[120px] h-[32px]"
                       style={{
                         transform: "rotate(-90deg)",
@@ -87,7 +104,18 @@ export default function Home() {
                     />
                   </div>
                   <div className="label">SPEED</div>
-                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{rate.toFixed(2)}X</span>
+                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{rate.toFixed(2)}X / {semitones >= 0 ? "+" : ""}{semitones.toFixed(1)}ST</span>
+                  <button
+                    onClick={() => setStepMode(!stepMode)}
+                    className={`text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 border ${
+                      stepMode
+                        ? "border-[#333] bg-[rgba(224,140,38,0.15)]"
+                        : "border-[#777]"
+                    }`}
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+                  >
+                    STEP
+                  </button>
                 </div>
 
                 {/* Reverb slider */}
