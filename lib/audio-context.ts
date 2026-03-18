@@ -4,8 +4,13 @@ export function getAudioContext(): AudioContext {
   if (!ctx) {
     ctx = new AudioContext();
   }
-  if (ctx.state === "suspended") {
-    ctx.resume();
-  }
   return ctx;
+}
+
+export async function ensureAudioContext(): Promise<AudioContext> {
+  const c = getAudioContext();
+  if (c.state === "suspended") {
+    await c.resume();
+  }
+  return c;
 }

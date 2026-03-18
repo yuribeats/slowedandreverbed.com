@@ -8,7 +8,7 @@ import {
 } from "@yuribeats/audio-utils";
 import { decodeFile, decodeArrayBuffer } from "./file-decoder";
 import { fetchYouTubeAudio } from "./cobalt";
-import { getAudioContext } from "./audio-context";
+import { getAudioContext, ensureAudioContext } from "./audio-context";
 
 interface AudioNodes {
   source: AudioBufferSourceNode;
@@ -53,7 +53,7 @@ interface AppStore {
   loadFromYouTube: (url: string) => Promise<void>;
   setParam: <K extends keyof SimpleParams>(key: K, value: SimpleParams[K]) => void;
   setParams: (params: SimpleParams) => void;
-  play: () => void;
+  play: () => Promise<void>;
   stop: () => void;
   rewind: () => void;
   fastForward: () => void;
@@ -291,12 +291,12 @@ export const useStore = create<AppStore>((set, get) => ({
     nodes.convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
   },
 
-  play: () => {
+  play: async () => {
     const { sourceBuffer, params, isPlaying, pauseOffset } = get();
     if (!sourceBuffer) return;
     if (isPlaying) get().stop();
 
-    const ctx = getAudioContext();
+    const ctx = await ensureAudioContext();
     const nodes = buildGraph(ctx, sourceBuffer, params, pauseOffset, () => {
       set({ isPlaying: false, nodes: null, pauseOffset: 0 });
     });
