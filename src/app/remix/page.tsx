@@ -1,12 +1,20 @@
 "use client";
 
 import { useRef, useCallback, useState } from "react";
+import { expandParams } from "@yuribeats/audio-utils";
 import { useRemixStore } from "../../../lib/remix-store";
 import { getAudioContext } from "../../../lib/audio-context";
 import MiniSpectrum from "../../../components/MiniSpectrum";
 import Toast from "../../../components/Toast";
 
 type DeckId = "A" | "B";
+
+function snapToSemitone(speed: number): number {
+  const rate = 1.0 + speed;
+  const semitones = 12 * Math.log2(rate);
+  const snapped = Math.round(semitones);
+  return Math.pow(2, snapped / 12) - 1.0;
+}
 
 const faderStyle: React.CSSProperties = {
   writingMode: "vertical-lr",
@@ -20,6 +28,13 @@ const faderStyle: React.CSSProperties = {
   transform: "translateX(-50%)",
 };
 
+const detailBtnClass = (active: boolean) =>
+  `text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 border ${
+    active ? "border-[#333] bg-[rgba(255,115,0,0.15)]" : "border-[#777]"
+  }`;
+
+const detailBtnStyle: React.CSSProperties = { fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" };
+
 function Deck({ id }: { id: DeckId }) {
   const deck = useRemixStore((s) => (id === "A" ? s.deckA : s.deckB));
   const loadFile = useRemixStore((s) => s.loadFile);
@@ -30,10 +45,25 @@ function Deck({ id }: { id: DeckId }) {
   const eject = useRemixStore((s) => s.eject);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [stepMode, setStepMode] = useState(false);
+  const [reverbDetail, setReverbDetail] = useState(false);
+  const [toneDetail, setToneDetail] = useState(false);
+  const [satDetail, setSatDetail] = useState(false);
+
   const rate = 1.0 + deck.params.speed;
+  const semitones = 12 * Math.log2(rate);
   const reverbPct = Math.round(deck.params.reverb * 100);
   const satPct = Math.round((deck.params.saturation ?? 0) * 100);
   const toneLabel = deck.params.tone === 0 ? "FLAT" : deck.params.tone < 0 ? "DARK" : "BRIGHT";
+  const expanded = expandParams(deck.params);
+
+  const handleSpeed = (v: number) => {
+    if (stepMode) {
+      setParam(id, "speed", snapToSemitone(v));
+    } else {
+      setParam(id, "speed", v);
+    }
+  };
 
   const handleLoad = useCallback(() => {
     getAudioContext();
@@ -117,15 +147,16 @@ function Deck({ id }: { id: DeckId }) {
             <div className="relative h-[100px] w-[36px] flex justify-center">
               <div className="slider-track h-full" />
               <input
-                type="range" min="-0.5" max="0.5" step="0.01"
+                type="range" min="-0.5" max="0.5" step={stepMode ? 0.001 : 0.01}
                 value={deck.params.speed}
-                onChange={(e) => setParam(id, "speed", parseFloat(e.target.value))}
+                onChange={(e) => handleSpeed(parseFloat(e.target.value))}
                 className="absolute h-full"
                 style={{ ...faderStyle, width: "36px" }}
               />
             </div>
             <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>SPEED</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{rate.toFixed(2)}X</span>
+            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{rate.toFixed(2)}X / {semitones >= 0 ? "+" : ""}{semitones.toFixed(1)}ST</span>
+            <button onClick={() => setStepMode(!stepMode)} className={detailBtnClass(stepMode)} style={detailBtnStyle}>STEP</button>
           </div>
 
           {/* Reverb */}
@@ -142,6 +173,7 @@ function Deck({ id }: { id: DeckId }) {
             </div>
             <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>REVERB</div>
             <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{reverbPct}%</span>
+            <button onClick={() => setReverbDetail(!reverbDetail)} className={detailBtnClass(reverbDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
 
           {/* Tone */}
@@ -158,6 +190,7 @@ function Deck({ id }: { id: DeckId }) {
             </div>
             <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>TONE</div>
             <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{toneLabel}</span>
+            <button onClick={() => setToneDetail(!toneDetail)} className={detailBtnClass(toneDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
 
           {/* Saturate */}
@@ -174,9 +207,158 @@ function Deck({ id }: { id: DeckId }) {
             </div>
             <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>SAT</div>
             <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{satPct}%</span>
+            <button onClick={() => setSatDetail(!satDetail)} className={detailBtnClass(satDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
         </div>
       </div>
+
+      {/* Reverb Detail */}
+      {reverbDetail && (
+        <div className="zone-engraved">
+          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>REVERB DETAIL</div>
+          <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="0" max="1" step="0.01"
+                  value={deck.params.reverbWetOverride ?? expanded.reverbWet}
+                  onChange={(e) => setParam(id, "reverbWetOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>WET/DRY</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.reverbWetOverride ?? expanded.reverbWet) * 100)}%</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="0.5" max="8" step="0.1"
+                  value={deck.params.reverbDurationOverride ?? expanded.reverbDuration}
+                  onChange={(e) => setParam(id, "reverbDurationOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>SIZE</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDurationOverride ?? expanded.reverbDuration).toFixed(1)}S</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="0.5" max="6" step="0.1"
+                  value={deck.params.reverbDecayOverride ?? expanded.reverbDecay}
+                  onChange={(e) => setParam(id, "reverbDecayOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>DECAY</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDecayOverride ?? expanded.reverbDecay).toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tone Detail — Parametric EQ */}
+      {toneDetail && (
+        <div className="zone-engraved">
+          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>PARAMETRIC EQ</div>
+          <div className="grid grid-cols-5 gap-2" style={{ justifyItems: "center" }}>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="-20" max="20" step="0.5"
+                  value={deck.params.eqLowOverride ?? expanded.eqLow}
+                  onChange={(e) => setParam(id, "eqLowOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>LOW</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqLowOverride ?? expanded.eqLow).toFixed(1)}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="-20" max="20" step="0.5"
+                  value={deck.params.eqMidOverride ?? expanded.eqMid}
+                  onChange={(e) => setParam(id, "eqMidOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>MID</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqMidOverride ?? expanded.eqMid).toFixed(1)}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="-20" max="20" step="0.5"
+                  value={deck.params.eqHighOverride ?? expanded.eqHigh}
+                  onChange={(e) => setParam(id, "eqHighOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>HIGH</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqHighOverride ?? expanded.eqHigh).toFixed(1)}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="100" max="10000" step="50"
+                  value={deck.params.eqBumpFreqOverride ?? expanded.eqBumpFreq}
+                  onChange={(e) => setParam(id, "eqBumpFreqOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>FREQ</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.params.eqBumpFreqOverride ?? expanded.eqBumpFreq)}HZ</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="0" max="15" step="0.5"
+                  value={deck.params.eqBumpGainOverride ?? expanded.eqBumpGain}
+                  onChange={(e) => setParam(id, "eqBumpGainOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>PEAK</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqBumpGainOverride ?? expanded.eqBumpGain).toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saturation Detail */}
+      {satDetail && (
+        <div className="zone-engraved">
+          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>SATURATION DETAIL</div>
+          <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="1" max="50" step="0.5"
+                  value={deck.params.satDriveOverride ?? expanded.satDrive}
+                  onChange={(e) => setParam(id, "satDriveOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>DRIVE</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.satDriveOverride ?? expanded.satDrive).toFixed(1)}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="0" max="1" step="0.01"
+                  value={deck.params.satMixOverride ?? expanded.satMix}
+                  onChange={(e) => setParam(id, "satMixOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>MIX</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satMixOverride ?? expanded.satMix) * 100)}%</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input type="range" min="1000" max="20000" step="100"
+                  value={deck.params.satToneOverride ?? expanded.satTone}
+                  onChange={(e) => setParam(id, "satToneOverride", parseFloat(e.target.value))}
+                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>TONE</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satToneOverride ?? expanded.satTone) / 1000)}KHZ</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Volume fader */}
       <div className="zone-inset flex items-center gap-3 justify-center py-3">
