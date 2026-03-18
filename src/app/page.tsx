@@ -79,7 +79,7 @@ export default function Home() {
 
             {/* Effects */}
             <div className="zone-engraved relative">
-              <div className="flex justify-around pt-2">
+              <div className="grid grid-cols-3 gap-4 pt-2" style={{ justifyItems: "center" }}>
                 {/* Speed slider */}
                 <div className="flex flex-col items-center gap-2">
                   <div className="relative h-[140px] w-[40px] flex justify-center">
