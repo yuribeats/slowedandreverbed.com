@@ -14,7 +14,6 @@ const btnClass =
 
 export default function Home() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
-  const sourceFilename = useStore((s) => s.sourceFilename);
   const randomize = useStore((s) => s.randomize);
 
   return (
@@ -26,11 +25,7 @@ export default function Home() {
             <h1 className="text-sm text-[#333] uppercase tracking-[0.2em] font-bold">
               THE SLOWED AND REVERB MACHINE
             </h1>
-            {sourceFilename && (
-              <span className="text-[10px] text-[#555] uppercase tracking-[0.1em]">
-                {sourceFilename}
-              </span>
-            )}
+            <Uploader />
           </div>
         </div>
 
