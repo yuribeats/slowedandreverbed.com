@@ -153,6 +153,7 @@ interface RemixStore {
   setStem: (deck: DeckId, stem: StemType | null) => void;
   setRegion: (deck: DeckId, start: number, end: number) => void;
   seek: (deck: DeckId, position: number) => Promise<void>;
+  scrub: (deck: DeckId, position: number) => void;
 }
 
 /* ─── Shared output bus: merger → EQ → compressor → makeup → destination ─── */
@@ -560,6 +561,11 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (wasPlaying) get().pause(id);
     set((s) => ({ [dk]: { ...s[dk], pauseOffset: position } }));
     if (wasPlaying) await get().play(id);
+  },
+
+  scrub: (id, position) => {
+    const dk = deckKey(id);
+    set((s) => ({ [dk]: { ...s[dk], pauseOffset: position } }));
   },
 
   setStem: (id, stem) => {

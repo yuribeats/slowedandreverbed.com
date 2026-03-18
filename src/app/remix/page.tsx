@@ -47,6 +47,7 @@ function Deck({ id }: { id: DeckId }) {
   const setStem = useRemixStore((s) => s.setStem);
   const setRegion = useRemixStore((s) => s.setRegion);
   const seek = useRemixStore((s) => s.seek);
+  const scrub = useRemixStore((s) => s.scrub);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [stepMode, setStepMode] = useState(false);
@@ -150,10 +151,13 @@ function Deck({ id }: { id: DeckId }) {
         audioBuffer={deck.sourceBuffer}
         isPlaying={deck.isPlaying}
         pauseOffset={deck.pauseOffset}
+        startedAt={deck.startedAt}
+        playbackRate={rate}
         regionStart={deck.regionStart}
         regionEnd={deck.regionEnd}
         onRegionChange={(s, e) => setRegion(id, s, e)}
         onSeek={(pos) => seek(id, pos)}
+        onScrub={(pos) => scrub(id, pos)}
       />
 
       {/* Stem isolation */}
