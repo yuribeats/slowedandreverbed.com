@@ -105,12 +105,12 @@ export default function Home() {
                     />
                   </div>
                   <div className="label">SPEED</div>
-                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(224,140,38,0.4)" }}>{rate.toFixed(2)}X / {semitones >= 0 ? "+" : ""}{semitones.toFixed(1)}ST</span>
+                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(255,115,0,0.4)" }}>{rate.toFixed(2)}X / {semitones >= 0 ? "+" : ""}{semitones.toFixed(1)}ST</span>
                   <button
                     onClick={() => setStepMode(!stepMode)}
                     className={`text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 border ${
                       stepMode
-                        ? "border-[#333] bg-[rgba(224,140,38,0.15)]"
+                        ? "border-[#333] bg-[rgba(255,115,0,0.15)]"
                         : "border-[#777]"
                     }`}
                     style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
@@ -143,7 +143,7 @@ export default function Home() {
                     />
                   </div>
                   <div className="label">REVERB</div>
-                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(224,140,38,0.4)" }}>{reverbPct}%</span>
+                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(255,115,0,0.4)" }}>{reverbPct}%</span>
                 </div>
 
                 {/* Tone slider */}
@@ -170,7 +170,7 @@ export default function Home() {
                     />
                   </div>
                   <div className="label">TONE</div>
-                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(224,140,38,0.4)" }}>{toneLabel}</span>
+                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(255,115,0,0.4)" }}>{toneLabel}</span>
                 </div>
               </div>
             </div>

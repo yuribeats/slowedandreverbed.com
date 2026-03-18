@@ -24,7 +24,7 @@
   --led-green-on: #75cc46;
   --led-red-off: #5a1c1c;
   --led-red-on: #c92a2a;
-  --led-orange: #e08c26;
+  --led-orange: #FF7300;
   --text-dark: #111111;
   --font-tech: 'Chakra Petch', var(--font-ibm-plex-mono), sans-serif;
 }
@@ -265,7 +265,7 @@ input[type="range"]::-webkit-slider-thumb {
   height: 16px;
   border-radius: 50%;
   background: var(--led-orange);
-  box-shadow: 0 0 6px rgba(224,140,38,0.6);
+  box-shadow: 0 0 6px rgba(255,115,0,0.6);
   border: none;
 }
 input[type="range"]::-moz-range-thumb {
@@ -273,6 +273,6 @@ input[type="range"]::-moz-range-thumb {
   height: 16px;
   border-radius: 50%;
   background: var(--led-orange);
-  box-shadow: 0 0 6px rgba(224,140,38,0.6);
+  box-shadow: 0 0 6px rgba(255,115,0,0.6);
   border: none;
 }

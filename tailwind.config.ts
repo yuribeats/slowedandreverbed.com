@@ -16,7 +16,7 @@ const config: Config = {
           "crt-bg": "#1e2e1a",
           "crt-bright": "#75cc46",
           "crt-dim": "#4a822c",
-          "led-orange": "#e08c26",
+          "led-orange": "#FF7300",
           text: "#111111",
           muted: "#6b6758",
           danger: "#c92a2a",
