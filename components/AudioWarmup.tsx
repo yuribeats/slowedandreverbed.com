@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { warmUpAudio } from "../lib/audio-context";
+import { getAudioContext } from "../lib/audio-context";
 
 export default function AudioWarmup() {
   useEffect(() => {
     const handler = () => {
-      warmUpAudio();
-      document.removeEventListener("touchstart", handler);
-      document.removeEventListener("click", handler);
+      getAudioContext();
     };
     document.addEventListener("touchstart", handler, { once: true });
     document.addEventListener("click", handler, { once: true });

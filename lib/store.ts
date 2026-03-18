@@ -211,8 +211,7 @@ export const useStore = create<AppStore>((set, get) => ({
 
   loadFile: async (file: File) => {
     get().stop();
-    // Free previous buffer before allocating new one (helps mobile memory)
-    set({ isLoading: true, error: null, youtubeUrl: null, pauseOffset: 0, sourceBuffer: null, sourceFile: null });
+    set({ isLoading: true, error: null, youtubeUrl: null, pauseOffset: 0 });
     try {
       const audioBuffer = await decodeFile(file);
       set({
@@ -231,7 +230,7 @@ export const useStore = create<AppStore>((set, get) => ({
 
   loadFromYouTube: async (url: string) => {
     get().stop();
-    set({ isLoading: true, error: null, youtubeUrl: url, pauseOffset: 0, sourceBuffer: null, sourceFile: null });
+    set({ isLoading: true, error: null, youtubeUrl: url, pauseOffset: 0 });
     try {
       const { buffer, title } = await fetchYouTubeAudio(url);
       const audioBuffer = await decodeArrayBuffer(buffer);
@@ -303,12 +302,7 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!sourceBuffer) return;
     if (isPlaying) get().stop();
 
-    // Must be synchronous in user gesture callstack for mobile
     const ctx = getAudioContext();
-    if (ctx.state === "suspended") {
-      ctx.resume();
-    }
-
     const nodes = buildGraph(ctx, sourceBuffer, params, pauseOffset, () => {
       set({ isPlaying: false, nodes: null, pauseOffset: 0 });
     });
@@ -506,7 +500,7 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   loadShare: async (id: string) => {
-    set({ isLoading: true, error: null, pauseOffset: 0, sourceBuffer: null });
+    set({ isLoading: true, error: null, pauseOffset: 0 });
 
     try {
       const res = await fetch(`/api/share?id=${id}`);
@@ -536,7 +530,7 @@ export const useStore = create<AppStore>((set, get) => ({
   loadPlaylistItem: async (item: PlaylistItem) => {
     if (!item.url) return;
     get().stop();
-    set({ isLoading: true, error: null, pauseOffset: 0, sourceBuffer: null });
+    set({ isLoading: true, error: null, pauseOffset: 0 });
 
     try {
       const audioRes = await fetch(item.url);
