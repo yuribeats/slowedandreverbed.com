@@ -14,6 +14,15 @@ export interface SimpleParams {
   speed: number;    // -0.5 to +0.5 (0 = no change, negative = slow, positive = fast)
   reverb: number;   // 0–1
   tone: number;     // -1 to 1 (dark to bright)
+  // Optional detailed overrides (when set, bypass the auto-calculated values)
+  reverbWetOverride?: number;       // 0–1
+  reverbDurationOverride?: number;  // 0.5–8 seconds
+  reverbDecayOverride?: number;     // 0.5–6
+  eqLowOverride?: number;          // -20 to +20 dB
+  eqMidOverride?: number;          // -20 to +20 dB
+  eqHighOverride?: number;         // -20 to +20 dB
+  eqBumpFreqOverride?: number;     // 100–10000 Hz
+  eqBumpGainOverride?: number;     // 0–15 dB
 }
 
 export interface EQBand {
@@ -48,14 +57,14 @@ export function expandParams(s: SimpleParams): ProcessingParams {
 
   return {
     rate,
-    reverbWet: reverbCurve * 0.8,
-    reverbDuration: 2.5 + s.reverb * 3.5,
-    reverbDecay: 2.0 + s.reverb * 2.0,
-    eqLow: -toneAmount * 0.3,
-    eqMid: 0,
-    eqHigh: toneAmount,
-    eqBumpFreq: bumpFreq,
-    eqBumpGain: bumpGain,
+    reverbWet: s.reverbWetOverride ?? reverbCurve * 0.8,
+    reverbDuration: s.reverbDurationOverride ?? 2.5 + s.reverb * 3.5,
+    reverbDecay: s.reverbDecayOverride ?? 2.0 + s.reverb * 2.0,
+    eqLow: s.eqLowOverride ?? -toneAmount * 0.3,
+    eqMid: s.eqMidOverride ?? 0,
+    eqHigh: s.eqHighOverride ?? toneAmount,
+    eqBumpFreq: s.eqBumpFreqOverride ?? bumpFreq,
+    eqBumpGain: s.eqBumpGainOverride ?? bumpGain,
   };
 }
 

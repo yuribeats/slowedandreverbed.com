@@ -260,14 +260,17 @@ export const useStore = create<AppStore>((set, get) => ({
       nodes.source.playbackRate.value = expanded.rate;
     }
 
-    if (key === "tone") {
+    const toneKeys: (keyof SimpleParams)[] = ["tone", "eqLowOverride", "eqMidOverride", "eqHighOverride", "eqBumpFreqOverride", "eqBumpGainOverride"];
+    if (toneKeys.includes(key)) {
       nodes.lowShelf.gain.value = expanded.eqLow;
+      nodes.peaking.gain.value = expanded.eqMid;
       nodes.highShelf.gain.value = expanded.eqHigh;
       nodes.bump.frequency.value = expanded.eqBumpFreq;
       nodes.bump.gain.value = expanded.eqBumpGain;
     }
 
-    if (key === "reverb") {
+    const reverbKeys: (keyof SimpleParams)[] = ["reverb", "reverbWetOverride", "reverbDurationOverride", "reverbDecayOverride"];
+    if (reverbKeys.includes(key)) {
       nodes.dryGain.gain.value = 1 - expanded.reverbWet;
       nodes.wetGain.gain.value = expanded.reverbWet;
       const ctx = getAudioContext();
