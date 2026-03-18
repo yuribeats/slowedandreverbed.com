@@ -91,15 +91,17 @@ export default function Home() {
                       step={stepMode ? 0.001 : 0.01}
                       value={params.speed}
                       onChange={(e) => handleSpeed(parseFloat(e.target.value))}
-                      className="absolute w-[140px] h-[40px]"
+                      className="absolute h-full"
                       style={{
-                        transform: "rotate(-90deg)",
-                        transformOrigin: "center",
-                        top: "50px",
-                        left: "-50px",
+                        writingMode: "vertical-lr",
+                        direction: "rtl",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
+                        width: "40px",
+                        top: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
                       }}
                     />
                   </div>
@@ -129,15 +131,17 @@ export default function Home() {
                       step="0.01"
                       value={params.reverb}
                       onChange={(e) => setParam("reverb", parseFloat(e.target.value))}
-                      className="absolute w-[140px] h-[40px]"
+                      className="absolute h-full"
                       style={{
-                        transform: "rotate(-90deg)",
-                        transformOrigin: "center",
-                        top: "50px",
-                        left: "-50px",
+                        writingMode: "vertical-lr",
+                        direction: "rtl",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
+                        width: "40px",
+                        top: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
                       }}
                     />
                   </div>
@@ -156,15 +160,17 @@ export default function Home() {
                       step="0.01"
                       value={params.tone}
                       onChange={(e) => setParam("tone", parseFloat(e.target.value))}
-                      className="absolute w-[140px] h-[40px]"
+                      className="absolute h-full"
                       style={{
-                        transform: "rotate(-90deg)",
-                        transformOrigin: "center",
-                        top: "50px",
-                        left: "-50px",
+                        writingMode: "vertical-lr",
+                        direction: "rtl",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
+                        width: "40px",
+                        top: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
                       }}
                     />
                   </div>

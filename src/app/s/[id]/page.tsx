@@ -92,15 +92,17 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       step="0.01"
                       value={storeParams.speed}
                       onChange={(e) => setParam("speed", parseFloat(e.target.value))}
-                      className="absolute w-[140px] h-[40px]"
+                      className="absolute h-full"
                       style={{
-                        transform: "rotate(-90deg)",
-                        transformOrigin: "center",
-                        top: "50px",
-                        left: "-50px",
+                        writingMode: "vertical-lr",
+                        direction: "rtl",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
+                        width: "40px",
+                        top: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
                       }}
                     />
                   </div>
@@ -119,15 +121,17 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       step="0.01"
                       value={storeParams.reverb}
                       onChange={(e) => setParam("reverb", parseFloat(e.target.value))}
-                      className="absolute w-[140px] h-[40px]"
+                      className="absolute h-full"
                       style={{
-                        transform: "rotate(-90deg)",
-                        transformOrigin: "center",
-                        top: "50px",
-                        left: "-50px",
+                        writingMode: "vertical-lr",
+                        direction: "rtl",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
+                        width: "40px",
+                        top: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
                       }}
                     />
                   </div>
@@ -146,15 +150,17 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       step="0.01"
                       value={storeParams.tone}
                       onChange={(e) => setParam("tone", parseFloat(e.target.value))}
-                      className="absolute w-[140px] h-[40px]"
+                      className="absolute h-full"
                       style={{
-                        transform: "rotate(-90deg)",
-                        transformOrigin: "center",
-                        top: "50px",
-                        left: "-50px",
+                        writingMode: "vertical-lr",
+                        direction: "rtl",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
+                        width: "40px",
+                        top: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
                       }}
                     />
                   </div>
