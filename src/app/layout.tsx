@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Audiowide, VT323 } from "next/font/google";
 import AudioWarmup from "../../components/AudioWarmup";
 import "./globals.css";
@@ -20,6 +20,13 @@ const vt323 = VT323({
   weight: "400",
   variable: "--font-vt323",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "THE SLOWED AND REVERB MACHINE",

@@ -402,6 +402,11 @@ input[type="range"]::-moz-range-thumb {
     0 0 8px rgba(117,204,70,0.06);
 }
 
+/* ─── Touch ─── */
+button, .rocker-switch, .tactical-button, input[type="range"] {
+  touch-action: manipulation;
+}
+
 /* ─── Mobile ─── */
 @media (max-width: 640px) {
   .console {

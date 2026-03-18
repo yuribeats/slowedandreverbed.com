@@ -41,11 +41,12 @@ export default function ProgressBar() {
     return () => cancelAnimationFrame(animRef.current);
   }, [sourceBuffer, isPlaying, startedAt, pauseOffset, params]);
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
       if (!sourceBuffer || !barRef.current) return;
+      e.preventDefault();
       const rect = barRef.current.getBoundingClientRect();
-      const ratio = (e.clientX - rect.left) / rect.width;
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       seek(ratio * sourceBuffer.duration);
     },
     [sourceBuffer, seek]
@@ -64,8 +65,8 @@ export default function ProgressBar() {
       <div
         ref={barRef}
         className="flex-1 h-[6px] relative"
-        style={{ background: "var(--crt-bg)", border: "1px solid var(--crt-grid)" }}
-        onClick={handleClick}
+        onPointerDown={handlePointerDown}
+        style={{ background: "var(--crt-bg)", border: "1px solid var(--crt-grid)", touchAction: "none" }}
       >
         <div
           className="absolute top-0 left-0 h-full"
