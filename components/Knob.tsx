@@ -129,7 +129,7 @@ export default function Knob({
           left: `${x}px`,
           top: `${y}px`,
           transform: `translate(-50%, -50%) rotate(${tickAngle}deg)`,
-          background: i === 0 || i === ticks - 1 ? "#e89030" : "#888",
+          background: i === 0 || i === ticks - 1 ? "#00e5cc" : "#333",
         }}
       />
     );
@@ -137,42 +137,33 @@ export default function Knob({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <span className="text-[10px] text-dw-aluminum-light uppercase tracking-[0.2em] font-bold">
+      <span className="text-[9px] text-dw-btn-label uppercase tracking-[0.05em] font-medium font-mono">
         {label}
       </span>
       <div className="relative w-[96px] h-[96px]" ref={knobRef}>
         {tickMarks}
-        {/* Outer ring - chrome bezel */}
+        {/* Dark knob body */}
         <div
-          className="absolute inset-[6px] rounded-full"
-          style={{
-            background: "linear-gradient(180deg, #d0d0d0 0%, #888 50%, #a0a0a0 100%)",
-            boxShadow: "0 3px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.4)",
-          }}
+          className="absolute inset-[6px] rounded-full dark-knob"
+          style={{ transform: `rotate(${angle}deg)` }}
+          onMouseDown={handleMouseDown}
         >
-          {/* Chrome sunburst knob body */}
+          {/* Pointer notch - teal indicator */}
           <div
-            className="absolute inset-[3px] rounded-full chrome-knob"
-            style={{ transform: `rotate(${angle}deg)` }}
-            onMouseDown={handleMouseDown}
-          >
-            {/* Pointer notch */}
-            <div
-              className="absolute top-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[14px]"
-              style={{ background: "#e89030", boxShadow: "0 0 4px rgba(232,144,48,0.5)" }}
-            />
-            {/* Center cap */}
-            <div
-              className="absolute inset-[14px] rounded-full"
-              style={{
-                background: "radial-gradient(circle at 40% 35%, #e0e0e0, #999 60%, #777)",
-                boxShadow: "inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.2)",
-              }}
-            />
-          </div>
+            className="absolute top-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[14px]"
+            style={{ background: "#00e5cc", boxShadow: "0 0 6px rgba(0,229,204,0.5)" }}
+          />
+          {/* Center cap */}
+          <div
+            className="absolute inset-[14px] rounded-full"
+            style={{
+              background: "radial-gradient(circle at 40% 35%, #333, #111 60%, #0a0a0a)",
+              boxShadow: "inset 0 1px 3px rgba(0,0,0,0.5)",
+            }}
+          />
         </div>
       </div>
-      <span className="text-[11px] text-dw-amber font-mono tracking-wider">
+      <span className="text-[10px] text-dw-vfd-teal font-mono tracking-wider" style={{ textShadow: "0 0 8px rgba(0,229,204,0.4)" }}>
         {valueDisplay}
       </span>
     </div>
