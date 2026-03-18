@@ -32,7 +32,7 @@ export default function Home() {
               <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
             </div>
             <span className="text-xl font-bold tracking-[2px] uppercase" style={{ color: "var(--text-dark)" }}>
-              AUDIO PROCESSOR
+              SLOWED AND REVERBED MACHINE
             </span>
           </div>
 

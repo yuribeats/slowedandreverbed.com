@@ -36,7 +36,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
               <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
             </div>
             <a href="/" className="text-xl font-bold tracking-[2px] uppercase" style={{ color: "var(--text-dark)" }}>
-              AUDIO PROCESSOR
+              SLOWED AND REVERBED MACHINE
             </a>
             {sourceFilename && (
               <span className="text-[10px] uppercase tracking-[0.1em] ml-auto" style={{ color: "var(--text-dark)" }}>
