@@ -8,10 +8,14 @@ const btnBase = "rocker-switch";
 export default function Transport() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const isPlaying = useStore((s) => s.isPlaying);
+  const isExporting = useStore((s) => s.isExporting);
+  const isLoading = useStore((s) => s.isLoading);
   const play = useStore((s) => s.play);
   const stop = useStore((s) => s.stop);
   const eject = useStore((s) => s.eject);
   const loadFile = useStore((s) => s.loadFile);
+  const randomize = useStore((s) => s.randomize);
+  const download = useStore((s) => s.download);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const off = !sourceBuffer;
@@ -35,6 +39,23 @@ export default function Transport() {
   return (
     <div className="flex items-center gap-4 flex-wrap justify-center">
       <input ref={inputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileSelect} />
+
+      {/* Load */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>LOAD</span>
+          <div className="led-cutout">
+            <div className={`led-rect ${isLoading ? "led-green-on" : "led-green"}`} />
+          </div>
+        </div>
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={isLoading}
+          className={btnBase}
+        >
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+        </button>
+      </div>
 
       {/* Play/Stop */}
       <div className="flex flex-col items-center">
@@ -62,6 +83,32 @@ export default function Transport() {
           </div>
         </div>
         <button onClick={handleEject} className={btnBase}>
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+        </button>
+      </div>
+
+      {/* RDM */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>RDM</span>
+          <div className="led-cutout">
+            <div className="led-rect led-green" />
+          </div>
+        </div>
+        <button onClick={randomize} disabled={off} className={btnBase}>
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+        </button>
+      </div>
+
+      {/* Download */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isExporting ? "WAIT" : "DL"}</span>
+          <div className="led-cutout">
+            <div className={`led-rect ${isExporting ? "led-green-on" : "led-green"}`} />
+          </div>
+        </div>
+        <button onClick={download} disabled={off || isExporting} className={btnBase}>
           <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
         </button>
       </div>

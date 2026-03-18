@@ -1,10 +1,8 @@
 "use client";
 
-import Uploader from "../../components/Uploader";
 import SpectrumAnalyzer from "../../components/SpectrumAnalyzer";
 import Controls from "../../components/Controls";
 import Transport from "../../components/Transport";
-import DownloadButton from "../../components/DownloadButton";
 import ProgressBar from "../../components/ProgressBar";
 import Playlist from "../../components/Playlist";
 import Toast from "../../components/Toast";
@@ -12,7 +10,6 @@ import { useStore } from "../../lib/store";
 
 export default function Home() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
-  const randomize = useStore((s) => s.randomize);
   const isPlaying = useStore((s) => s.isPlaying);
   const sourceFilename = useStore((s) => s.sourceFilename);
   const params = useStore((s) => s.params);
@@ -132,15 +129,12 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Input panel */}
-          <div className="zone-inset flex items-center gap-4">
-            <Uploader />
-            <div className="flex-1"><ProgressBar /></div>
-            <button onClick={randomize} disabled={!sourceBuffer} className="tactical-button disabled:opacity-50" style={{ fontFamily: "var(--font-tech)" }}>
-              RDM
-            </button>
-            <DownloadButton />
-          </div>
+          {/* Progress bar */}
+          {sourceBuffer && (
+            <div className="zone-inset">
+              <ProgressBar />
+            </div>
+          )}
         </div>
 
         <Playlist />
