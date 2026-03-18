@@ -8,7 +8,7 @@ import {
 } from "@yuribeats/audio-utils";
 import { decodeFile, decodeArrayBuffer } from "./file-decoder";
 import { fetchYouTubeAudio } from "./cobalt";
-import { getAudioContext, ensureAudioContext } from "./audio-context";
+import { getAudioContext } from "./audio-context";
 
 interface AudioNodes {
   source: AudioBufferSourceNode;
