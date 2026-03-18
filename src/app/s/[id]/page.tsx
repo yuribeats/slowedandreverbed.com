@@ -45,7 +45,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
 
           {isLoading && (
             <div className="zone-inset text-center py-10">
-              <p className="text-xs uppercase tracking-[0.15em]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
+              <p className="text-xs uppercase tracking-[0.15em]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(224,140,38,0.4)" }}>
                 LOADING SHARED TRACK...
               </p>
             </div>
@@ -106,7 +106,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div className="label">SPEED</div>
-                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{rate.toFixed(2)}X</span>
+                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(224,140,38,0.4)" }}>{rate.toFixed(2)}X</span>
                 </div>
 
                 {/* Reverb slider */}
@@ -133,7 +133,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div className="label">REVERB</div>
-                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{reverbPct}%</span>
+                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(224,140,38,0.4)" }}>{reverbPct}%</span>
                 </div>
 
                 {/* Tone slider */}
@@ -160,7 +160,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div className="label">TONE</div>
-                  <span className="text-[10px]" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>{toneLabel}</span>
+                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(224,140,38,0.4)" }}>{toneLabel}</span>
                 </div>
               </div>
             </div>
