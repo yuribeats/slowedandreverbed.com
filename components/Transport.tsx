@@ -21,9 +21,8 @@ export default function Transport() {
 
   const off = !sourceBuffer;
 
-  const handleLoad = useCallback(async () => {
-    const ctx = getAudioContext();
-    await ctx.resume();
+  const handleLoad = useCallback(() => {
+    getAudioContext();
     if (sourceBuffer) {
       eject();
     }
