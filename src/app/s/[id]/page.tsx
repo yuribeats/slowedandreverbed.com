@@ -80,8 +80,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
 
             {/* Effects */}
             <div className="zone-engraved relative">
-              <div className="label" style={{ position: "absolute", top: "10px", width: "calc(100% - 40px)", fontSize: "14px" }}>EFFECTS</div>
-              <div className="flex justify-around pt-6">
+              <div className="flex justify-around pt-2">
                 {/* Speed slider */}
                 <div className="flex flex-col items-center gap-2">
                   <div className="relative h-[140px] w-[40px] flex justify-center">
