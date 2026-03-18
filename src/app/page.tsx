@@ -18,6 +18,7 @@ function snapToSemitone(speed: number): number {
 export default function Home() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const isPlaying = useStore((s) => s.isPlaying);
+  const sourceFilename = useStore((s) => s.sourceFilename);
   const params = useStore((s) => s.params);
   const setParam = useStore((s) => s.setParam);
   const [stepMode, setStepMode] = useState(false);
@@ -54,7 +55,7 @@ export default function Home() {
             {/* Status CRT */}
             <div className="crt flex flex-col" style={{ height: "180px" }}>
               <div className="px-2 py-1 flex justify-between text-[10px] border-b z-10" style={{ color: "var(--crt-bright)", borderColor: "var(--crt-grid)" }}>
-                <span>SYS STATUS</span>
+                <span>{sourceFilename ? sourceFilename.toUpperCase() : "SYS STATUS"}</span>
                 <span>{isPlaying ? "PLAYING" : "READY"}</span>
               </div>
               <div className="crt-grid flex-1 p-2 text-[12px] leading-[1.8] z-10" style={{ color: "var(--crt-bright)" }}>
