@@ -329,6 +329,9 @@ function deckKey(id: DeckId): "deckA" | "deckB" {
   return id === "A" ? "deckA" : "deckB";
 }
 
+/* ─── Generation counters to prevent stale onEnded callbacks ─── */
+const deckGeneration: Record<string, number> = { A: 0, B: 0 };
+
 /* ─── Store ─── */
 export const useRemixStore = create<RemixStore>((set, get) => ({
   deckA: defaultDeck(),
@@ -365,38 +368,51 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     const key = deckKey(id);
     const deck = getDeck(get(), id);
     if (!deck.sourceBuffer) return;
-    if (deck.isPlaying) {
-      // Kill existing source before restarting
-      try { deck.nodes?.source.stop(); } catch { /* ok */ }
-      set((s) => ({ [key]: { ...s[key], isPlaying: false, nodes: null } }));
+
+    // Bump generation — any previous onEnded callback becomes stale
+    deckGeneration[id] = (deckGeneration[id] || 0) + 1;
+    const gen = deckGeneration[id];
+
+    // Kill existing source
+    if (deck.nodes) {
+      try { deck.nodes.source.onended = null; } catch { /* ok */ }
+      try { deck.nodes.source.stop(); } catch { /* ok */ }
     }
+    set((s) => ({ [key]: { ...s[key], isPlaying: false, nodes: null } }));
 
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
 
+    // Re-read deck state after async gap
+    const freshDeck = getDeck(get(), id);
+    if (!freshDeck.sourceBuffer) return;
+
     const cfGains = getCrossfaderGains(get().crossfader);
     const cfGain = id === "A" ? cfGains.a : cfGains.b;
 
-    const playBuffer = (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
+    const playBuffer = (freshDeck.activeStem && freshDeck.stemBuffers?.[freshDeck.activeStem]) || freshDeck.sourceBuffer;
 
-    const rStart = deck.regionStart;
-    const rEnd = deck.regionEnd > 0 ? deck.regionEnd : playBuffer.duration;
-    const hasRegion = rStart > 0 || (deck.regionEnd > 0 && deck.regionEnd < playBuffer.duration);
-    const playOffset = deck.pauseOffset >= rStart ? deck.pauseOffset : rStart;
+    const rStart = freshDeck.regionStart;
+    const rEnd = freshDeck.regionEnd > 0 ? freshDeck.regionEnd : playBuffer.duration;
+    const hasRegion = rStart > 0 || (freshDeck.regionEnd > 0 && freshDeck.regionEnd < playBuffer.duration);
+    const playOffset = freshDeck.pauseOffset >= rStart ? freshDeck.pauseOffset : rStart;
     const remaining = rEnd - playOffset;
     const playDuration = remaining > 0 ? remaining : undefined;
 
     const nodes = buildDeckGraph(
       ctx,
       playBuffer,
-      deck.params,
+      freshDeck.params,
       playOffset,
       playDuration,
-      deck.volume,
+      freshDeck.volume,
       cfGain,
       () => {
-        // When source ends: loop if region is set, otherwise stop
-        if (hasRegion && getDeck(get(), id).isPlaying) {
+        // Ignore if this source is stale (stop/pause/new play already happened)
+        if (deckGeneration[id] !== gen) return;
+        if (!getDeck(get(), id).isPlaying) return;
+
+        if (hasRegion) {
           set((s) => ({ [key]: { ...s[key], pauseOffset: rStart, nodes: null } }));
           get().play(id);
         } else {
@@ -420,26 +436,33 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   stop: (id) => {
     const key = deckKey(id);
     const deck = getDeck(get(), id);
-    if (deck.nodes) {
-      try { deck.nodes.source.stop(); } catch { /* already stopped */ }
-    }
-    // Reset to region start
+    // Bump generation first so onEnded is ignored
+    deckGeneration[id] = (deckGeneration[id] || 0) + 1;
+    // Set state before stopping source (onEnded will check generation and bail)
     set((s) => ({
       [key]: { ...s[key], pauseOffset: s[key].regionStart, isPlaying: false, nodes: null },
     }));
+    if (deck.nodes) {
+      try { deck.nodes.source.onended = null; } catch { /* ok */ }
+      try { deck.nodes.source.stop(); } catch { /* ok */ }
+    }
   },
 
   pause: (id) => {
     const key = deckKey(id);
     const deck = getDeck(get(), id);
     if (!deck.nodes || !deck.isPlaying) return;
+    // Bump generation first
+    deckGeneration[id] = (deckGeneration[id] || 0) + 1;
     const ctx = getAudioContext();
     const rStart = deck.regionStart;
     const elapsed = rStart + (ctx.currentTime - deck.startedAt) * expandParams(deck.params).rate;
-    try { deck.nodes.source.stop(); } catch { /* already stopped */ }
+    // Set state before stopping source
     set((s) => ({
       [key]: { ...s[key], pauseOffset: elapsed, isPlaying: false, nodes: null },
     }));
+    try { deck.nodes.source.onended = null; } catch { /* ok */ }
+    try { deck.nodes.source.stop(); } catch { /* ok */ }
   },
 
   setParam: (id, paramKey, value) => {
