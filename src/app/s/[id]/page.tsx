@@ -60,8 +60,6 @@ export default function SharePage({ params }: { params: { id: string } }) {
                 <span>{isPlaying ? "PLAYING" : "READY"}</span>
               </div>
               <div className="crt-grid flex-1 p-2 text-[12px] leading-[1.8] z-10" style={{ color: "var(--crt-bright)" }}>
-                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>MODE:</span> SHARED</div>
-                <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>INPUT:</span> {sourceFilename ? sourceFilename.slice(0, 12).toUpperCase() : "NONE"}</div>
                 <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>SPEED:</span> {rate.toFixed(2)}X</div>
                 <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>REVERB:</span> {reverbPct}%</div>
                 <div><span style={{ color: "var(--crt-dim)", display: "inline-block", width: "70px" }}>TONE:</span> {toneLabel}</div>
