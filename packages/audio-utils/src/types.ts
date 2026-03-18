@@ -27,14 +27,26 @@ export const SIMPLE_DEFAULTS: SimpleParams = {
 };
 
 export function expandParams(s: SimpleParams): ProcessingParams {
+  // Tone: boost the direction you're turning.
+  // Negative = dark (bass boost + high cut), Positive = bright (high boost + bass cut)
+  // ±15dB swing for dramatic effect
+  const toneMag = Math.abs(s.tone);
+  const toneSign = s.tone < 0 ? -1 : 1;
+  // Exponential curve for more impact at extremes
+  const toneAmount = Math.pow(toneMag, 0.7) * 15 * toneSign;
+
+  // Reverb: use a sqrt curve so lower values still have audible wetness.
+  // At 0.25 knob → ~0.4 wet. At 0.5 → ~0.57 wet. At 1.0 → 0.8 wet.
+  const reverbCurve = Math.sqrt(s.reverb);
+
   return {
     rate: s.rate,
-    reverbWet: s.reverb * 0.8,
+    reverbWet: reverbCurve * 0.8,
     reverbDuration: 1.5 + s.reverb * 4.5,
     reverbDecay: 1.5 + s.reverb * 2.5,
-    eqLow: -s.tone * 8,
+    eqLow: -toneAmount,
     eqMid: 0,
-    eqHigh: s.tone * 8,
+    eqHigh: toneAmount,
   };
 }
 
