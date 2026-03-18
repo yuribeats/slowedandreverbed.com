@@ -4,7 +4,7 @@ import { useRef, useCallback, useState } from "react";
 import { expandParams } from "@yuribeats/audio-utils";
 import { useRemixStore } from "../../../lib/remix-store";
 import { getAudioContext } from "../../../lib/audio-context";
-import MiniSpectrum from "../../../components/MiniSpectrum";
+import WaveformDisplay from "../../../components/WaveformDisplay";
 import Toast from "../../../components/Toast";
 
 type DeckId = "A" | "B";
@@ -44,7 +44,8 @@ function Deck({ id }: { id: DeckId }) {
   const setVolume = useRemixStore((s) => s.setVolume);
   const eject = useRemixStore((s) => s.eject);
   const setStem = useRemixStore((s) => s.setStem);
-  const cue = useRemixStore((s) => s.cue);
+  const setRegion = useRemixStore((s) => s.setRegion);
+  const seek = useRemixStore((s) => s.seek);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [stepMode, setStepMode] = useState(false);
@@ -58,6 +59,21 @@ function Deck({ id }: { id: DeckId }) {
   const satPct = Math.round((deck.params.saturation ?? 0) * 100);
   const toneLabel = deck.params.tone === 0 ? "FLAT" : deck.params.tone < 0 ? "DARK" : "BRIGHT";
   const expanded = expandParams(deck.params);
+
+  // Speed-adjusted BPM and key
+  const adjustedBPM = deck.detectedBPM ? Math.round(deck.detectedBPM * rate) : null;
+  const adjustedKey = (() => {
+    if (!deck.detectedKey) return null;
+    if (semitones === 0) return deck.detectedKey;
+    const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const parts = deck.detectedKey.split(" ");
+    const rootNote = parts[0];
+    const quality = parts[1] || "";
+    const rootIdx = NOTE_NAMES.indexOf(rootNote);
+    if (rootIdx === -1) return deck.detectedKey;
+    const shifted = ((rootIdx + Math.round(semitones)) % 12 + 12) % 12;
+    return NOTE_NAMES[shifted] + (quality ? " " + quality : "");
+  })();
 
   const handleSpeed = (v: number) => {
     if (stepMode) {
@@ -113,23 +129,37 @@ function Deck({ id }: { id: DeckId }) {
         </div>
       </div>
 
-      {/* CRT status + spectrum */}
+      {/* CRT status */}
       <div className="display-bezel flex flex-col gap-2 p-3">
-        <div
-          className="text-[10px] truncate crt-text"
-          style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "13px" }}
-        >
-          {deck.sourceFilename ? deck.sourceFilename.toUpperCase() : "NO TRACK"}
-          {deck.isPlaying && " — PLAYING"}
+        <div className="flex items-center justify-between">
+          <div
+            className="text-[10px] truncate crt-text"
+            style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "13px" }}
+          >
+            {deck.sourceFilename ? deck.sourceFilename.toUpperCase() : "NO TRACK"}
+            {deck.isPlaying && " — PLAYING"}
+          </div>
         </div>
         {deck.sourceBuffer && (
           <div className="flex gap-3 text-[10px]" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "12px" }}>
-            <span style={{ color: "var(--crt-bright)" }}>BPM: {deck.detectedBPM ?? "—"}</span>
-            <span style={{ color: "var(--crt-bright)" }}>KEY: {deck.detectedKey ?? "—"}</span>
+            <span style={{ color: "var(--crt-bright)" }}>BPM: {adjustedBPM ?? "—"}</span>
+            <span style={{ color: "var(--crt-bright)" }}>KEY: {adjustedKey ?? "—"}</span>
           </div>
         )}
-        <MiniSpectrum analyser={deck.nodes?.analyser ?? null} isPlaying={deck.isPlaying} />
       </div>
+
+      {/* Waveform */}
+      <WaveformDisplay
+        audioBuffer={deck.sourceBuffer}
+        isPlaying={deck.isPlaying}
+        startedAt={deck.startedAt}
+        pauseOffset={deck.pauseOffset}
+        playbackRate={rate}
+        regionStart={deck.regionStart}
+        regionEnd={deck.regionEnd}
+        onRegionChange={(s, e) => setRegion(id, s, e)}
+        onSeek={(pos) => seek(id, pos)}
+      />
 
       {/* Stem isolation */}
       {deck.sourceBuffer && (
@@ -159,7 +189,7 @@ function Deck({ id }: { id: DeckId }) {
         </div>
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>CUE</span>
-          <button onClick={() => cue(id)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "48px", height: "48px" }}>
+          <button onClick={() => { if (deck.isPlaying) stop(id); }} disabled={!deck.sourceBuffer || !deck.isPlaying} className="rocker-switch" style={{ width: "48px", height: "48px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>

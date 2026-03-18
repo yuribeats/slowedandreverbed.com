@@ -5,7 +5,6 @@ import {
   expandParams,
   detectBPM,
   detectKey,
-  detectFirstTransient,
 } from "@yuribeats/audio-utils";
 import { decodeFile } from "./file-decoder";
 import { getAudioContext } from "./audio-context";
@@ -75,7 +74,8 @@ interface DeckState {
   volume: number;
   detectedBPM: number | null;
   detectedKey: string | null;
-  cuePoint: number;  // seconds — first transient
+  regionStart: number;  // seconds into source buffer
+  regionEnd: number;    // seconds into source buffer (0 = full track)
   activeStem: StemType | null;
   stemBuffers: Partial<Record<StemType, AudioBuffer>> | null;
   isStemLoading: boolean;
@@ -95,7 +95,8 @@ const defaultDeck = (): DeckState => ({
   volume: 0.8,
   detectedBPM: null,
   detectedKey: null,
-  cuePoint: 0,
+  regionStart: 0,
+  regionEnd: 0,
   activeStem: null,
   stemBuffers: null,
   isStemLoading: false,
@@ -149,7 +150,8 @@ interface RemixStore {
   eject: (deck: DeckId) => void;
   setMasterBus: <K extends keyof MasterBusParams>(key: K, value: MasterBusParams[K]) => void;
   setStem: (deck: DeckId, stem: StemType | null) => void;
-  cue: (deck: DeckId) => Promise<void>;
+  setRegion: (deck: DeckId, start: number, end: number) => void;
+  seek: (deck: DeckId, position: number) => Promise<void>;
 }
 
 /* ─── Shared output bus: merger → EQ → compressor → makeup → destination ─── */
@@ -207,6 +209,7 @@ function buildDeckGraph(
   sourceBuffer: AudioBuffer,
   params: SimpleParams,
   offset: number,
+  duration: number | undefined,
   volume: number,
   crossfaderGain: number,
   onEnded: () => void
@@ -303,7 +306,11 @@ function buildDeckGraph(
   deckGain.connect(getSharedMerger());
 
   source.onended = onEnded;
-  source.start(0, offset);
+  if (duration && duration > 0) {
+    source.start(0, offset, duration);
+  } else {
+    source.start(0, offset);
+  }
 
   return {
     source, lowShelf, peaking, highShelf, bump,
@@ -336,7 +343,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const audioBuffer = await decodeFile(file);
       const bpm = detectBPM(audioBuffer);
       const musicalKey = detectKey(audioBuffer);
-      const cuePoint = detectFirstTransient(audioBuffer);
       set((s) => ({
         [dk]: {
           ...s[dk],
@@ -345,7 +351,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           isLoading: false,
           detectedBPM: bpm || null,
           detectedKey: musicalKey || null,
-          cuePoint,
+          regionStart: 0,
+          regionEnd: 0,
         },
       }));
     } catch {
@@ -368,16 +375,24 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     // Use stem buffer if active, otherwise original
     const playBuffer = (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
 
+    // Region-aware offset and duration
+    const regionStart = deck.regionStart;
+    const regionEnd = deck.regionEnd > 0 ? deck.regionEnd : playBuffer.duration;
+    const playOffset = deck.pauseOffset > 0 ? deck.pauseOffset : regionStart;
+    const remaining = regionEnd - playOffset;
+    const playDuration = remaining > 0 ? remaining : undefined;
+
     const nodes = buildDeckGraph(
       ctx,
       playBuffer,
       deck.params,
-      deck.pauseOffset,
+      playOffset,
+      playDuration,
       deck.volume,
       cfGain,
       () => {
         set((s) => ({
-          [key]: { ...s[key], isPlaying: false, nodes: null, pauseOffset: 0 },
+          [key]: { ...s[key], isPlaying: false, nodes: null, pauseOffset: regionStart },
         }));
       }
     );
@@ -387,7 +402,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         ...s[key],
         isPlaying: true,
         nodes,
-        startedAt: ctx.currentTime - deck.pauseOffset,
+        startedAt: ctx.currentTime - (playOffset - regionStart),
       },
     }));
   },
@@ -397,7 +412,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     const deck = getDeck(get(), id);
     if (deck.nodes) {
       const ctx = getAudioContext();
-      const elapsed = (ctx.currentTime - deck.startedAt) * expandParams(deck.params).rate;
+      const regionStart = deck.regionStart;
+      const elapsed = regionStart + (ctx.currentTime - deck.startedAt) * expandParams(deck.params).rate;
       set((s) => ({
         [key]: { ...s[key], pauseOffset: elapsed, isPlaying: false, nodes: null },
       }));
@@ -486,15 +502,19 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     }));
   },
 
-  cue: async (id) => {
+  setRegion: (id, start, end) => {
+    const dk = deckKey(id);
+    set((s) => ({ [dk]: { ...s[dk], regionStart: start, regionEnd: end } }));
+  },
+
+  seek: async (id, position) => {
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
     if (!deck.sourceBuffer) return;
-    if (deck.isPlaying) get().stop(id);
-
-    // Set pause offset to the cue point, then play
-    set((s) => ({ [dk]: { ...s[dk], pauseOffset: deck.cuePoint } }));
-    await get().play(id);
+    const wasPlaying = deck.isPlaying;
+    if (wasPlaying) get().stop(id);
+    set((s) => ({ [dk]: { ...s[dk], pauseOffset: position } }));
+    if (wasPlaying) await get().play(id);
   },
 
   setStem: (id, stem) => {
