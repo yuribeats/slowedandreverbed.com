@@ -6,9 +6,9 @@ import { getAudioContext } from "../lib/audio-context";
 
 export default function WaveformCanvas() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
-  const processedBuffer = useStore((s) => s.processedBuffer);
   const isPlaying = useStore((s) => s.isPlaying);
   const startedAt = useStore((s) => s.startedAt);
+  const rate = useStore((s) => s.params.rate);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -63,25 +63,37 @@ export default function WaveformCanvas() {
 
     ctx.clearRect(0, 0, width, height);
 
-    // Draw source waveform
+    // VU meter style background grid
+    ctx.strokeStyle = "rgba(200, 169, 110, 0.06)";
+    ctx.lineWidth = 1;
+    for (let y = 0; y < height; y += 8) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    // Center line
+    ctx.strokeStyle = "rgba(200, 169, 110, 0.15)";
+    ctx.beginPath();
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.stroke();
+
     if (sourceBuffer) {
-      drawWaveform(ctx, sourceBuffer, "#7a6440", width, height);
+      drawWaveform(ctx, sourceBuffer, "#c8a96e", width, height);
     }
 
-    // Draw processed waveform
-    if (processedBuffer) {
-      drawWaveform(ctx, processedBuffer, "#c8a96e", width, height);
-    }
-
-    // Draw playhead
-    if (isPlaying && processedBuffer) {
+    // Playhead
+    if (isPlaying && sourceBuffer) {
       const audioCtx = getAudioContext();
       const elapsed = audioCtx.currentTime - startedAt;
-      const progress = elapsed / processedBuffer.duration;
+      const totalDuration = sourceBuffer.duration / rate;
+      const progress = elapsed / totalDuration;
       if (progress >= 0 && progress <= 1) {
         const x = progress * width;
         ctx.strokeStyle = "#e8e0d0";
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
@@ -89,7 +101,7 @@ export default function WaveformCanvas() {
       }
       animRef.current = requestAnimationFrame(draw);
     }
-  }, [sourceBuffer, processedBuffer, isPlaying, startedAt, drawWaveform]);
+  }, [sourceBuffer, isPlaying, startedAt, rate, drawWaveform]);
 
   useEffect(() => {
     draw();
@@ -104,8 +116,10 @@ export default function WaveformCanvas() {
   if (!sourceBuffer) return null;
 
   return (
-    <div className="border border-dw-border p-4">
-      <canvas ref={canvasRef} className="w-full h-32 block" />
+    <div className="relative bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-4">
+      <div className="bg-[#0a0a0a] border border-[#111] shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] p-1">
+        <canvas ref={canvasRef} className="w-full h-28 block" />
+      </div>
     </div>
   );
 }

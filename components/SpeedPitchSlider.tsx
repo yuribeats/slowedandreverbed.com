@@ -1,6 +1,7 @@
 "use client";
 
 import { useStore } from "../lib/store";
+import Knob from "./Knob";
 
 export default function SpeedPitchSlider() {
   const rate = useStore((s) => s.params.rate);
@@ -9,22 +10,16 @@ export default function SpeedPitchSlider() {
   const semitones = 12 * Math.log2(rate);
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-xs text-dw-muted uppercase tracking-widest">
-        SPEED / PITCH
-      </label>
-      <input
-        type="range"
+    <div className="flex flex-col items-center gap-1">
+      <Knob
+        value={rate}
         min={0.5}
         max={1.0}
         step={0.01}
-        value={rate}
-        onChange={(e) => setParam("rate", parseFloat(e.target.value))}
+        label="SPEED / PITCH"
+        valueDisplay={`${rate.toFixed(2)}X / ${semitones.toFixed(1)}ST`}
+        onChange={(v) => setParam("rate", v)}
       />
-      <div className="flex justify-between text-xs text-dw-accent font-mono">
-        <span>{rate.toFixed(2)}X</span>
-        <span>{semitones.toFixed(1)}ST</span>
-      </div>
     </div>
   );
 }

@@ -9,24 +9,29 @@ import { decodeFile, decodeArrayBuffer } from "./file-decoder";
 import { fetchYouTubeAudio } from "./cobalt";
 import { getAudioContext } from "./audio-context";
 
+interface AudioNodes {
+  source: AudioBufferSourceNode;
+  lowShelf: BiquadFilterNode;
+  peaking: BiquadFilterNode;
+  highShelf: BiquadFilterNode;
+  convolver: ConvolverNode;
+  dryGain: GainNode;
+  wetGain: GainNode;
+}
+
 interface AppStore {
-  sourceFile: File | null;
   sourceBuffer: AudioBuffer | null;
-  processedBuffer: AudioBuffer | null;
   sourceFilename: string | null;
   youtubeUrl: string | null;
 
   params: ProcessingParams;
-  isProcessing: boolean;
   isLoading: boolean;
-  progress: number;
-
   isPlaying: boolean;
-  currentTime: number;
-  playbackNode: AudioBufferSourceNode | null;
-  startedAt: number;
-
+  isExporting: boolean;
   error: string | null;
+
+  nodes: AudioNodes | null;
+  startedAt: number;
 
   loadFile: (file: File) => Promise<void>;
   loadFromYouTube: (url: string) => Promise<void>;
@@ -34,76 +39,94 @@ interface AppStore {
     key: K,
     value: ProcessingParams[K]
   ) => void;
-  process: () => Promise<void>;
   play: () => void;
-  pause: () => void;
-  download: () => void;
+  stop: () => void;
+  download: () => Promise<void>;
   clearError: () => void;
 }
 
+function generateIR(ctx: AudioContext, duration: number, decay: number): AudioBuffer {
+  const length = Math.ceil(ctx.sampleRate * duration);
+  const ir = ctx.createBuffer(2, length, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const data = ir.getChannelData(c);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+    }
+  }
+  return ir;
+}
+
+function normalizeBuffer(buffer: AudioBuffer): AudioBuffer {
+  const ctx = getAudioContext();
+  const normalized = ctx.createBuffer(
+    buffer.numberOfChannels,
+    buffer.length,
+    buffer.sampleRate
+  );
+  let peak = 0;
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const data = buffer.getChannelData(c);
+    for (let i = 0; i < data.length; i++) {
+      const abs = Math.abs(data[i]);
+      if (abs > peak) peak = abs;
+    }
+  }
+  const gain = peak > 0 ? 1.0 / peak : 1;
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const src = buffer.getChannelData(c);
+    const dst = normalized.getChannelData(c);
+    for (let i = 0; i < src.length; i++) {
+      dst[i] = src[i] * gain;
+    }
+  }
+  return normalized;
+}
+
 export const useStore = create<AppStore>((set, get) => ({
-  sourceFile: null,
   sourceBuffer: null,
-  processedBuffer: null,
   sourceFilename: null,
   youtubeUrl: null,
 
   params: { ...DEFAULTS },
-  isProcessing: false,
   isLoading: false,
-  progress: 0,
-
   isPlaying: false,
-  currentTime: 0,
-  playbackNode: null,
-  startedAt: 0,
-
+  isExporting: false,
   error: null,
 
+  nodes: null,
+  startedAt: 0,
+
   loadFile: async (file: File) => {
-    set({
-      isLoading: true,
-      error: null,
-      processedBuffer: null,
-      youtubeUrl: null,
-    });
+    get().stop();
+    set({ isLoading: true, error: null, youtubeUrl: null });
     try {
       const audioBuffer = await decodeFile(file);
       set({
-        sourceFile: file,
         sourceBuffer: audioBuffer,
         sourceFilename: file.name.replace(/\.[^/.]+$/, ""),
         isLoading: false,
       });
     } catch {
-      set({
-        isLoading: false,
-        error: "Failed to decode audio file",
-      });
+      set({ isLoading: false, error: "Failed to decode audio file" });
     }
   },
 
   loadFromYouTube: async (url: string) => {
-    set({
-      isLoading: true,
-      error: null,
-      processedBuffer: null,
-      youtubeUrl: url,
-    });
+    get().stop();
+    set({ isLoading: true, error: null, youtubeUrl: url });
     try {
       const { buffer, title } = await fetchYouTubeAudio(url);
       const audioBuffer = await decodeArrayBuffer(buffer);
       set({
         sourceBuffer: audioBuffer,
         sourceFilename: title,
-        sourceFile: null,
         isLoading: false,
       });
     } catch (err) {
       set({
         isLoading: false,
-        error:
-          err instanceof Error ? err.message : "Failed to fetch YouTube audio",
+        error: err instanceof Error ? err.message : "Failed to fetch YouTube audio",
       });
     }
   },
@@ -112,28 +135,118 @@ export const useStore = create<AppStore>((set, get) => ({
     set((state) => ({
       params: { ...state.params, [key]: value },
     }));
-  },
 
-  process: async () => {
-    const { sourceBuffer, params } = get();
-    if (!sourceBuffer) return;
+    // Update live audio nodes in real time
+    const { nodes, params: currentParams } = get();
+    if (!nodes) return;
 
-    // Stop playback
-    const { playbackNode } = get();
-    if (playbackNode) {
-      playbackNode.stop();
-      set({ playbackNode: null, isPlaying: false });
+    const newParams = { ...currentParams, [key]: value };
+
+    // Update playback rate
+    if (key === "rate") {
+      nodes.source.playbackRate.value = value as number;
     }
 
-    set({ isProcessing: true, progress: 0, error: null });
+    // Update EQ
+    if (key === "eqLow") nodes.lowShelf.gain.value = value as number;
+    if (key === "eqMid") nodes.peaking.gain.value = value as number;
+    if (key === "eqHigh") nodes.highShelf.gain.value = value as number;
+
+    // Update reverb mix
+    if (key === "reverbWet") {
+      nodes.dryGain.gain.value = 1 - (value as number);
+      nodes.wetGain.gain.value = value as number;
+    }
+
+    // Rebuild convolver IR if reverb shape changed
+    if (key === "reverbDuration" || key === "reverbDecay") {
+      const ctx = getAudioContext();
+      nodes.convolver.buffer = generateIR(
+        ctx,
+        newParams.reverbDuration,
+        newParams.reverbDecay
+      );
+    }
+  },
+
+  play: () => {
+    const { sourceBuffer, params, isPlaying } = get();
+    if (!sourceBuffer) return;
+    if (isPlaying) get().stop();
+
+    const ctx = getAudioContext();
+
+    const source = ctx.createBufferSource();
+    source.buffer = sourceBuffer;
+    source.playbackRate.value = params.rate;
+
+    const lowShelf = ctx.createBiquadFilter();
+    lowShelf.type = "lowshelf";
+    lowShelf.frequency.value = 200;
+    lowShelf.gain.value = params.eqLow;
+
+    const peaking = ctx.createBiquadFilter();
+    peaking.type = "peaking";
+    peaking.frequency.value = 2500;
+    peaking.Q.value = 1.0;
+    peaking.gain.value = params.eqMid;
+
+    const highShelf = ctx.createBiquadFilter();
+    highShelf.type = "highshelf";
+    highShelf.frequency.value = 8000;
+    highShelf.gain.value = params.eqHigh;
+
+    const convolver = ctx.createConvolver();
+    convolver.buffer = generateIR(ctx, params.reverbDuration, params.reverbDecay);
+
+    const dryGain = ctx.createGain();
+    dryGain.gain.value = 1 - params.reverbWet;
+
+    const wetGain = ctx.createGain();
+    wetGain.gain.value = params.reverbWet;
+
+    // Connect chain
+    source.connect(lowShelf);
+    lowShelf.connect(peaking);
+    peaking.connect(highShelf);
+    highShelf.connect(dryGain);
+    highShelf.connect(convolver);
+    convolver.connect(wetGain);
+    dryGain.connect(ctx.destination);
+    wetGain.connect(ctx.destination);
+
+    source.onended = () => {
+      set({ isPlaying: false, nodes: null });
+    };
+
+    source.start(0);
+
+    set({
+      isPlaying: true,
+      nodes: { source, lowShelf, peaking, highShelf, convolver, dryGain, wetGain },
+      startedAt: ctx.currentTime,
+    });
+  },
+
+  stop: () => {
+    const { nodes } = get();
+    if (nodes) {
+      try { nodes.source.stop(); } catch { /* already stopped */ }
+    }
+    set({ isPlaying: false, nodes: null });
+  },
+
+  download: async () => {
+    const { sourceBuffer, params, sourceFilename } = get();
+    if (!sourceBuffer) return;
+
+    set({ isExporting: true, error: null });
 
     try {
       const channelData: Float32Array[] = [];
       for (let c = 0; c < sourceBuffer.numberOfChannels; c++) {
         channelData.push(new Float32Array(sourceBuffer.getChannelData(c)));
       }
-
-      set({ progress: 0.1 });
 
       const result = await renderOffline({
         channelData,
@@ -142,8 +255,6 @@ export const useStore = create<AppStore>((set, get) => ({
         length: sourceBuffer.length,
         params,
       });
-
-      set({ progress: 0.9 });
 
       const ctx = getAudioContext();
       const buf = ctx.createBuffer(
@@ -155,63 +266,26 @@ export const useStore = create<AppStore>((set, get) => ({
         buf.getChannelData(c).set(result.channelData[c]);
       }
 
-      set({ processedBuffer: buf, isProcessing: false, progress: 1 });
+      const normalized = normalizeBuffer(buf);
+      const blob = encodeWAV(normalized);
+      const filename = sourceFilename
+        ? `${sourceFilename}-driftwave.wav`
+        : "driftwave-output.wav";
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      set({ isExporting: false });
     } catch (err) {
       set({
-        isProcessing: false,
-        error:
-          err instanceof Error ? err.message : "Processing failed",
+        isExporting: false,
+        error: err instanceof Error ? err.message : "Export failed",
       });
     }
-  },
-
-  play: () => {
-    const { processedBuffer, isPlaying, playbackNode } = get();
-    if (!processedBuffer) return;
-
-    if (isPlaying && playbackNode) {
-      playbackNode.stop();
-    }
-
-    const ctx = getAudioContext();
-    const source = ctx.createBufferSource();
-    source.buffer = processedBuffer;
-    source.connect(ctx.destination);
-    source.onended = () => {
-      set({ isPlaying: false, playbackNode: null, currentTime: 0 });
-    };
-    source.start(0);
-
-    set({
-      isPlaying: true,
-      playbackNode: source,
-      startedAt: ctx.currentTime,
-    });
-  },
-
-  pause: () => {
-    const { playbackNode } = get();
-    if (playbackNode) {
-      playbackNode.stop();
-      set({ isPlaying: false, playbackNode: null });
-    }
-  },
-
-  download: () => {
-    const { processedBuffer, sourceFilename } = get();
-    if (!processedBuffer) return;
-
-    const blob = encodeWAV(processedBuffer);
-    const filename = sourceFilename
-      ? `${sourceFilename}-driftwave.wav`
-      : "driftwave-output.wav";
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
   },
 
   clearError: () => set({ error: null }),

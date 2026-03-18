@@ -50,11 +50,11 @@ export default function Uploader() {
   if (sourceBuffer && !isLoading) return null;
 
   return (
-    <div className="border border-dw-border p-6">
+    <div className="bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-6">
       <div
-        className={`border border-dashed ${
-          dragOver ? "border-dw-accent" : "border-dw-border"
-        } p-12 text-center transition-colors`}
+        className={`border-2 border-dashed ${
+          dragOver ? "border-dw-accent" : "border-[#444]"
+        } p-10 text-center transition-colors`}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -71,11 +71,11 @@ export default function Uploader() {
           onChange={handleFileSelect}
         />
         {isLoading ? (
-          <p className="text-dw-muted uppercase tracking-widest text-sm">
+          <p className="text-dw-muted uppercase tracking-[0.15em] text-xs">
             DECODING...
           </p>
         ) : (
-          <p className="text-dw-muted uppercase tracking-widest text-sm">
+          <p className="text-dw-muted uppercase tracking-[0.15em] text-xs">
             DROP AUDIO FILE / CLICK TO BROWSE
           </p>
         )}
@@ -89,19 +89,19 @@ export default function Uploader() {
           onKeyDown={(e) => e.key === "Enter" && handleYouTube()}
           placeholder="PASTE YOUTUBE URL..."
           disabled={isLoading}
-          className="flex-1 bg-dw-surface2 border border-dw-border px-3 py-2 text-sm text-dw-text placeholder:text-dw-muted uppercase tracking-wider outline-none focus:border-dw-accent disabled:opacity-50"
+          className="flex-1 bg-[#1a1a1a] border border-[#333] px-3 py-2 text-xs text-dw-text placeholder:text-dw-muted uppercase tracking-[0.1em] outline-none focus:border-dw-accent disabled:opacity-50 font-mono"
         />
         <button
           onClick={handleYouTube}
           disabled={isLoading || !ytUrl.trim()}
-          className="bg-dw-surface2 border border-dw-border px-4 py-2 text-sm text-dw-accent uppercase tracking-wider hover:bg-dw-border disabled:opacity-50 disabled:text-dw-muted"
+          className="bg-[#1a1a1a] border border-[#333] px-5 py-2 text-xs text-dw-accent uppercase tracking-[0.15em] hover:bg-[#333] disabled:opacity-50 disabled:text-dw-muted font-mono"
         >
           {isLoading ? "..." : "FETCH"}
         </button>
       </div>
 
       {ytError && (
-        <p className="mt-2 text-dw-danger text-xs uppercase tracking-wider">
+        <p className="mt-2 text-dw-danger text-[10px] uppercase tracking-[0.1em]">
           {ytError}
         </p>
       )}

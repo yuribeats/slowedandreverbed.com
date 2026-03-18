@@ -1,61 +1,47 @@
 "use client";
 
 import { useStore } from "../lib/store";
+import Knob from "./Knob";
 
 export default function ReverbControls() {
   const params = useStore((s) => s.params);
   const setParam = useStore((s) => s.setParam);
 
   return (
-    <div className="flex flex-col gap-3">
-      <label className="text-xs text-dw-muted uppercase tracking-widest">
+    <div className="flex flex-col items-center gap-3">
+      <span className="text-[10px] text-dw-muted uppercase tracking-[0.15em]">
         REVERB
-      </label>
-
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-xs text-dw-muted uppercase tracking-wider">
-          <span>WET</span>
-          <span className="text-dw-accent">{Math.round(params.reverbWet * 100)}%</span>
-        </div>
-        <input
-          type="range"
+      </span>
+      <div className="flex gap-4">
+        <Knob
+          value={params.reverbWet}
           min={0}
           max={1}
           step={0.01}
-          value={params.reverbWet}
-          onChange={(e) => setParam("reverbWet", parseFloat(e.target.value))}
+          label="WET"
+          valueDisplay={`${Math.round(params.reverbWet * 100)}%`}
+          onChange={(v) => setParam("reverbWet", v)}
+          ticks={11}
         />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-xs text-dw-muted uppercase tracking-wider">
-          <span>SIZE</span>
-          <span className="text-dw-accent">{params.reverbDuration.toFixed(1)}S</span>
-        </div>
-        <input
-          type="range"
+        <Knob
+          value={params.reverbDuration}
           min={1}
           max={6}
           step={0.1}
-          value={params.reverbDuration}
-          onChange={(e) =>
-            setParam("reverbDuration", parseFloat(e.target.value))
-          }
+          label="SIZE"
+          valueDisplay={`${params.reverbDuration.toFixed(1)}S`}
+          onChange={(v) => setParam("reverbDuration", v)}
+          ticks={6}
         />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-xs text-dw-muted uppercase tracking-wider">
-          <span>DECAY</span>
-          <span className="text-dw-accent">{params.reverbDecay.toFixed(1)}</span>
-        </div>
-        <input
-          type="range"
+        <Knob
+          value={params.reverbDecay}
           min={1}
           max={5}
           step={0.1}
-          value={params.reverbDecay}
-          onChange={(e) => setParam("reverbDecay", parseFloat(e.target.value))}
+          label="DECAY"
+          valueDisplay={params.reverbDecay.toFixed(1)}
+          onChange={(v) => setParam("reverbDecay", v)}
+          ticks={5}
         />
       </div>
     </div>
