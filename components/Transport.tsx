@@ -20,7 +20,7 @@ export default function Transport() {
 
   const off = !sourceBuffer;
 
-  const handleEject = useCallback(() => {
+  const handleLoad = useCallback(() => {
     if (sourceBuffer) {
       eject();
     }
@@ -45,11 +45,11 @@ export default function Transport() {
         <div className="flex items-center gap-2 mb-2">
           <span className="label" style={{ margin: 0, fontSize: "10px" }}>LOAD</span>
           <div className="led-cutout">
-            <div className={`led-rect ${isLoading ? "led-green-on" : "led-green"}`} />
+            <div className={`led-rect ${isLoading ? "led-green-on" : sourceBuffer ? "led-green-on" : "led-green"}`} />
           </div>
         </div>
         <button
-          onClick={() => inputRef.current?.click()}
+          onClick={handleLoad}
           disabled={isLoading}
           className={btnBase}
         >
@@ -70,19 +70,6 @@ export default function Transport() {
           disabled={!isPlaying && off}
           className={btnBase}
         >
-          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-        </button>
-      </div>
-
-      {/* Eject */}
-      <div className="flex flex-col items-center">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>EJECT</span>
-          <div className="led-cutout">
-            <div className={`led-rect ${sourceBuffer ? "led-red-on" : "led-red"}`} />
-          </div>
-        </div>
-        <button onClick={handleEject} className={btnBase}>
           <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
         </button>
       </div>
