@@ -77,7 +77,7 @@ export default function Transport() {
       {/* RDM */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>RDM</span>
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>RANDOM</span>
           <div className="led-cutout">
             <div className="led-rect led-green" />
           </div>
@@ -90,7 +90,7 @@ export default function Transport() {
       {/* Download */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isExporting ? "WAIT" : "DL"}</span>
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isExporting ? "WAIT" : "DOWNLOAD"}</span>
           <div className="led-cutout">
             <div className={`led-rect ${isExporting ? "led-green-on" : "led-green"}`} />
           </div>
