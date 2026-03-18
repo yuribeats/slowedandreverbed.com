@@ -63,6 +63,7 @@ interface AppStore {
   loadShare: (id: string) => Promise<void>;
   loadPlaylistItem: (item: PlaylistItem) => Promise<void>;
   seek: (time: number) => void;
+  fetchPlaylist: () => Promise<void>;
   eject: () => void;
   clearError: () => void;
 }
@@ -344,7 +345,7 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   download: async () => {
-    const { sourceBuffer, params, sourceFilename, playlist } = get();
+    const { sourceBuffer, params, sourceFilename } = get();
     if (!sourceBuffer) return;
 
     set({ isExporting: true, error: null });
@@ -387,17 +388,31 @@ export const useStore = create<AppStore>((set, get) => ({
       a.click();
       URL.revokeObjectURL(url);
 
-      // Add to playlist (local only for downloads)
-      const item: PlaylistItem = {
-        id: Math.random().toString(36).substring(2, 10),
-        name: filename.replace(".wav", ""),
-        url: "",
-        settings: { ...params },
-        createdAt: Date.now(),
-      };
-      const updated = [item, ...playlist].slice(0, 50);
-      set({ isExporting: false, playlist: updated });
-      savePlaylist(updated);
+      set({ isExporting: false });
+
+      // Upload to Pinata in background
+      const formData = new FormData();
+      formData.append("audio", blob, filename);
+      formData.append("filename", filename.replace(".wav", ""));
+      formData.append("settings", JSON.stringify(params));
+
+      fetch("/api/save", { method: "POST", body: formData })
+        .then((res) => res.json())
+        .then(({ id: saveId, audioUrl }) => {
+          if (saveId && audioUrl) {
+            const item: PlaylistItem = {
+              id: saveId,
+              name: filename.replace(".wav", ""),
+              url: audioUrl,
+              settings: { ...params },
+              createdAt: Date.now(),
+            };
+            const updated = [item, ...get().playlist].slice(0, 50);
+            set({ playlist: updated });
+            savePlaylist(updated);
+          }
+        })
+        .catch(() => {});
     } catch (err) {
       set({
         isExporting: false,
@@ -527,6 +542,20 @@ export const useStore = create<AppStore>((set, get) => ({
         isLoading: false,
         error: err instanceof Error ? err.message : "Failed to load track",
       });
+    }
+  },
+
+  fetchPlaylist: async () => {
+    try {
+      const res = await fetch("/api/save");
+      if (!res.ok) return;
+      const { items } = await res.json();
+      if (items && items.length > 0) {
+        set({ playlist: items });
+        savePlaylist(items);
+      }
+    } catch {
+      // silent fail, use local cache
     }
   },
 

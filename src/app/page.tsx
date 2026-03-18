@@ -6,6 +6,7 @@ import Controls from "../../components/Controls";
 import Transport from "../../components/Transport";
 import DownloadButton from "../../components/DownloadButton";
 import ProgressBar from "../../components/ProgressBar";
+import Playlist from "../../components/Playlist";
 import Toast from "../../components/Toast";
 import { useStore } from "../../lib/store";
 
@@ -49,6 +50,7 @@ export default function Home() {
           </div>
         </div>
 
+        <Playlist />
         <Toast />
       </div>
     </main>
