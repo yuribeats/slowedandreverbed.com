@@ -15,28 +15,39 @@ interface AudioNodes {
   lowShelf: BiquadFilterNode;
   peaking: BiquadFilterNode;
   highShelf: BiquadFilterNode;
+  bump: BiquadFilterNode;
   convolver: ConvolverNode;
   dryGain: GainNode;
   wetGain: GainNode;
   analyser: AnalyserNode;
 }
 
+interface PlaylistItem {
+  id: string;
+  name: string;
+  url: string;
+  settings: SimpleParams;
+  createdAt: number;
+}
+
 interface AppStore {
   sourceBuffer: AudioBuffer | null;
   sourceFilename: string | null;
+  sourceFile: File | null;
   youtubeUrl: string | null;
 
   params: SimpleParams;
   isLoading: boolean;
   isPlaying: boolean;
   isExporting: boolean;
+  isSharing: boolean;
   error: string | null;
 
   nodes: AudioNodes | null;
   startedAt: number;
+  pauseOffset: number;
 
-  sourceFile: File | null;
-  isSharing: boolean;
+  playlist: PlaylistItem[];
 
   loadFile: (file: File) => Promise<void>;
   loadFromYouTube: (url: string) => Promise<void>;
@@ -44,10 +55,13 @@ interface AppStore {
   setParams: (params: SimpleParams) => void;
   play: () => void;
   stop: () => void;
+  rewind: () => void;
+  fastForward: () => void;
   download: () => Promise<void>;
   randomize: () => void;
   share: () => Promise<string | null>;
   loadShare: (id: string) => Promise<void>;
+  loadPlaylistItem: (item: PlaylistItem) => Promise<void>;
   eject: () => void;
   clearError: () => void;
 }
@@ -90,6 +104,90 @@ function normalizeBuffer(buffer: AudioBuffer): AudioBuffer {
   return normalized;
 }
 
+function loadPlaylist(): PlaylistItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const data = localStorage.getItem("driftwave-playlist");
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePlaylist(items: PlaylistItem[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("driftwave-playlist", JSON.stringify(items));
+}
+
+function buildGraph(
+  ctx: AudioContext,
+  sourceBuffer: AudioBuffer,
+  params: SimpleParams,
+  offset: number,
+  onEnded: () => void
+): AudioNodes {
+  const expanded = expandParams(params);
+
+  const source = ctx.createBufferSource();
+  source.buffer = sourceBuffer;
+  source.playbackRate.value = expanded.rate;
+
+  const lowShelf = ctx.createBiquadFilter();
+  lowShelf.type = "lowshelf";
+  lowShelf.frequency.value = 200;
+  lowShelf.gain.value = expanded.eqLow;
+
+  const peaking = ctx.createBiquadFilter();
+  peaking.type = "peaking";
+  peaking.frequency.value = 2500;
+  peaking.Q.value = 1.0;
+  peaking.gain.value = expanded.eqMid;
+
+  const highShelf = ctx.createBiquadFilter();
+  highShelf.type = "highshelf";
+  highShelf.frequency.value = 8000;
+  highShelf.gain.value = expanded.eqHigh;
+
+  const bump = ctx.createBiquadFilter();
+  bump.type = "peaking";
+  bump.frequency.value = expanded.eqBumpFreq;
+  bump.Q.value = 1.5;
+  bump.gain.value = expanded.eqBumpGain;
+
+  const convolver = ctx.createConvolver();
+  convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
+
+  const dryGain = ctx.createGain();
+  dryGain.gain.value = 1 - expanded.reverbWet;
+
+  const wetGain = ctx.createGain();
+  wetGain.gain.value = expanded.reverbWet;
+
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.8;
+
+  const merger = ctx.createGain();
+  merger.gain.value = 1;
+
+  source.connect(lowShelf);
+  lowShelf.connect(peaking);
+  peaking.connect(highShelf);
+  highShelf.connect(bump);
+  bump.connect(dryGain);
+  bump.connect(convolver);
+  convolver.connect(wetGain);
+  dryGain.connect(merger);
+  wetGain.connect(merger);
+  merger.connect(analyser);
+  analyser.connect(ctx.destination);
+
+  source.onended = onEnded;
+  source.start(0, offset);
+
+  return { source, lowShelf, peaking, highShelf, bump, convolver, dryGain, wetGain, analyser };
+}
+
 export const useStore = create<AppStore>((set, get) => ({
   sourceBuffer: null,
   sourceFilename: null,
@@ -105,10 +203,13 @@ export const useStore = create<AppStore>((set, get) => ({
 
   nodes: null,
   startedAt: 0,
+  pauseOffset: 0,
+
+  playlist: loadPlaylist(),
 
   loadFile: async (file: File) => {
     get().stop();
-    set({ isLoading: true, error: null, youtubeUrl: null });
+    set({ isLoading: true, error: null, youtubeUrl: null, pauseOffset: 0 });
     try {
       const audioBuffer = await decodeFile(file);
       set({
@@ -124,13 +225,14 @@ export const useStore = create<AppStore>((set, get) => ({
 
   loadFromYouTube: async (url: string) => {
     get().stop();
-    set({ isLoading: true, error: null, youtubeUrl: url });
+    set({ isLoading: true, error: null, youtubeUrl: url, pauseOffset: 0 });
     try {
       const { buffer, title } = await fetchYouTubeAudio(url);
       const audioBuffer = await decodeArrayBuffer(buffer);
       set({
         sourceBuffer: audioBuffer,
         sourceFilename: title,
+        sourceFile: null,
         isLoading: false,
       });
     } catch (err) {
@@ -152,13 +254,15 @@ export const useStore = create<AppStore>((set, get) => ({
     const newSimple = { ...get().params, [key]: value };
     const expanded = expandParams(newSimple);
 
-    if (key === "rate") {
+    if (key === "speed") {
       nodes.source.playbackRate.value = expanded.rate;
     }
 
     if (key === "tone") {
       nodes.lowShelf.gain.value = expanded.eqLow;
       nodes.highShelf.gain.value = expanded.eqHigh;
+      nodes.bump.frequency.value = expanded.eqBumpFreq;
+      nodes.bump.gain.value = expanded.eqBumpGain;
     }
 
     if (key === "reverb") {
@@ -169,85 +273,77 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
+  setParams: (params: SimpleParams) => {
+    set({ params });
+    const { nodes } = get();
+    if (!nodes) return;
+    const expanded = expandParams(params);
+    nodes.source.playbackRate.value = expanded.rate;
+    nodes.lowShelf.gain.value = expanded.eqLow;
+    nodes.highShelf.gain.value = expanded.eqHigh;
+    nodes.bump.frequency.value = expanded.eqBumpFreq;
+    nodes.bump.gain.value = expanded.eqBumpGain;
+    nodes.dryGain.gain.value = 1 - expanded.reverbWet;
+    nodes.wetGain.gain.value = expanded.reverbWet;
+    const ctx = getAudioContext();
+    nodes.convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
+  },
+
   play: () => {
-    const { sourceBuffer, params, isPlaying } = get();
+    const { sourceBuffer, params, isPlaying, pauseOffset } = get();
     if (!sourceBuffer) return;
     if (isPlaying) get().stop();
 
     const ctx = getAudioContext();
-    const expanded = expandParams(params);
-
-    const source = ctx.createBufferSource();
-    source.buffer = sourceBuffer;
-    source.playbackRate.value = expanded.rate;
-
-    const lowShelf = ctx.createBiquadFilter();
-    lowShelf.type = "lowshelf";
-    lowShelf.frequency.value = 200;
-    lowShelf.gain.value = expanded.eqLow;
-
-    const peaking = ctx.createBiquadFilter();
-    peaking.type = "peaking";
-    peaking.frequency.value = 2500;
-    peaking.Q.value = 1.0;
-    peaking.gain.value = expanded.eqMid;
-
-    const highShelf = ctx.createBiquadFilter();
-    highShelf.type = "highshelf";
-    highShelf.frequency.value = 8000;
-    highShelf.gain.value = expanded.eqHigh;
-
-    const convolver = ctx.createConvolver();
-    convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
-
-    const dryGain = ctx.createGain();
-    dryGain.gain.value = 1 - expanded.reverbWet;
-
-    const wetGain = ctx.createGain();
-    wetGain.gain.value = expanded.reverbWet;
-
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.8;
-
-    // Merge node to combine dry + wet before analyser
-    const merger = ctx.createGain();
-    merger.gain.value = 1;
-
-    source.connect(lowShelf);
-    lowShelf.connect(peaking);
-    peaking.connect(highShelf);
-    highShelf.connect(dryGain);
-    highShelf.connect(convolver);
-    convolver.connect(wetGain);
-    dryGain.connect(merger);
-    wetGain.connect(merger);
-    merger.connect(analyser);
-    analyser.connect(ctx.destination);
-
-    source.onended = () => {
-      set({ isPlaying: false, nodes: null });
-    };
-
-    source.start(0);
+    const nodes = buildGraph(ctx, sourceBuffer, params, pauseOffset, () => {
+      set({ isPlaying: false, nodes: null, pauseOffset: 0 });
+    });
 
     set({
       isPlaying: true,
-      nodes: { source, lowShelf, peaking, highShelf, convolver, dryGain, wetGain, analyser },
-      startedAt: ctx.currentTime,
+      nodes,
+      startedAt: ctx.currentTime - pauseOffset,
     });
   },
 
   stop: () => {
-    const { nodes } = get();
+    const { nodes, startedAt, params } = get();
     if (nodes) {
+      const ctx = getAudioContext();
+      const elapsed = (ctx.currentTime - startedAt) * expandParams(params).rate;
+      set({ pauseOffset: elapsed });
       try { nodes.source.stop(); } catch { /* already stopped */ }
     }
     set({ isPlaying: false, nodes: null });
   },
 
+  rewind: () => {
+    const { isPlaying } = get();
+    set({ pauseOffset: 0 });
+    if (isPlaying) {
+      get().stop();
+      set({ pauseOffset: 0 });
+      get().play();
+    }
+  },
+
+  fastForward: () => {
+    const { sourceBuffer, isPlaying, startedAt, params } = get();
+    if (!sourceBuffer) return;
+    const ctx = getAudioContext();
+    const rate = expandParams(params).rate;
+    const elapsed = isPlaying ? (ctx.currentTime - startedAt) * rate : get().pauseOffset;
+    const newOffset = Math.min(elapsed + 10, sourceBuffer.duration - 0.1);
+    set({ pauseOffset: newOffset });
+    if (isPlaying) {
+      get().stop();
+      set({ pauseOffset: newOffset });
+      get().play();
+    }
+  },
+
   download: async () => {
-    const { sourceBuffer, params, sourceFilename } = get();
+    const { sourceBuffer, params, sourceFilename, playlist } = get();
     if (!sourceBuffer) return;
 
     set({ isExporting: true, error: null });
@@ -290,7 +386,17 @@ export const useStore = create<AppStore>((set, get) => ({
       a.click();
       URL.revokeObjectURL(url);
 
-      set({ isExporting: false });
+      // Add to playlist (local only for downloads)
+      const item: PlaylistItem = {
+        id: Math.random().toString(36).substring(2, 10),
+        name: filename.replace(".wav", ""),
+        url: "",
+        settings: { ...params },
+        createdAt: Date.now(),
+      };
+      const updated = [item, ...playlist].slice(0, 50);
+      set({ isExporting: false, playlist: updated });
+      savePlaylist(updated);
     } catch (err) {
       set({
         isExporting: false,
@@ -299,24 +405,9 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  setParams: (params: SimpleParams) => {
-    set({ params });
-    // Update live nodes if playing
-    const { nodes } = get();
-    if (!nodes) return;
-    const expanded = expandParams(params);
-    nodes.source.playbackRate.value = expanded.rate;
-    nodes.lowShelf.gain.value = expanded.eqLow;
-    nodes.highShelf.gain.value = expanded.eqHigh;
-    nodes.dryGain.gain.value = 1 - expanded.reverbWet;
-    nodes.wetGain.gain.value = expanded.reverbWet;
-    const ctx = getAudioContext();
-    nodes.convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
-  },
-
   randomize: () => {
     const newParams: SimpleParams = {
-      rate: 0.5 + Math.random() * 0.5,
+      speed: -0.5 + Math.random() * 1.0,
       reverb: Math.random(),
       tone: -1 + Math.random() * 2,
     };
@@ -324,7 +415,7 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   share: async () => {
-    const { sourceFile, sourceBuffer, youtubeUrl, params, sourceFilename } = get();
+    const { sourceFile, sourceBuffer, youtubeUrl, params, sourceFilename, playlist } = get();
     if (!sourceBuffer) return null;
 
     set({ isSharing: true, error: null });
@@ -337,7 +428,6 @@ export const useStore = create<AppStore>((set, get) => ({
       if (sourceFile) {
         formData.append("audio", sourceFile);
       } else if (youtubeUrl) {
-        // Re-fetch the audio for sharing
         const res = await fetch("/api/cobalt", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -360,13 +450,23 @@ export const useStore = create<AppStore>((set, get) => ({
         throw new Error(data.error || "Share failed");
       }
 
-      const { id } = await res.json();
+      const { id, audioUrl } = await res.json();
       const shareUrl = `${window.location.origin}/s/${id}`;
 
-      // Copy to clipboard
       await navigator.clipboard.writeText(shareUrl);
 
-      set({ isSharing: false });
+      // Add to playlist
+      const item: PlaylistItem = {
+        id,
+        name: sourceFilename || "shared-track",
+        url: audioUrl || "",
+        settings: { ...params },
+        createdAt: Date.now(),
+      };
+      const updated = [item, ...playlist].slice(0, 50);
+      set({ isSharing: false, playlist: updated });
+      savePlaylist(updated);
+
       return shareUrl;
     } catch (err) {
       set({
@@ -378,7 +478,7 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   loadShare: async (id: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, pauseOffset: 0 });
 
     try {
       const res = await fetch(`/api/share?id=${id}`);
@@ -387,7 +487,6 @@ export const useStore = create<AppStore>((set, get) => ({
       const data = await res.json();
       const { settings, filename, audioUrl } = data;
 
-      // Fetch the audio file
       const audioRes = await fetch(audioUrl);
       const buffer = await audioRes.arrayBuffer();
       const audioBuffer = await decodeArrayBuffer(buffer);
@@ -406,6 +505,30 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
+  loadPlaylistItem: async (item: PlaylistItem) => {
+    if (!item.url) return;
+    get().stop();
+    set({ isLoading: true, error: null, pauseOffset: 0 });
+
+    try {
+      const audioRes = await fetch(item.url);
+      const buffer = await audioRes.arrayBuffer();
+      const audioBuffer = await decodeArrayBuffer(buffer);
+
+      set({
+        sourceBuffer: audioBuffer,
+        sourceFilename: item.name,
+        params: { ...item.settings },
+        isLoading: false,
+      });
+    } catch (err) {
+      set({
+        isLoading: false,
+        error: err instanceof Error ? err.message : "Failed to load track",
+      });
+    }
+  },
+
   eject: () => {
     get().stop();
     set({
@@ -413,6 +536,7 @@ export const useStore = create<AppStore>((set, get) => ({
       sourceFile: null,
       sourceFilename: null,
       youtubeUrl: null,
+      pauseOffset: 0,
       params: { ...SIMPLE_DEFAULTS },
     });
   },

@@ -4,8 +4,9 @@ import { useState } from "react";
 import Uploader from "../../components/Uploader";
 import SpectrumAnalyzer from "../../components/SpectrumAnalyzer";
 import Controls from "../../components/Controls";
-import Player from "../../components/Player";
+import Transport from "../../components/Transport";
 import DownloadButton from "../../components/DownloadButton";
+import Playlist from "../../components/Playlist";
 import Toast from "../../components/Toast";
 import { useStore } from "../../lib/store";
 
@@ -15,7 +16,6 @@ const btnClass =
 export default function Home() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const sourceFilename = useStore((s) => s.sourceFilename);
-  const eject = useStore((s) => s.eject);
   const randomize = useStore((s) => s.randomize);
   const share = useStore((s) => s.share);
   const isSharing = useStore((s) => s.isSharing);
@@ -32,35 +32,26 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0d0d0d] p-4 sm:p-8">
       <div className="max-w-4xl mx-auto flex flex-col gap-4">
+        {/* Header */}
         <div className="bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] px-6 py-3 flex items-center justify-between">
           <h1 className="text-sm text-dw-text uppercase tracking-[0.2em] font-bold">
             THE SLOWED AND REVERB MACHINE
           </h1>
-          <div className="flex items-center gap-4">
-            {sourceFilename && (
-              <span className="text-[10px] text-dw-muted uppercase tracking-[0.1em]">
-                {sourceFilename}
-              </span>
-            )}
-            {sourceBuffer && (
-              <button
-                onClick={eject}
-                className="text-[10px] text-dw-muted uppercase tracking-[0.15em] hover:text-dw-accent font-mono border border-[#333] px-3 py-1 hover:border-dw-accent"
-                title="EJECT"
-              >
-                EJECT
-              </button>
-            )}
-          </div>
+          {sourceFilename && (
+            <span className="text-[10px] text-dw-muted uppercase tracking-[0.1em]">
+              {sourceFilename}
+            </span>
+          )}
         </div>
 
         <Uploader />
         <SpectrumAnalyzer />
         <Controls />
 
+        {/* Transport bar */}
         {sourceBuffer && (
           <div className="bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] px-4 py-3 flex items-center gap-3">
-            <Player />
+            <Transport />
             <button onClick={randomize} className={btnClass}>
               RANDOM
             </button>
@@ -76,6 +67,7 @@ export default function Home() {
           </div>
         )}
 
+        <Playlist />
         <Toast />
       </div>
     </main>

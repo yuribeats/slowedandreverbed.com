@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, list } from "@vercel/blob";
+import { PinataSDK } from "pinata";
+
+function getPinata() {
+  return new PinataSDK({
+    pinataJwt: process.env.PINATA_JWT!,
+    pinataGateway: process.env.PINATA_GATEWAY!,
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,23 +19,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing audio or settings" }, { status: 400 });
     }
 
-    // Generate a short ID
+    const pinata = getPinata();
     const id = Math.random().toString(36).substring(2, 10);
 
-    // Upload audio to Vercel Blob
-    const blob = await put(`shares/${id}/audio`, file, {
-      access: "public",
-      contentType: file.type || "audio/mpeg",
-    });
+    const audioUpload = await pinata.upload.public.file(file)
+      .name(`driftwave-${id}`)
+      .keyvalues({
+        type: "driftwave-audio",
+        shareId: id,
+        filename: filename || "audio",
+        settings: settings,
+      });
 
-    // Store settings as a separate blob
-    await put(
-      `shares/${id}/settings.json`,
-      JSON.stringify({ settings: JSON.parse(settings), filename, audioUrl: blob.url }),
-      { access: "public", contentType: "application/json" }
-    );
+    const audioUrl = `https://${process.env.PINATA_GATEWAY}/files/${audioUpload.cid}`;
 
-    return NextResponse.json({ id, url: `/s/${id}` });
+    return NextResponse.json({ id, audioUrl });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Share failed" },
@@ -44,16 +49,28 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Find the settings blob
-    const { blobs } = await list({ prefix: `shares/${id}/settings` });
-    if (blobs.length === 0) {
+    const pinata = getPinata();
+
+    const result = await pinata.files.public.list().keyvalues({ shareId: id });
+    const files = result.files;
+
+    if (!files || files.length === 0) {
       return NextResponse.json({ error: "Share not found" }, { status: 404 });
     }
 
-    const res = await fetch(blobs[0].url);
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ error: "Failed to load share" }, { status: 500 });
+    const file = files[0];
+    const kv = file.keyvalues || {};
+    const audioUrl = `https://${process.env.PINATA_GATEWAY}/files/${file.cid}`;
+
+    return NextResponse.json({
+      settings: kv.settings ? JSON.parse(kv.settings) : null,
+      filename: kv.filename || "shared-track",
+      audioUrl,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to load share" },
+      { status: 500 }
+    );
   }
 }

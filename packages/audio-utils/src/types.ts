@@ -6,10 +6,12 @@ export interface ProcessingParams {
   eqLow: number;
   eqMid: number;
   eqHigh: number;
+  eqBumpFreq: number;
+  eqBumpGain: number;
 }
 
 export interface SimpleParams {
-  rate: number;     // 0.5–1.0
+  speed: number;    // -0.5 to +0.5 (0 = no change, negative = slow, positive = fast)
   reverb: number;   // 0–1
   tone: number;     // -1 to 1 (dark to bright)
 }
@@ -21,32 +23,39 @@ export interface EQBand {
 }
 
 export const SIMPLE_DEFAULTS: SimpleParams = {
-  rate: 0.85,
+  speed: -0.15,    // slightly slowed (~0.85x)
   reverb: 0.5,
-  tone: -0.3,  // slightly dark
+  tone: -0.3,
 };
 
 export function expandParams(s: SimpleParams): ProcessingParams {
-  // Tone: boost the direction you're turning.
-  // Negative = dark (bass boost + high cut), Positive = bright (high boost + bass cut)
-  // ±15dB swing for dramatic effect
+  // Speed: 0 = 1.0x, -0.5 = 0.5x, +0.5 = 1.5x
+  const rate = 1.0 + s.speed;
+
+  // Tone: ±20dB swing with exponential curve for dramatic effect
   const toneMag = Math.abs(s.tone);
   const toneSign = s.tone < 0 ? -1 : 1;
-  // Exponential curve for more impact at extremes
-  const toneAmount = Math.pow(toneMag, 0.7) * 15 * toneSign;
+  const toneAmount = Math.pow(toneMag, 0.6) * 20 * toneSign;
 
-  // Reverb: use a sqrt curve so lower values still have audible wetness.
-  // At 0.25 knob → ~0.4 wet. At 0.5 → ~0.57 wet. At 1.0 → 0.8 wet.
+  // Reverb: sqrt curve for audible presence at low settings
   const reverbCurve = Math.sqrt(s.reverb);
 
+  // Resonant bump: sweeps frequency with tone direction, gain scales with magnitude
+  const bumpFreq = s.tone > 0
+    ? 2000 + s.tone * 6000     // bright: 2kHz → 8kHz
+    : 800 - toneMag * 600;     // dark: 800Hz → 200Hz
+  const bumpGain = Math.pow(toneMag, 0.6) * 12; // up to 12dB resonant peak
+
   return {
-    rate: s.rate,
+    rate,
     reverbWet: reverbCurve * 0.8,
     reverbDuration: 2.5 + s.reverb * 3.5,
     reverbDecay: 2.0 + s.reverb * 2.0,
     eqLow: -toneAmount,
     eqMid: 0,
     eqHigh: toneAmount,
+    eqBumpFreq: bumpFreq,
+    eqBumpGain: bumpGain,
   };
 }
 

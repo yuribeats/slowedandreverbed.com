@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useStore } from "../../../../lib/store";
 import SpectrumAnalyzer from "../../../../components/SpectrumAnalyzer";
 import Controls from "../../../../components/Controls";
-import Player from "../../../../components/Player";
+import Transport from "../../../../components/Transport";
 import DownloadButton from "../../../../components/DownloadButton";
 import Toast from "../../../../components/Toast";
 
@@ -45,7 +45,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
 
         {sourceBuffer && (
           <div className="bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] px-4 py-3 flex items-center gap-3">
-            <Player />
+            <Transport />
             <div className="flex-1" />
             <DownloadButton />
           </div>

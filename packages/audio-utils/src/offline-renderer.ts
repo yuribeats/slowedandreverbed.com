@@ -56,6 +56,12 @@ export async function renderOffline(input: RenderInput): Promise<{
   highShelf.frequency.value = 8000;
   highShelf.gain.value = params.eqHigh;
 
+  const bump = offlineCtx.createBiquadFilter();
+  bump.type = "peaking";
+  bump.frequency.value = params.eqBumpFreq;
+  bump.Q.value = 1.5;
+  bump.gain.value = params.eqBumpGain;
+
   // Reverb
   const irData = generateImpulseResponse(
     sampleRate,
@@ -79,9 +85,10 @@ export async function renderOffline(input: RenderInput): Promise<{
   source.connect(lowShelf);
   lowShelf.connect(peaking);
   peaking.connect(highShelf);
+  highShelf.connect(bump);
 
-  highShelf.connect(dryGain);
-  highShelf.connect(convolver);
+  bump.connect(dryGain);
+  bump.connect(convolver);
   convolver.connect(wetGain);
 
   dryGain.connect(offlineCtx.destination);
