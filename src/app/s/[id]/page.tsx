@@ -19,24 +19,28 @@ export default function SharePage({ params }: { params: { id: string } }) {
   }, [params.id, loadShare]);
 
   return (
-    <main className="min-h-screen bg-[#0d0d0d] p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto flex flex-col gap-4">
-        <div className="bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] px-6 py-3 flex items-center justify-between">
-          <a href="/" className="text-sm text-dw-text uppercase tracking-[0.2em] font-bold">
-            THE SLOWED AND REVERB MACHINE
-          </a>
-          {sourceFilename && (
-            <span className="text-[10px] text-dw-muted uppercase tracking-[0.1em]">
-              {sourceFilename}
-            </span>
-          )}
+    <main className="min-h-screen wood-grain p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto flex flex-col gap-1">
+        <div className="wood-grain p-[6px]">
+          <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-6 py-3 flex items-center justify-between">
+            <a href="/" className="text-sm text-[#333] uppercase tracking-[0.2em] font-bold">
+              THE SLOWED AND REVERB MACHINE
+            </a>
+            {sourceFilename && (
+              <span className="text-[10px] text-[#555] uppercase tracking-[0.1em]">
+                {sourceFilename}
+              </span>
+            )}
+          </div>
         </div>
 
         {isLoading && (
-          <div className="bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] p-10 text-center">
-            <p className="text-dw-muted uppercase tracking-[0.15em] text-xs">
-              LOADING SHARED TRACK...
-            </p>
+          <div className="wood-grain p-[6px]">
+            <div className="dark-faceplate border border-[#444] p-10 text-center">
+              <p className="text-dw-amber uppercase tracking-[0.15em] text-xs">
+                LOADING SHARED TRACK...
+              </p>
+            </div>
           </div>
         )}
 
@@ -44,10 +48,12 @@ export default function SharePage({ params }: { params: { id: string } }) {
         <Controls />
 
         {sourceBuffer && (
-          <div className="bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] px-4 py-3 flex items-center gap-3">
-            <Transport />
-            <div className="flex-1" />
-            <DownloadButton />
+          <div className="wood-grain p-[6px]">
+            <div className="brushed-aluminum border border-[#666] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] px-4 py-3 flex items-center gap-3">
+              <Transport />
+              <div className="flex-1" />
+              <DownloadButton />
+            </div>
           </div>
         )}
 

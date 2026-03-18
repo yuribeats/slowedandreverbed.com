@@ -30,11 +30,12 @@ export default function SpectrumAnalyzer() {
     const width = rect.width;
     const height = rect.height;
 
-    ctx.fillStyle = "#0a0a0a";
+    // Dark tinted glass background
+    ctx.fillStyle = "#080808";
     ctx.fillRect(0, 0, width, height);
 
-    // Grid lines
-    ctx.strokeStyle = "rgba(100, 200, 100, 0.06)";
+    // Subtle amber grid lines
+    ctx.strokeStyle = "rgba(232, 144, 48, 0.04)";
     ctx.lineWidth = 1;
     for (let y = 0; y < height; y += 12) {
       ctx.beginPath();
@@ -51,13 +52,11 @@ export default function SpectrumAnalyzer() {
     }
 
     for (let i = 0; i < BAR_COUNT; i++) {
-      // Map bars to frequency bins (logarithmic-ish)
       const binIndex = Math.floor(Math.pow(i / BAR_COUNT, 1.5) * freqData.length);
       const value = freqData[binIndex] || 0;
       const normalized = value / 255;
       const x = i * (barWidth + BAR_GAP);
 
-      // Draw segmented bar (LED style)
       const segmentHeight = 4;
       const segmentGap = 1;
       const totalSegments = Math.floor(height / (segmentHeight + segmentGap));
@@ -67,23 +66,23 @@ export default function SpectrumAnalyzer() {
         const segY = height - (s + 1) * (segmentHeight + segmentGap);
         const ratio = s / totalSegments;
 
-        // Green → Yellow → Red
+        // Amber color scheme: dim amber → bright amber → hot amber/white
         let r, g, b;
-        if (ratio < 0.6) {
-          r = 40;
-          g = 200;
-          b = 40;
+        if (ratio < 0.5) {
+          r = 160 + ratio * 140;
+          g = 80 + ratio * 80;
+          b = 20;
         } else if (ratio < 0.8) {
-          r = 220;
-          g = 200;
-          b = 40;
+          r = 232;
+          g = 144;
+          b = 30 + (ratio - 0.5) * 60;
         } else {
-          r = 220;
-          g = 50;
-          b = 40;
+          r = 255;
+          g = 170 + (ratio - 0.8) * 200;
+          b = 60 + (ratio - 0.8) * 200;
         }
 
-        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillStyle = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
         ctx.fillRect(x, segY, barWidth, segmentHeight);
       }
 
@@ -97,14 +96,7 @@ export default function SpectrumAnalyzer() {
       const peakSegment = Math.floor(peaksRef.current[i] * totalSegments);
       if (peakSegment > 0) {
         const peakY = height - peakSegment * (segmentHeight + segmentGap);
-        const peakRatio = peakSegment / totalSegments;
-        if (peakRatio < 0.6) {
-          ctx.fillStyle = "rgb(80, 255, 80)";
-        } else if (peakRatio < 0.8) {
-          ctx.fillStyle = "rgb(255, 255, 80)";
-        } else {
-          ctx.fillStyle = "rgb(255, 80, 80)";
-        }
+        ctx.fillStyle = "rgb(255, 200, 100)";
         ctx.fillRect(x, peakY, barWidth, segmentHeight);
       }
     }
@@ -124,7 +116,6 @@ export default function SpectrumAnalyzer() {
     };
   }, [draw, isPlaying]);
 
-  // Draw idle state when not playing
   useEffect(() => {
     if (!isPlaying) {
       peaksRef.current = new Array(BAR_COUNT).fill(0);
@@ -135,9 +126,13 @@ export default function SpectrumAnalyzer() {
   if (!sourceBuffer) return null;
 
   return (
-    <div className="relative bg-gradient-to-b from-[#3a3a3e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-4">
-      <div className="bg-[#0a0a0a] border border-[#111] shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] p-1">
-        <canvas ref={canvasRef} className="w-full h-36 block" />
+    <div className="wood-grain p-[6px]">
+      <div className="dark-faceplate border border-[#444] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="p-3">
+          <div className="tinted-glass border border-[#222] p-1">
+            <canvas ref={canvasRef} className="w-full h-36 block" />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useStore } from "../lib/store";
 
 const btnBase =
-  "bg-gradient-to-b from-[#4a4a4e] to-[#2a2a2e] border border-[#1a1a1a] shadow-[0_2px_4px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] hover:from-[#555] hover:to-[#333] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] disabled:opacity-50 flex items-center justify-center";
+  "bg-gradient-to-b from-[#c0c0c0] via-[#a0a0a0] to-[#888] border border-[#666] shadow-[0_2px_4px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] hover:from-[#d0d0d0] hover:to-[#999] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] disabled:opacity-50 flex items-center justify-center";
 
 export default function Transport() {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
@@ -18,20 +18,18 @@ export default function Transport() {
 
   return (
     <div className="flex items-center gap-1">
-      {/* Rewind */}
       <button
         onClick={rewind}
-        className={`${btnBase} w-10 h-10 text-dw-muted hover:text-dw-text`}
+        className={`${btnBase} w-10 h-10 text-[#333] hover:text-[#111]`}
         title="REWIND"
       >
         <span className="text-sm leading-none">&#9198;</span>
       </button>
 
-      {/* Play / Stop */}
       {isPlaying ? (
         <button
           onClick={stop}
-          className={`${btnBase} w-10 h-10 text-dw-text`}
+          className={`${btnBase} w-10 h-10 text-[#333]`}
           title="STOP"
         >
           <span className="text-xs leading-none">&#9632;</span>
@@ -39,26 +37,24 @@ export default function Transport() {
       ) : (
         <button
           onClick={play}
-          className={`${btnBase} w-10 h-10 text-dw-accent`}
+          className={`${btnBase} w-10 h-10 text-[#333]`}
           title="PLAY"
         >
           <span className="text-sm leading-none">&#9654;</span>
         </button>
       )}
 
-      {/* Fast Forward */}
       <button
         onClick={fastForward}
-        className={`${btnBase} w-10 h-10 text-dw-muted hover:text-dw-text`}
+        className={`${btnBase} w-10 h-10 text-[#333] hover:text-[#111]`}
         title="FAST FORWARD"
       >
         <span className="text-sm leading-none">&#9197;</span>
       </button>
 
-      {/* Eject */}
       <button
         onClick={eject}
-        className={`${btnBase} w-10 h-10 text-dw-muted hover:text-dw-text ml-2`}
+        className={`${btnBase} w-10 h-10 text-[#333] hover:text-[#111] ml-2`}
         title="EJECT"
       >
         <span className="text-sm leading-none">&#9167;</span>

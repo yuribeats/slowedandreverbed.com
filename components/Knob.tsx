@@ -76,7 +76,6 @@ export default function Knob({
     };
   }, [min, max, step, onChange]);
 
-  // Touch support
   useEffect(() => {
     const el = knobRef.current;
     if (!el) return;
@@ -119,41 +118,61 @@ export default function Knob({
     const t = i / (ticks - 1);
     const tickAngle = MIN_ANGLE + t * (MAX_ANGLE - MIN_ANGLE);
     const rad = ((tickAngle - 90) * Math.PI) / 180;
-    const r = 34;
-    const x = 40 + r * Math.cos(rad);
-    const y = 40 + r * Math.sin(rad);
+    const r = 42;
+    const x = 48 + r * Math.cos(rad);
+    const y = 48 + r * Math.sin(rad);
     tickMarks.push(
       <div
         key={i}
-        className="absolute w-[2px] h-[6px] bg-dw-muted"
+        className="absolute w-[2px] h-[8px]"
         style={{
           left: `${x}px`,
           top: `${y}px`,
           transform: `translate(-50%, -50%) rotate(${tickAngle}deg)`,
+          background: i === 0 || i === ticks - 1 ? "#e89030" : "#888",
         }}
       />
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[10px] text-dw-muted uppercase tracking-[0.15em]">
+    <div className="flex flex-col items-center gap-2">
+      <span className="text-[10px] text-dw-aluminum-light uppercase tracking-[0.2em] font-bold">
         {label}
       </span>
-      <div className="relative w-[80px] h-[80px]" ref={knobRef}>
+      <div className="relative w-[96px] h-[96px]" ref={knobRef}>
         {tickMarks}
+        {/* Outer ring - chrome bezel */}
         <div
-          className="absolute inset-[8px] rounded-full bg-gradient-to-b from-[#6a6a6a] via-[#4a4a4a] to-[#2a2a2a] shadow-[0_2px_8px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)]"
-          style={{ transform: `rotate(${angle}deg)` }}
-          onMouseDown={handleMouseDown}
+          className="absolute inset-[6px] rounded-full"
+          style={{
+            background: "linear-gradient(180deg, #d0d0d0 0%, #888 50%, #a0a0a0 100%)",
+            boxShadow: "0 3px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.4)",
+          }}
         >
-          {/* Pointer notch */}
-          <div className="absolute top-[4px] left-1/2 -translate-x-1/2 w-[2px] h-[12px] bg-[#e8e0d0]" />
-          {/* Center cap */}
-          <div className="absolute inset-[10px] rounded-full bg-gradient-to-b from-[#555] to-[#333] shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]" />
+          {/* Chrome sunburst knob body */}
+          <div
+            className="absolute inset-[3px] rounded-full chrome-knob"
+            style={{ transform: `rotate(${angle}deg)` }}
+            onMouseDown={handleMouseDown}
+          >
+            {/* Pointer notch */}
+            <div
+              className="absolute top-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[14px]"
+              style={{ background: "#e89030", boxShadow: "0 0 4px rgba(232,144,48,0.5)" }}
+            />
+            {/* Center cap */}
+            <div
+              className="absolute inset-[14px] rounded-full"
+              style={{
+                background: "radial-gradient(circle at 40% 35%, #e0e0e0, #999 60%, #777)",
+                boxShadow: "inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.2)",
+              }}
+            />
+          </div>
         </div>
       </div>
-      <span className="text-[11px] text-dw-accent font-mono tracking-wider">
+      <span className="text-[11px] text-dw-amber font-mono tracking-wider">
         {valueDisplay}
       </span>
     </div>

@@ -2,61 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg: #0d0d0d;
-  --surface: #1a1a1a;
-  --surface-2: #242424;
-  --border: #2e2e2e;
-  --accent: #c8a96e;
-  --accent-dim: #7a6440;
-  --text-primary: #e8e0d0;
-  --text-muted: #7a7570;
-  --danger: #c0392b;
-}
-
 * {
   border-radius: 0;
 }
 
 body {
-  background: var(--bg);
-  color: var(--text-primary);
+  background: #1a120b;
+  color: #e8e0d0;
   font-family: var(--font-ibm-plex-mono), monospace;
 }
 
-/* Custom range slider */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  width: 100%;
-  height: 24px;
+/* Walnut wood grain texture */
+.wood-grain {
+  background:
+    repeating-linear-gradient(
+      2deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    ),
+    repeating-linear-gradient(
+      178deg,
+      transparent,
+      transparent 7px,
+      rgba(0,0,0,0.05) 7px,
+      rgba(0,0,0,0.05) 8px
+    ),
+    linear-gradient(180deg, #4a3425 0%, #3d2b1f 30%, #2a1a10 70%, #3d2b1f 100%);
 }
 
-input[type="range"]::-webkit-slider-runnable-track {
-  height: 2px;
-  background: var(--border);
+/* Brushed aluminum faceplate */
+.brushed-aluminum {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 1px,
+      rgba(255,255,255,0.03) 1px,
+      rgba(255,255,255,0.03) 2px
+    ),
+    linear-gradient(180deg, #a0a0a0 0%, #909090 15%, #888888 50%, #909090 85%, #a0a0a0 100%);
 }
 
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  background: var(--accent);
-  margin-top: -5px;
+/* Dark faceplate section */
+.dark-faceplate {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 1px,
+      rgba(255,255,255,0.02) 1px,
+      rgba(255,255,255,0.02) 2px
+    ),
+    linear-gradient(180deg, #3a3a3e 0%, #2a2a2e 50%, #222226 100%);
 }
 
-input[type="range"]::-moz-range-track {
-  height: 2px;
-  background: var(--border);
-  border: none;
+/* Tinted glass display */
+.tinted-glass {
+  background: linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 50%, #0a0a0a 100%);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), inset 0 -1px 0 rgba(255,255,255,0.03);
 }
 
-input[type="range"]::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  background: var(--accent);
-  border: none;
-  border-radius: 0;
+/* Chrome knob sunburst */
+.chrome-knob {
+  background: conic-gradient(
+    from 0deg,
+    #c8c8c8, #f0f0f0 10deg, #a8a8a8 20deg,
+    #d8d8d8 30deg, #f0f0f0 40deg, #a8a8a8 50deg,
+    #c8c8c8 60deg, #f0f0f0 70deg, #a0a0a0 80deg,
+    #d0d0d0 90deg, #f0f0f0 100deg, #a8a8a8 110deg,
+    #c8c8c8 120deg, #f0f0f0 130deg, #a0a0a0 140deg,
+    #d8d8d8 150deg, #f0f0f0 160deg, #a8a8a8 170deg,
+    #c8c8c8 180deg, #f0f0f0 190deg, #a0a0a0 200deg,
+    #d0d0d0 210deg, #f0f0f0 220deg, #a8a8a8 230deg,
+    #c8c8c8 240deg, #f0f0f0 250deg, #a0a0a0 260deg,
+    #d8d8d8 270deg, #f0f0f0 280deg, #a8a8a8 290deg,
+    #c8c8c8 300deg, #f0f0f0 310deg, #a0a0a0 320deg,
+    #d0d0d0 330deg, #f0f0f0 340deg, #a8a8a8 350deg,
+    #c8c8c8 360deg
+  );
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.5),
+    0 1px 0 rgba(255,255,255,0.3),
+    inset 0 1px 3px rgba(255,255,255,0.4);
+}
+
+/* Screw head */
+.panel-screw {
+  background: radial-gradient(circle at 35% 35%, #666, #333 60%, #222);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05);
 }

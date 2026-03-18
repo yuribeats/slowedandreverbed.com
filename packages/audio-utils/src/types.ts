@@ -51,7 +51,7 @@ export function expandParams(s: SimpleParams): ProcessingParams {
     reverbWet: reverbCurve * 0.8,
     reverbDuration: 2.5 + s.reverb * 3.5,
     reverbDecay: 2.0 + s.reverb * 2.0,
-    eqLow: -toneAmount,
+    eqLow: -toneAmount * 0.3,
     eqMid: 0,
     eqHigh: toneAmount,
     eqBumpFreq: bumpFreq,
