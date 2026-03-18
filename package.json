@@ -12,6 +12,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/blob": "^2.3.1",
     "@yuribeats/audio-utils": "workspace:*",
     "next": "14.2.35",
     "react": "^18",

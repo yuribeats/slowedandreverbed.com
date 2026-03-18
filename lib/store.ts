@@ -35,12 +35,19 @@ interface AppStore {
   nodes: AudioNodes | null;
   startedAt: number;
 
+  sourceFile: File | null;
+  isSharing: boolean;
+
   loadFile: (file: File) => Promise<void>;
   loadFromYouTube: (url: string) => Promise<void>;
   setParam: <K extends keyof SimpleParams>(key: K, value: SimpleParams[K]) => void;
+  setParams: (params: SimpleParams) => void;
   play: () => void;
   stop: () => void;
   download: () => Promise<void>;
+  randomize: () => void;
+  share: () => Promise<string | null>;
+  loadShare: (id: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -85,12 +92,14 @@ function normalizeBuffer(buffer: AudioBuffer): AudioBuffer {
 export const useStore = create<AppStore>((set, get) => ({
   sourceBuffer: null,
   sourceFilename: null,
+  sourceFile: null,
   youtubeUrl: null,
 
   params: { ...SIMPLE_DEFAULTS },
   isLoading: false,
   isPlaying: false,
   isExporting: false,
+  isSharing: false,
   error: null,
 
   nodes: null,
@@ -103,6 +112,7 @@ export const useStore = create<AppStore>((set, get) => ({
       const audioBuffer = await decodeFile(file);
       set({
         sourceBuffer: audioBuffer,
+        sourceFile: file,
         sourceFilename: file.name.replace(/\.[^/.]+$/, ""),
         isLoading: false,
       });
@@ -284,6 +294,113 @@ export const useStore = create<AppStore>((set, get) => ({
       set({
         isExporting: false,
         error: err instanceof Error ? err.message : "Export failed",
+      });
+    }
+  },
+
+  setParams: (params: SimpleParams) => {
+    set({ params });
+    // Update live nodes if playing
+    const { nodes } = get();
+    if (!nodes) return;
+    const expanded = expandParams(params);
+    nodes.source.playbackRate.value = expanded.rate;
+    nodes.lowShelf.gain.value = expanded.eqLow;
+    nodes.highShelf.gain.value = expanded.eqHigh;
+    nodes.dryGain.gain.value = 1 - expanded.reverbWet;
+    nodes.wetGain.gain.value = expanded.reverbWet;
+    const ctx = getAudioContext();
+    nodes.convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
+  },
+
+  randomize: () => {
+    const newParams: SimpleParams = {
+      rate: 0.5 + Math.random() * 0.5,
+      reverb: Math.random(),
+      tone: -1 + Math.random() * 2,
+    };
+    get().setParams(newParams);
+  },
+
+  share: async () => {
+    const { sourceFile, sourceBuffer, youtubeUrl, params, sourceFilename } = get();
+    if (!sourceBuffer) return null;
+
+    set({ isSharing: true, error: null });
+
+    try {
+      const formData = new FormData();
+      formData.append("settings", JSON.stringify(params));
+      formData.append("filename", sourceFilename || "audio");
+
+      if (sourceFile) {
+        formData.append("audio", sourceFile);
+      } else if (youtubeUrl) {
+        // Re-fetch the audio for sharing
+        const res = await fetch("/api/cobalt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: youtubeUrl }),
+        });
+        if (!res.ok) throw new Error("Failed to fetch audio for sharing");
+        const audioBlob = await res.blob();
+        formData.append("audio", audioBlob, "audio.mp3");
+      } else {
+        throw new Error("No audio source to share");
+      }
+
+      const res = await fetch("/api/share", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Share failed");
+      }
+
+      const { id } = await res.json();
+      const shareUrl = `${window.location.origin}/s/${id}`;
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+
+      set({ isSharing: false });
+      return shareUrl;
+    } catch (err) {
+      set({
+        isSharing: false,
+        error: err instanceof Error ? err.message : "Share failed",
+      });
+      return null;
+    }
+  },
+
+  loadShare: async (id: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const res = await fetch(`/api/share?id=${id}`);
+      if (!res.ok) throw new Error("Share not found");
+
+      const data = await res.json();
+      const { settings, filename, audioUrl } = data;
+
+      // Fetch the audio file
+      const audioRes = await fetch(audioUrl);
+      const buffer = await audioRes.arrayBuffer();
+      const audioBuffer = await decodeArrayBuffer(buffer);
+
+      set({
+        sourceBuffer: audioBuffer,
+        sourceFilename: filename,
+        params: settings,
+        isLoading: false,
+      });
+    } catch (err) {
+      set({
+        isLoading: false,
+        error: err instanceof Error ? err.message : "Failed to load shared track",
       });
     }
   },
