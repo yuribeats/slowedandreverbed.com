@@ -211,7 +211,8 @@ export const useStore = create<AppStore>((set, get) => ({
 
   loadFile: async (file: File) => {
     get().stop();
-    set({ isLoading: true, error: null, youtubeUrl: null, pauseOffset: 0 });
+    // Free previous buffer before allocating new one (helps mobile memory)
+    set({ isLoading: true, error: null, youtubeUrl: null, pauseOffset: 0, sourceBuffer: null, sourceFile: null });
     try {
       const audioBuffer = await decodeFile(file);
       set({
@@ -220,14 +221,17 @@ export const useStore = create<AppStore>((set, get) => ({
         sourceFilename: file.name.replace(/\.[^/.]+$/, ""),
         isLoading: false,
       });
-    } catch {
-      set({ isLoading: false, error: "Failed to decode audio file" });
+    } catch (err) {
+      set({
+        isLoading: false,
+        error: err instanceof Error ? err.message : "Failed to decode audio file",
+      });
     }
   },
 
   loadFromYouTube: async (url: string) => {
     get().stop();
-    set({ isLoading: true, error: null, youtubeUrl: url, pauseOffset: 0 });
+    set({ isLoading: true, error: null, youtubeUrl: url, pauseOffset: 0, sourceBuffer: null, sourceFile: null });
     try {
       const { buffer, title } = await fetchYouTubeAudio(url);
       const audioBuffer = await decodeArrayBuffer(buffer);
@@ -497,7 +501,7 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   loadShare: async (id: string) => {
-    set({ isLoading: true, error: null, pauseOffset: 0 });
+    set({ isLoading: true, error: null, pauseOffset: 0, sourceBuffer: null });
 
     try {
       const res = await fetch(`/api/share?id=${id}`);
@@ -527,7 +531,7 @@ export const useStore = create<AppStore>((set, get) => ({
   loadPlaylistItem: async (item: PlaylistItem) => {
     if (!item.url) return;
     get().stop();
-    set({ isLoading: true, error: null, pauseOffset: 0 });
+    set({ isLoading: true, error: null, pauseOffset: 0, sourceBuffer: null });
 
     try {
       const audioRes = await fetch(item.url);
