@@ -202,28 +202,23 @@ body {
 .led-red { background: var(--led-red-off); }
 .led-red-on { background: var(--led-red-on); box-shadow: 0 0 8px var(--led-red-on); }
 
-/* Vertical slider */
+/* Vertical fader */
 .slider-track {
-  width: 8px;
-  background: #1a1a1a;
-  border-radius: 4px;
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
-}
-
-.slider-handle {
-  width: 32px;
-  height: 20px;
-  background: var(--control-base);
-  border-radius: 3px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2);
-  border: 1px solid #111;
-}
-
-.slider-grip {
-  width: 20px;
-  height: 2px;
+  width: 6px;
   background: #111;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.1);
+  border-radius: 3px;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(255,255,255,0.05);
+  position: relative;
+}
+.slider-track::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 1px;
+  background: rgba(255,255,255,0.08);
+  transform: translateX(-50%);
 }
 
 /* Tactical inputs */
@@ -257,22 +252,39 @@ body {
 }
 .tactical-button:disabled { opacity: 0.5; }
 
-/* Range input thumb */
+/* Fader thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--led-orange);
-  box-shadow: 0 0 6px rgba(255,115,0,0.6);
-  border: none;
+  width: 28px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom,
+    #555 0%,
+    #444 20%,
+    #333 40%,
+    #222 50%,
+    #333 60%,
+    #444 80%,
+    #555 100%
+  );
+  border: 1px solid #111;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
+  background-image: linear-gradient(to bottom,
+    #555 0%, #444 20%, #333 40%, #222 50%, #333 60%, #444 80%, #555 100%
+  ),
+  repeating-linear-gradient(to bottom,
+    transparent 0px, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 3px
+  );
+  background-blend-mode: normal, overlay;
 }
 input[type="range"]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--led-orange);
-  box-shadow: 0 0 6px rgba(255,115,0,0.6);
-  border: none;
+  width: 28px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom,
+    #555 0%, #444 20%, #333 40%, #222 50%, #333 60%, #444 80%, #555 100%
+  );
+  border: 1px solid #111;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
 }

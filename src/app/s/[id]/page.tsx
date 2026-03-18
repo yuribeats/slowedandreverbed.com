@@ -45,7 +45,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
 
           {isLoading && (
             <div className="zone-inset text-center py-10">
-              <p className="text-xs uppercase tracking-[0.15em]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(255,115,0,0.4)" }}>
+              <p className="text-xs uppercase tracking-[0.15em]" style={{ color: "var(--text-dark)" }}>
                 LOADING SHARED TRACK...
               </p>
             </div>
@@ -84,7 +84,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
               <div className="flex justify-around pt-6">
                 {/* Speed slider */}
                 <div className="flex flex-col items-center gap-2">
-                  <div className="relative h-[120px] w-[32px] flex justify-center">
+                  <div className="relative h-[140px] w-[40px] flex justify-center">
                     <div className="slider-track h-full" />
                     <input
                       type="range"
@@ -93,12 +93,12 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       step="0.01"
                       value={storeParams.speed}
                       onChange={(e) => setParam("speed", parseFloat(e.target.value))}
-                      className="absolute w-[120px] h-[32px]"
+                      className="absolute w-[140px] h-[40px]"
                       style={{
                         transform: "rotate(-90deg)",
                         transformOrigin: "center",
-                        top: "44px",
-                        left: "-44px",
+                        top: "50px",
+                        left: "-50px",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
@@ -106,12 +106,12 @@ export default function SharePage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div className="label">SPEED</div>
-                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(255,115,0,0.4)" }}>{rate.toFixed(2)}X</span>
+                  <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{rate.toFixed(2)}X</span>
                 </div>
 
                 {/* Reverb slider */}
                 <div className="flex flex-col items-center gap-2">
-                  <div className="relative h-[120px] w-[32px] flex justify-center">
+                  <div className="relative h-[140px] w-[40px] flex justify-center">
                     <div className="slider-track h-full" />
                     <input
                       type="range"
@@ -120,12 +120,12 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       step="0.01"
                       value={storeParams.reverb}
                       onChange={(e) => setParam("reverb", parseFloat(e.target.value))}
-                      className="absolute w-[120px] h-[32px]"
+                      className="absolute w-[140px] h-[40px]"
                       style={{
                         transform: "rotate(-90deg)",
                         transformOrigin: "center",
-                        top: "44px",
-                        left: "-44px",
+                        top: "50px",
+                        left: "-50px",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
@@ -133,12 +133,12 @@ export default function SharePage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div className="label">REVERB</div>
-                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(255,115,0,0.4)" }}>{reverbPct}%</span>
+                  <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{reverbPct}%</span>
                 </div>
 
                 {/* Tone slider */}
                 <div className="flex flex-col items-center gap-2">
-                  <div className="relative h-[120px] w-[32px] flex justify-center">
+                  <div className="relative h-[140px] w-[40px] flex justify-center">
                     <div className="slider-track h-full" />
                     <input
                       type="range"
@@ -147,12 +147,12 @@ export default function SharePage({ params }: { params: { id: string } }) {
                       step="0.01"
                       value={storeParams.tone}
                       onChange={(e) => setParam("tone", parseFloat(e.target.value))}
-                      className="absolute w-[120px] h-[32px]"
+                      className="absolute w-[140px] h-[40px]"
                       style={{
                         transform: "rotate(-90deg)",
                         transformOrigin: "center",
-                        top: "44px",
-                        left: "-44px",
+                        top: "50px",
+                        left: "-50px",
                         WebkitAppearance: "none",
                         appearance: "none",
                         background: "transparent",
@@ -160,7 +160,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div className="label">TONE</div>
-                  <span className="text-[10px]" style={{ color: "var(--led-orange)", textShadow: "0 0 6px rgba(255,115,0,0.4)" }}>{toneLabel}</span>
+                  <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{toneLabel}</span>
                 </div>
               </div>
             </div>
