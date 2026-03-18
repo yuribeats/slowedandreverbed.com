@@ -53,7 +53,7 @@ interface AppStore {
   loadFromYouTube: (url: string) => Promise<void>;
   setParam: <K extends keyof SimpleParams>(key: K, value: SimpleParams[K]) => void;
   setParams: (params: SimpleParams) => void;
-  play: () => Promise<void>;
+  play: () => void;
   stop: () => void;
   rewind: () => void;
   fastForward: () => void;
@@ -298,12 +298,17 @@ export const useStore = create<AppStore>((set, get) => ({
     nodes.convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
   },
 
-  play: async () => {
+  play: () => {
     const { sourceBuffer, params, isPlaying, pauseOffset } = get();
     if (!sourceBuffer) return;
     if (isPlaying) get().stop();
 
-    const ctx = await ensureAudioContext();
+    // Must be synchronous in user gesture callstack for mobile
+    const ctx = getAudioContext();
+    if (ctx.state === "suspended") {
+      ctx.resume();
+    }
+
     const nodes = buildGraph(ctx, sourceBuffer, params, pauseOffset, () => {
       set({ isPlaying: false, nodes: null, pauseOffset: 0 });
     });
