@@ -94,7 +94,7 @@ const defaultDeck = (): DeckState => ({
   sourceBuffer: null,
   sourceFilename: null,
   sourceFile: null,
-  params: { ...SIMPLE_DEFAULTS },
+  params: { ...SIMPLE_DEFAULTS, speed: 0, reverb: 0, tone: 0, saturation: 0, pitch: 0, pitchSpeedLinked: true },
   isLoading: false,
   isPlaying: false,
   nodes: null,

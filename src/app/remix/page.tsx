@@ -54,7 +54,7 @@ function Deck({ id }: { id: DeckId }) {
   const removeFromBank = useRemixStore((s) => s.removeFromBank);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [stepMode, setStepMode] = useState(false);
+  const [stepMode, setStepMode] = useState(true);
   const [reverbDetail, setReverbDetail] = useState(false);
   const [toneDetail, setToneDetail] = useState(false);
   const [satDetail, setSatDetail] = useState(false);
