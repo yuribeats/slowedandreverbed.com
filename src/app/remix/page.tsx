@@ -58,6 +58,7 @@ function Deck({ id }: { id: DeckId }) {
   const [reverbDetail, setReverbDetail] = useState(false);
   const [toneDetail, setToneDetail] = useState(false);
   const [satDetail, setSatDetail] = useState(false);
+  const [fineness, setFineness] = useState(0.01); // seconds per unit
 
   const rate = 1.0 + deck.params.speed;
   const pitchSemitones = deck.params.pitch ?? 0;
@@ -217,6 +218,74 @@ function Deck({ id }: { id: DeckId }) {
         onSeek={(pos) => seek(id, pos)}
         onScrub={(pos) => scrub(id, pos)}
       />
+
+      {/* Loop IN/OUT fine-tune */}
+      {deck.sourceBuffer && (deck.regionStart > 0 || deck.regionEnd > 0) && (
+        <div className="zone-engraved">
+          <div className="flex items-center gap-3 justify-center">
+            {/* IN knob */}
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="label" style={{ fontSize: "8px", margin: 0 }}>IN</div>
+              <input
+                type="range"
+                min={0}
+                max={deck.sourceBuffer.duration}
+                step={fineness}
+                value={deck.regionStart}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  const end = deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer!.duration;
+                  if (v < end) setRegion(id, v, deck.regionEnd);
+                }}
+                className="w-[80px]"
+                style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
+              />
+              <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                {deck.regionStart.toFixed(3)}S
+              </span>
+            </div>
+
+            {/* OUT knob */}
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="label" style={{ fontSize: "8px", margin: 0 }}>OUT</div>
+              <input
+                type="range"
+                min={0}
+                max={deck.sourceBuffer.duration}
+                step={fineness}
+                value={deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (v > deck.regionStart) setRegion(id, deck.regionStart, v);
+                }}
+                className="w-[80px]"
+                style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
+              />
+              <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                {(deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration).toFixed(3)}S
+              </span>
+            </div>
+
+            {/* Fineness slider */}
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="label" style={{ fontSize: "8px", margin: 0 }}>FINE</div>
+              <input
+                type="range"
+                min={0.001}
+                max={0.5}
+                step={0.001}
+                value={fineness}
+                onChange={(e) => setFineness(parseFloat(e.target.value))}
+                className="w-[60px]"
+                style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
+              />
+              <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                {fineness >= 0.1 ? fineness.toFixed(1) : fineness >= 0.01 ? fineness.toFixed(2) : fineness.toFixed(3)}S
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stem isolation */}
       {deck.sourceBuffer && (
