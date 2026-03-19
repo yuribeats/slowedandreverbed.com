@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import ytdl from "@distube/ytdl-core";
-import youtubeDl from "youtube-dl-exec";
 
 export const maxDuration = 60;
 
@@ -22,7 +20,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   });
 }
 
-// Strategy order: yt-dlp → RapidAPI (paid) → ytdl-core → Cobalt
+// Strategy order: yt-proxy (Railway) → Cobalt
 export async function POST(req: NextRequest) {
   const { url } = await req.json();
 
@@ -30,29 +28,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
   }
 
-  // 1. yt-dlp (most maintained, free)
-  try {
-    const result = await withTimeout(tryYtDlp(url), STRATEGY_TIMEOUT, "yt-dlp");
-    if (result) return result;
-  } catch { /* next */ }
-
-  // 2. RapidAPI (paid — set RAPIDAPI_KEY env var)
-  if (process.env.RAPIDAPI_KEY) {
+  // 1. Self-hosted yt-dlp proxy (Railway)
+  if (process.env.YT_PROXY_URL) {
     try {
-      const result = await withTimeout(tryRapidApi(url), STRATEGY_TIMEOUT, "RapidAPI");
+      const result = await withTimeout(tryYtProxy(url), STRATEGY_TIMEOUT, "yt-proxy");
       if (result) return result;
     } catch { /* next */ }
   }
 
-  // 3. ytdl-core (free fallback)
-  if (ytdl.validateURL(url)) {
-    try {
-      const result = await withTimeout(tryYtdl(url), STRATEGY_TIMEOUT, "ytdl-core");
-      if (result) return result;
-    } catch { /* next */ }
-  }
-
-  // 4. Cobalt instances (free fallback)
+  // 2. Cobalt instances (free fallback)
   for (const instance of COBALT_INSTANCES) {
     try {
       const result = await withTimeout(tryCobalt(instance, url), STRATEGY_TIMEOUT, instance);
@@ -66,115 +50,38 @@ export async function POST(req: NextRequest) {
   );
 }
 
-function extractVideoId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
+// --- Self-hosted yt-dlp proxy (Railway) ---
+async function tryYtProxy(url: string): Promise<NextResponse | null> {
+  const proxyUrl = process.env.YT_PROXY_URL;
+  if (!proxyUrl) return null;
+
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (process.env.YT_PROXY_SECRET) {
+    headers["x-api-secret"] = process.env.YT_PROXY_SECRET;
   }
-  return null;
-}
 
-// --- yt-dlp via youtube-dl-exec ---
-async function tryYtDlp(url: string): Promise<NextResponse | null> {
-  const info = await youtubeDl(url, {
-    dumpSingleJson: true,
-    format: "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio",
-    noCheckCertificates: true,
-    noWarnings: true,
-    addHeader: [
-      "User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    ],
-  }) as Record<string, unknown>;
+  const res = await fetch(`${proxyUrl}/api/extract`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ url }),
+  });
 
-  const title = sanitizeTitle(info.title as string);
-  const audioUrl = (info.url as string) || null;
-  if (!audioUrl) return null;
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.audioUrl) return null;
 
-  const ext = (info.ext as string) || "webm";
-  const contentType = ext === "m4a" ? "audio/mp4" : ext === "webm" ? "audio/webm" : "audio/mpeg";
+  // Download the audio stream through the proxy
+  const audioRes = await fetch(`${proxyUrl}/api/download?url=${encodeURIComponent(data.audioUrl)}`, {
+    headers: process.env.YT_PROXY_SECRET ? { "x-api-secret": process.env.YT_PROXY_SECRET } : {},
+  });
+  if (!audioRes.ok) return null;
 
-  const response = await fetch(audioUrl);
-  if (!response.ok) return null;
+  const buffer = await audioRes.arrayBuffer();
+  const title = data.title?.replace(/[^\w\s-]/g, "").trim().substring(0, 80) || "youtube-audio";
 
-  const buffer = await response.arrayBuffer();
   return new NextResponse(buffer, {
     headers: {
-      "Content-Type": contentType,
-      "Content-Disposition": `attachment; filename="audio"`,
-      "X-Audio-Title": title,
-    },
-  });
-}
-
-// --- RapidAPI YouTube MP3 ---
-// Supports multiple providers via RAPIDAPI_HOST env var
-// Default: youtube-mp36.p.rapidapi.com (sign up at rapidapi.com, search "YouTube MP3")
-async function tryRapidApi(url: string): Promise<NextResponse | null> {
-  const apiKey = process.env.RAPIDAPI_KEY;
-  if (!apiKey) return null;
-
-  const videoId = extractVideoId(url);
-  if (!videoId) return null;
-
-  const host = process.env.RAPIDAPI_HOST || "youtube-mp36.p.rapidapi.com";
-  const endpoint = process.env.RAPIDAPI_ENDPOINT || `https://${host}/dl?id=${videoId}`;
-
-  const response = await fetch(endpoint, {
-    headers: {
-      "X-RapidAPI-Key": apiKey,
-      "X-RapidAPI-Host": host,
-    },
-  });
-
-  if (!response.ok) return null;
-  const data = await response.json();
-
-  if (data.status !== "ok" || !data.link) return null;
-
-  const title = sanitizeTitle(data.title);
-  const audioResponse = await fetch(data.link);
-  if (!audioResponse.ok) return null;
-
-  const buffer = await audioResponse.arrayBuffer();
-  return new NextResponse(buffer, {
-    headers: {
-      "Content-Type": "audio/mpeg",
-      "Content-Disposition": `attachment; filename="audio.mp3"`,
-      "X-Audio-Title": title,
-    },
-  });
-}
-
-// --- ytdl-core ---
-async function tryYtdl(url: string): Promise<NextResponse | null> {
-  const info = await ytdl.getInfo(url, {
-    requestOptions: {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    },
-  });
-
-  const title = sanitizeTitle(info.videoDetails.title);
-
-  const format = ytdl.chooseFormat(info.formats, {
-    quality: "highestaudio",
-    filter: "audioonly",
-  });
-
-  const response = await fetch(format.url);
-  if (!response.ok) return null;
-
-  const buffer = await response.arrayBuffer();
-  return new NextResponse(buffer, {
-    headers: {
-      "Content-Type": format.mimeType?.split(";")[0] ?? "audio/webm",
+      "Content-Type": data.contentType || "audio/webm",
       "Content-Disposition": `attachment; filename="audio"`,
       "X-Audio-Title": title,
     },
@@ -217,11 +124,3 @@ async function tryCobalt(instance: string, url: string): Promise<NextResponse | 
   return null;
 }
 
-function sanitizeTitle(raw: unknown): string {
-  return (
-    String(raw || "youtube-audio")
-      .replace(/[^\w\s-]/g, "")
-      .trim()
-      .substring(0, 80) || "youtube-audio"
-  );
-}
