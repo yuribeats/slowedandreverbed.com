@@ -1073,6 +1073,75 @@ function Sequencer() {
   );
 }
 
+function Manual({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.85)" }}>
+      <div className="console w-full max-w-[700px] max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}>MANUAL</span>
+          <button onClick={onClose} className={detailBtnClass(false)} style={detailBtnStyle}>CLOSE</button>
+        </div>
+        <div className="flex flex-col gap-3 text-[10px] leading-[1.6]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>DECKS</div>
+            <div>LOAD A TRACK INTO EACH DECK USING THE LOAD BUTTON. EACH DECK HAS INDEPENDENT CONTROLS FOR SPEED, PITCH, VOLUME, REVERB, TONE, AND SATURATION.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SPEED + PITCH</div>
+            <div>LINKED (DEFAULT): SPEED AND PITCH MOVE TOGETHER LIKE A TURNTABLE. VARISPEED.</div>
+            <div>UNLINKED: SPEED CHANGES TEMPO WITHOUT AFFECTING PITCH. PITCH SHIFTS WITHOUT AFFECTING TEMPO.</div>
+            <div>STEP: SNAPS PITCH TO SEMITONE INTERVALS.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>BPM</div>
+            <div>SELECT A 4-BAR LOOP REGION ON THE WAVEFORM, THEN HIT CALC BPM FROM LOOP. FORMULA: 240 / LOOP LENGTH IN SECONDS.</div>
+            <div>CLICK THE BPM VALUE IN THE DISPLAY TO TYPE A NEW BPM. SPEED (AND PITCH IF LINKED) ADJUSTS AUTOMATICALLY.</div>
+            <div>BPM UPDATES IN REAL TIME AS YOU ADJUST SPEED.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOOP FINE-TUNE</div>
+            <div>WHEN A REGION IS SELECTED, IN/OUT ROTARY KNOBS APPEAR. DRAG UP TO NUDGE FORWARD, DOWN TO NUDGE BACK. 0.1MS RESOLUTION OVER A +/-0.5S WINDOW.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>PIANO KEYBOARD</div>
+            <div>ONE OCTAVE SINE WAVE GENERATOR FOR FINDING THE KEY BY EAR. OVERLAY A NOTE ON YOUR SAMPLE. OCTAVE UP/DOWN BUTTONS. LATCH HOLDS A NOTE UNTIL YOU PRESS ANOTHER OR THE SAME KEY AGAIN.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOOP BANK + SEQUENCER</div>
+            <div>SELECT A REGION AND HIT ADD TO BANK TO SAVE IT. BANKED LOOPS APPEAR BELOW WITH LOAD (RECALL) AND X (DELETE).</div>
+            <div>HIT SEQ IN THE HEADER TO OPEN THE SEQUENCER. TWO TRACKS (DECK A, DECK B). ADD BANKED LOOPS TO BUILD A SEQUENCE. HIT PLAY TO PLAY THROUGH.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SYNC + LOCK</div>
+            <div>SYNC START: STARTS BOTH DECKS SIMULTANEOUSLY WITH SAMPLE-ACCURATE TIMING.</div>
+            <div>LOCK BPM: DECK A IS THE ALPHA. ADJUSTS DECK B&apos;S SPEED TO MATCH DECK A&apos;S CURRENT BPM SO LOOPS STAY IN SYNC.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>CROSSFADER</div>
+            <div>CENTER = BOTH DECKS FULL VOLUME. LEFT = DECK A ONLY. RIGHT = DECK B ONLY.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>STEM ISOLATION</div>
+            <div>CLICK VOCALS, DRUMS, BASS, OR OTHER TO ISOLATE A STEM USING ML SEPARATION (DEMUCS). FIRST USE TAKES 30-60 SECONDS. CLICK AGAIN TO TOGGLE OFF.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>OUTPUT BUS</div>
+            <div>MASTER EQ (LOW/MID/HIGH), COMPRESSOR, AND LIMITER ON THE FINAL MIX. EACH HAS A DETAIL PANEL FOR FINE CONTROL.</div>
+            <div>COMP: SINGLE KNOB MAPS TO THRESHOLD + RATIO + MAKEUP. DETAIL OVERRIDES INDIVIDUAL PARAMS.</div>
+            <div>LIMIT: BRICK-WALL LIMITER AFTER THE COMPRESSOR. DETAIL CONTROLS CEILING, RELEASE, AND KNEE.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>EFFECT DETAILS</div>
+            <div>REVERB DETAIL: WET/DRY, SIZE (DURATION), DECAY.</div>
+            <div>TONE DETAIL: 5-BAND PARAMETRIC EQ (LOW, MID, HIGH, FREQ SWEEP, PEAK GAIN).</div>
+            <div>SAT DETAIL: DRIVE, MIX, TONE (POST-SATURATION FILTER).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RemixPage() {
   const crossfader = useRemixStore((s) => s.crossfader);
   const setCrossfader = useRemixStore((s) => s.setCrossfader);
@@ -1082,6 +1151,7 @@ export default function RemixPage() {
   const sequencerOpen = useRemixStore((s) => s.sequencerOpen);
   const setSequencerOpen = useRemixStore((s) => s.setSequencerOpen);
   const lockBPM = useRemixStore((s) => s.lockBPM);
+  const [manualOpen, setManualOpen] = useState(false);
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
@@ -1105,6 +1175,13 @@ export default function RemixPage() {
                 style={detailBtnStyle}
               >
                 SEQ
+              </button>
+              <button
+                onClick={() => setManualOpen(true)}
+                className={detailBtnClass(false)}
+                style={detailBtnStyle}
+              >
+                MANUAL
               </button>
               <a
                 href="/"
@@ -1196,6 +1273,7 @@ export default function RemixPage() {
 
         <Toast />
       </div>
+      {manualOpen && <Manual onClose={() => setManualOpen(false)} />}
     </main>
   );
 }
