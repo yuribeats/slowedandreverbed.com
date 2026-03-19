@@ -1114,7 +1114,7 @@ function Manual({ onClose }: { onClose: () => void }) {
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SYNC + LOCK</div>
             <div>SYNC START: STARTS BOTH DECKS SIMULTANEOUSLY WITH SAMPLE-ACCURATE TIMING.</div>
-            <div>LOCK BPM: DECK A IS THE ALPHA. ADJUSTS DECK B&apos;S SPEED TO MATCH DECK A&apos;S CURRENT BPM SO LOOPS STAY IN SYNC.</div>
+            <div>LOCK BPM: DECK A IS THE ALPHA. ADJUSTS DECK B&apos;S SPEED TO MATCH DECK A&apos;S CURRENT BPM. WHILE LOCKED, SPEED AND PITCH CHANGES ON DECK A AUTOMATICALLY PROPAGATE TO DECK B. CLICK AGAIN TO UNLOCK.</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>CROSSFADER</div>
@@ -1151,6 +1151,7 @@ export default function RemixPage() {
   const sequencerOpen = useRemixStore((s) => s.sequencerOpen);
   const setSequencerOpen = useRemixStore((s) => s.setSequencerOpen);
   const lockBPM = useRemixStore((s) => s.lockBPM);
+  const bpmLocked = useRemixStore((s) => s.bpmLocked);
   const [manualOpen, setManualOpen] = useState(false);
 
   return (
@@ -1220,11 +1221,15 @@ export default function RemixPage() {
               <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>LOCK BPM</span>
               <button
                 onClick={() => lockBPM()}
-                disabled={!deckA.calculatedBPM || !deckB.calculatedBPM}
+                disabled={!bpmLocked && (!deckA.calculatedBPM || !deckB.calculatedBPM)}
                 className="rocker-switch"
-                style={{ width: "60px", height: "44px", opacity: (!deckA.calculatedBPM || !deckB.calculatedBPM) ? 0.4 : 1 }}
+                style={{
+                  width: "60px", height: "44px",
+                  opacity: (!bpmLocked && (!deckA.calculatedBPM || !deckB.calculatedBPM)) ? 0.4 : 1,
+                  boxShadow: bpmLocked ? "inset 0 0 8px rgba(200,169,110,0.3)" : undefined,
+                }}
               >
-                <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+                <div className={`w-1.5 h-1.5 rounded-full border-2 ${bpmLocked ? "border-[var(--accent-gold)]" : "border-[#555]"}`} />
               </button>
             </div>
           </div>

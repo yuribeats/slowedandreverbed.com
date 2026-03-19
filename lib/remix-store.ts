@@ -168,6 +168,8 @@ interface RemixStore {
   crossfader: number;
   masterBus: MasterBusParams;
 
+  bpmLocked: boolean;
+
   // Sequencer
   sequencerOpen: boolean;
   sequencerTracksA: number[];  // indices into deckA.loopBank
@@ -409,6 +411,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   deckB: defaultDeck(),
   crossfader: 0,
   masterBus: { ...defaultMasterBus },
+  bpmLocked: false,
   sequencerOpen: false,
   sequencerTracksA: [],
   sequencerTracksB: [],
@@ -584,6 +587,38 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       deck.nodes.satFilter.frequency.value = expanded.satTone;
       deck.nodes.satDry.gain.value = 1 - expanded.satMix;
       deck.nodes.satWet.gain.value = expanded.satMix;
+    }
+
+    // BPM lock: Deck A speed/pitch changes propagate to Deck B
+    if (id === "A" && get().bpmLocked && (paramKey === "speed" || paramKey === "pitch")) {
+      const { deckA, deckB } = get();
+      if (deckA.calculatedBPM && deckB.calculatedBPM) {
+        const rateA = 1.0 + deckA.params.speed;
+        const targetBPM = deckA.calculatedBPM * rateA;
+        const newRateB = targetBPM / deckB.calculatedBPM;
+        const newSpeedB = Math.max(-0.5, Math.min(0.5, newRateB - 1.0));
+
+        // Set B's speed to match A's BPM
+        const bKey = deckKey("B");
+        set((s) => ({
+          [bKey]: { ...s[bKey], params: { ...s[bKey].params, speed: newSpeedB } },
+        }));
+        const deckBFresh = getDeck(get(), "B");
+        if (deckBFresh.nodes) {
+          deckBFresh.nodes.source.playbackRate.value = 1.0 + newSpeedB;
+          if (deckBFresh.nodes.pitchShifter) {
+            const expB = expandParams(deckBFresh.params);
+            deckBFresh.nodes.pitchShifter.port.postMessage({ pitchFactor: expB.pitchFactor / expB.rate });
+          }
+        }
+
+        // If A changed pitch and B is linked, match pitch too
+        if (paramKey === "pitch" && (deckBFresh.params.pitchSpeedLinked ?? true)) {
+          set((s) => ({
+            [bKey]: { ...s[bKey], params: { ...s[bKey].params, pitch: 12 * Math.log2(1.0 + newSpeedB) } },
+          }));
+        }
+      }
     }
   },
 
@@ -917,7 +952,14 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   },
 
   lockBPM: () => {
-    const { deckA, deckB } = get();
+    const { deckA, deckB, bpmLocked } = get();
+
+    // Toggle off
+    if (bpmLocked) {
+      set({ bpmLocked: false });
+      return;
+    }
+
     if (!deckA.calculatedBPM || !deckB.calculatedBPM) return;
 
     // Deck A is alpha — match B's BPM to A's current BPM
@@ -930,5 +972,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (deckB.params.pitchSpeedLinked ?? true) {
       get().setParam("B", "pitch", 12 * Math.log2(1.0 + newSpeed));
     }
+
+    set({ bpmLocked: true });
   },
 }));
