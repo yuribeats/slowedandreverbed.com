@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const maxDuration = 300;
 
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
-const DEMUCS_MODEL = "cjwbw/demucs:25a173108cff36ef9f80f854c162d01df9e6528be175794b81571f6e5d7ce0e8";
+const DEMUCS_VERSION = "5a7041cc9b82e5a558fea6b3d7b12dea89625e89da33f0447bd727c2d0ab9e77";
 
 export async function POST(req: NextRequest) {
   if (!REPLICATE_TOKEN) {
@@ -42,9 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File upload returned no URL" }, { status: 502 });
     }
 
-    // Create prediction
-    const version = DEMUCS_MODEL.split(":")[1];
-
+    // Create prediction using ryan5453/demucs (htdemucs_ft for best quality)
     const predRes = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -52,10 +50,10 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version,
+        version: DEMUCS_VERSION,
         input: {
           audio: fileUrl,
-          stem: "none",
+          model: "htdemucs_ft",
         },
       }),
     });
@@ -73,7 +71,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No poll URL returned" }, { status: 502 });
     }
 
-    const deadline = Date.now() + 280_000; // 280s max
+    const deadline = Date.now() + 280_000;
     while (prediction.status !== "succeeded" && prediction.status !== "failed") {
       if (Date.now() > deadline) {
         return NextResponse.json({ error: "Stem separation timed out" }, { status: 504 });
@@ -94,15 +92,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Output is an object with stem URLs: { vocals, drums, bass, other }
-    // or a single URL if stem was specified
+    // Output: object with stem URLs { vocals, drums, bass, other }
     const output = prediction.output;
 
     if (!output) {
       return NextResponse.json({ error: "No output from model" }, { status: 502 });
     }
 
-    // Return URLs — client will fetch audio directly from Replicate CDN
     return NextResponse.json({
       vocals: output.vocals || null,
       drums: output.drums || null,

@@ -167,7 +167,7 @@ function Deck({ id }: { id: DeckId }) {
             <span className="label" style={{ margin: 0, fontSize: "8px" }}>
               {deck.isStemLoading ? "SEPARATING..." : "ISOLATE:"}
             </span>
-            {(["vocals", "drums", "instrumental"] as const).map((stem) => (
+            {(["vocals", "drums", "bass", "other"] as const).map((stem) => (
               <button
                 key={stem}
                 onClick={() => setStem(id, stem)}
@@ -180,7 +180,7 @@ function Deck({ id }: { id: DeckId }) {
               >
                 {deck.isStemLoading && deck.activeStem === stem
                   ? "..."
-                  : stem === "instrumental" ? "INST" : stem.toUpperCase()}
+                  : stem.toUpperCase()}
               </button>
             ))}
             {deck.stemBuffers && !deck.isStemLoading && (
