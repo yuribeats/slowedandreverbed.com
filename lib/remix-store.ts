@@ -65,6 +65,7 @@ type StemType = "vocals" | "drums" | "instrumental";
 interface DeckState {
   sourceBuffer: AudioBuffer | null;
   sourceFilename: string | null;
+  sourceFile: File | null;
   params: SimpleParams;
   isLoading: boolean;
   isPlaying: boolean;
@@ -86,6 +87,7 @@ type DeckId = "A" | "B";
 const defaultDeck = (): DeckState => ({
   sourceBuffer: null,
   sourceFilename: null,
+  sourceFile: null,
   params: { ...SIMPLE_DEFAULTS },
   isLoading: false,
   isPlaying: false,
@@ -151,6 +153,7 @@ interface RemixStore {
   eject: (deck: DeckId) => void;
   setMasterBus: <K extends keyof MasterBusParams>(key: K, value: MasterBusParams[K]) => void;
   setStem: (deck: DeckId, stem: StemType | null) => void;
+  separateStems: (deck: DeckId) => Promise<void>;
   setRegion: (deck: DeckId, start: number, end: number) => void;
   seek: (deck: DeckId, position: number) => Promise<void>;
   scrub: (deck: DeckId, position: number) => void;
@@ -344,7 +347,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFile: async (id, file) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, detectedBPM: null, detectedKey: null, activeStem: null, stemBuffers: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, detectedBPM: null, detectedKey: null, activeStem: null, stemBuffers: null, sourceFile: file } }));
     try {
       const audioBuffer = await decodeFile(file);
       const bpm = detectBPM(audioBuffer);
@@ -591,14 +594,101 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   setStem: (id, stem) => {
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
+
+    // If selecting a stem and stems aren't loaded yet, trigger separation
+    if (stem && !deck.stemBuffers) {
+      set((s) => ({ [dk]: { ...s[dk], activeStem: stem } }));
+      get().separateStems(id);
+      return;
+    }
+
     const wasPlaying = deck.isPlaying;
     if (wasPlaying) get().stop(id);
 
     set((s) => ({
-      [dk]: { ...s[dk], activeStem: stem, pauseOffset: 0 },
+      [dk]: { ...s[dk], activeStem: stem, pauseOffset: s[dk].regionStart },
     }));
 
     if (wasPlaying) get().play(id);
+  },
+
+  separateStems: async (id) => {
+    const dk = deckKey(id);
+    const deck = getDeck(get(), id);
+    if (!deck.sourceFile || deck.isStemLoading) return;
+
+    set((s) => ({ [dk]: { ...s[dk], isStemLoading: true } }));
+
+    try {
+      const formData = new FormData();
+      formData.append("audio", deck.sourceFile);
+
+      const res = await fetch("/api/stems", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Stem separation failed");
+      }
+
+      const data = await res.json();
+      const ctx = getAudioContext();
+
+      // Decode each stem from base64 to AudioBuffer
+      const decodeStem = async (b64: string | null): Promise<AudioBuffer | null> => {
+        if (!b64) return null;
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return ctx.decodeAudioData(bytes.buffer);
+      };
+
+      const [vocalsBuffer, drumsBuffer, bassBuffer, otherBuffer] = await Promise.all([
+        decodeStem(data.vocals),
+        decodeStem(data.drums),
+        decodeStem(data.bass),
+        decodeStem(data.other),
+      ]);
+
+      // Build "instrumental" by mixing bass + other + drums (everything except vocals)
+      let instrumentalBuffer: AudioBuffer | null = null;
+      const instSources = [drumsBuffer, bassBuffer, otherBuffer].filter(Boolean) as AudioBuffer[];
+      if (instSources.length > 0) {
+        const maxLen = Math.max(...instSources.map((b) => b.length));
+        const sampleRate = instSources[0].sampleRate;
+        const numCh = instSources[0].numberOfChannels;
+        instrumentalBuffer = ctx.createBuffer(numCh, maxLen, sampleRate);
+        for (let c = 0; c < numCh; c++) {
+          const out = instrumentalBuffer.getChannelData(c);
+          for (const src of instSources) {
+            if (c < src.numberOfChannels) {
+              const ch = src.getChannelData(c);
+              for (let i = 0; i < ch.length; i++) out[i] += ch[i];
+            }
+          }
+        }
+      }
+
+      const stems: Partial<Record<StemType, AudioBuffer>> = {};
+      if (vocalsBuffer) stems.vocals = vocalsBuffer;
+      if (drumsBuffer) stems.drums = drumsBuffer;
+      if (instrumentalBuffer) stems.instrumental = instrumentalBuffer;
+
+      set((s) => ({
+        [dk]: { ...s[dk], stemBuffers: stems, isStemLoading: false },
+      }));
+
+      // If a stem was already selected, restart playback with it
+      const freshDeck = getDeck(get(), id);
+      if (freshDeck.activeStem && freshDeck.isPlaying) {
+        get().stop(id);
+        get().play(id);
+      }
+    } catch {
+      set((s) => ({ [dk]: { ...s[dk], isStemLoading: false } }));
+    }
   },
 
   setMasterBus: (key, value) => {

@@ -163,18 +163,28 @@ function Deck({ id }: { id: DeckId }) {
       {/* Stem isolation */}
       {deck.sourceBuffer && (
         <div className="flex items-center gap-2 justify-center">
-          <span className="label" style={{ margin: 0, fontSize: "8px" }}>ISOLATE:</span>
+          <span className="label" style={{ margin: 0, fontSize: "8px" }}>
+            {deck.isStemLoading ? "SEPARATING..." : "ISOLATE:"}
+          </span>
           {(["vocals", "drums", "instrumental"] as const).map((stem) => (
             <button
               key={stem}
               onClick={() => setStem(id, deck.activeStem === stem ? null : stem)}
               disabled={deck.isStemLoading}
               className={detailBtnClass(deck.activeStem === stem)}
-              style={detailBtnStyle}
+              style={{
+                ...detailBtnStyle,
+                opacity: deck.isStemLoading ? 0.5 : 1,
+              }}
             >
-              {stem === "instrumental" ? "INST" : stem.toUpperCase()}
+              {deck.isStemLoading && deck.activeStem === stem
+                ? "..."
+                : stem === "instrumental" ? "INST" : stem.toUpperCase()}
             </button>
           ))}
+          {deck.stemBuffers && (
+            <span className="text-[7px]" style={{ color: "#555", fontFamily: "var(--font-tech)" }}>READY</span>
+          )}
         </div>
       )}
 
