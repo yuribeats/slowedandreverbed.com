@@ -623,7 +623,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   separateStems: async (id) => {
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
-    if (!deck.sourceFile || deck.isStemLoading) return;
+    if (!deck.sourceBuffer || deck.isStemLoading) return;
 
     const wasPlaying = deck.isPlaying;
     if (wasPlaying) get().pause(id);
@@ -631,62 +631,113 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     set((s) => ({ [dk]: { ...s[dk], isStemLoading: true, stemError: null } }));
 
     try {
-      const formData = new FormData();
-      formData.append("audio", deck.sourceFile);
-
-      const res = await fetch("/api/stems", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        let msg = "Stem separation failed";
-        try { const d = await res.json(); msg = d.error || msg; } catch { /* ok */ }
-        throw new Error(msg);
-      }
-
-      const data = await res.json();
+      const buf = deck.sourceBuffer;
+      const sr = buf.sampleRate;
+      const len = buf.length;
+      const isStereo = buf.numberOfChannels >= 2;
+      const L = buf.getChannelData(0);
+      const R = isStereo ? buf.getChannelData(1) : L;
       const ctx = getAudioContext();
 
-      // Fetch stem audio from URL and decode to AudioBuffer
-      const fetchStem = async (url: string | null): Promise<AudioBuffer | null> => {
-        if (!url) return null;
-        const audioRes = await fetch(url);
-        if (!audioRes.ok) return null;
-        const ab = await audioRes.arrayBuffer();
-        return ctx.decodeAudioData(ab);
-      };
+      // ── Vocals: center-panned content via mid extraction ──
+      // Mid = (L + R) / 2, then bandpass 200-8000Hz for voice range
+      const vocBuf = ctx.createBuffer(1, len, sr);
+      const vocData = vocBuf.getChannelData(0);
+      if (isStereo) {
+        for (let i = 0; i < len; i++) vocData[i] = (L[i] + R[i]) * 0.5;
+        // Subtract side to emphasize center
+        // Apply simple bandpass via biquad offline
+        const vocOff = new OfflineAudioContext(1, len, sr);
+        const vocSrc = vocOff.createBufferSource();
+        const tmpVocBuf = vocOff.createBuffer(1, len, sr);
+        tmpVocBuf.getChannelData(0).set(vocData);
+        vocSrc.buffer = tmpVocBuf;
+        const hp = vocOff.createBiquadFilter();
+        hp.type = "highpass"; hp.frequency.value = 150; hp.Q.value = 0.7;
+        const lp = vocOff.createBiquadFilter();
+        lp.type = "lowpass"; lp.frequency.value = 8000; lp.Q.value = 0.7;
+        vocSrc.connect(hp); hp.connect(lp); lp.connect(vocOff.destination);
+        vocSrc.start(0);
+        const vocRendered = await vocOff.startRendering();
+        vocData.set(vocRendered.getChannelData(0));
+      } else {
+        // Mono: just bandpass for voice
+        for (let i = 0; i < len; i++) vocData[i] = L[i];
+        const vocOff = new OfflineAudioContext(1, len, sr);
+        const vocSrc = vocOff.createBufferSource();
+        vocSrc.buffer = vocBuf;
+        const hp = vocOff.createBiquadFilter();
+        hp.type = "highpass"; hp.frequency.value = 150; hp.Q.value = 0.7;
+        const lp = vocOff.createBiquadFilter();
+        lp.type = "lowpass"; lp.frequency.value = 8000; lp.Q.value = 0.7;
+        vocSrc.connect(hp); hp.connect(lp); lp.connect(vocOff.destination);
+        vocSrc.start(0);
+        const vocRendered = await vocOff.startRendering();
+        vocData.set(vocRendered.getChannelData(0));
+      }
 
-      const [vocalsBuffer, drumsBuffer, bassBuffer, otherBuffer] = await Promise.all([
-        fetchStem(data.vocals),
-        fetchStem(data.drums),
-        fetchStem(data.bass),
-        fetchStem(data.other),
-      ]);
-
-      // Build "instrumental" by mixing bass + other + drums (everything except vocals)
-      let instrumentalBuffer: AudioBuffer | null = null;
-      const instSources = [drumsBuffer, bassBuffer, otherBuffer].filter(Boolean) as AudioBuffer[];
-      if (instSources.length > 0) {
-        const maxLen = Math.max(...instSources.map((b) => b.length));
-        const sr = instSources[0].sampleRate;
-        const ch = instSources[0].numberOfChannels;
-        instrumentalBuffer = ctx.createBuffer(ch, maxLen, sr);
-        for (let c = 0; c < ch; c++) {
-          const out = instrumentalBuffer.getChannelData(c);
-          for (const src of instSources) {
-            if (c < src.numberOfChannels) {
-              const d = src.getChannelData(c);
-              for (let i = 0; i < d.length; i++) out[i] += d[i];
-            }
-          }
+      // ── Instrumental: side content (removes center-panned vocals) ──
+      const instBuf = ctx.createBuffer(2, len, sr);
+      const instL = instBuf.getChannelData(0);
+      const instR = instBuf.getChannelData(1);
+      if (isStereo) {
+        // Karaoke technique: remove center by subtracting mid
+        const mid = new Float32Array(len);
+        for (let i = 0; i < len; i++) mid[i] = (L[i] + R[i]) * 0.5;
+        for (let i = 0; i < len; i++) {
+          instL[i] = L[i] - mid[i] * 0.8; // keep some center for fullness
+          instR[i] = R[i] - mid[i] * 0.8;
         }
+      } else {
+        // Mono: can't separate, just copy
+        instL.set(L);
+        instR.set(L);
+      }
+
+      // ── Drums: transient emphasis via envelope follower ──
+      const drumBuf = ctx.createBuffer(1, len, sr);
+      const drumData = drumBuf.getChannelData(0);
+      // Mix to mono
+      const monoMix = new Float32Array(len);
+      for (let i = 0; i < len; i++) monoMix[i] = (L[i] + R[i]) * 0.5;
+
+      // Offline render: highpass at 60Hz + bandpass emphasis 2-10kHz for attack
+      const drumOff = new OfflineAudioContext(1, len, sr);
+      const drumSrc = drumOff.createBufferSource();
+      const tmpDrumBuf = drumOff.createBuffer(1, len, sr);
+      tmpDrumBuf.getChannelData(0).set(monoMix);
+      drumSrc.buffer = tmpDrumBuf;
+      const drumHP = drumOff.createBiquadFilter();
+      drumHP.type = "highpass"; drumHP.frequency.value = 60; drumHP.Q.value = 0.5;
+      const drumPeak = drumOff.createBiquadFilter();
+      drumPeak.type = "peaking"; drumPeak.frequency.value = 4000; drumPeak.Q.value = 0.8; drumPeak.gain.value = 6;
+      const drumLP = drumOff.createBiquadFilter();
+      drumLP.type = "lowpass"; drumLP.frequency.value = 12000; drumLP.Q.value = 0.5;
+      drumSrc.connect(drumHP); drumHP.connect(drumPeak); drumPeak.connect(drumLP); drumLP.connect(drumOff.destination);
+      drumSrc.start(0);
+      const drumRendered = await drumOff.startRendering();
+      const rendered = drumRendered.getChannelData(0);
+
+      // Transient gate: compute envelope, emphasize transients
+      const envAttack = Math.round(sr * 0.001); // 1ms
+      const envRelease = Math.round(sr * 0.05); // 50ms
+      let envelope = 0;
+      for (let i = 0; i < len; i++) {
+        const abs = Math.abs(rendered[i]);
+        if (abs > envelope) {
+          envelope += (abs - envelope) / envAttack;
+        } else {
+          envelope += (abs - envelope) / envRelease;
+        }
+        // Gate: emphasize when envelope is rising (transient)
+        const gate = Math.min(1, envelope * 3);
+        drumData[i] = rendered[i] * gate;
       }
 
       const stems: Partial<Record<StemType, AudioBuffer>> = {};
-      if (vocalsBuffer) stems.vocals = vocalsBuffer;
-      if (drumsBuffer) stems.drums = drumsBuffer;
-      if (instrumentalBuffer) stems.instrumental = instrumentalBuffer;
+      stems.vocals = vocBuf;
+      stems.drums = drumBuf;
+      stems.instrumental = instBuf;
 
       set((s) => ({
         [dk]: { ...s[dk], stemBuffers: stems, isStemLoading: false },
