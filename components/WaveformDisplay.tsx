@@ -333,18 +333,20 @@ export default function WaveformDisplay({
       ctx.fillText(`${zoom.toFixed(1)}X`, w - 4, 10);
     }
 
-    if (isPlaying) {
-      animRef.current = requestAnimationFrame(draw);
-    }
   }, [audioBuffer, isPlaying, pauseOffset, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime]);
 
+  // Animation loop — only useEffect controls scheduling, draw never self-schedules
   useEffect(() => {
-    draw();
-    if (isPlaying) {
-      animRef.current = requestAnimationFrame(draw);
-    }
+    let frameId: number | null = null;
+    const animate = () => {
+      draw();
+      if (isPlaying) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+    animate();
     return () => {
-      if (animRef.current) cancelAnimationFrame(animRef.current);
+      if (frameId !== null) cancelAnimationFrame(frameId);
     };
   }, [draw, isPlaying]);
 
