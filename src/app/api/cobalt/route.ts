@@ -9,6 +9,7 @@ const COBALT_INSTANCES = [
 ];
 
 const STRATEGY_TIMEOUT = 15_000; // 15s per strategy
+const PROXY_TIMEOUT = 60_000; // proxy needs time for yt-dlp + stream
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   // 1. Self-hosted yt-dlp proxy (Railway)
   if (process.env.YT_PROXY_URL) {
     try {
-      const result = await withTimeout(tryYtProxy(url), STRATEGY_TIMEOUT, "yt-proxy");
+      const result = await withTimeout(tryYtProxy(url), PROXY_TIMEOUT, "yt-proxy");
       if (result) return result;
     } catch { /* next */ }
   }
@@ -60,28 +61,21 @@ async function tryYtProxy(url: string): Promise<NextResponse | null> {
     headers["x-api-secret"] = process.env.YT_PROXY_SECRET;
   }
 
-  const res = await fetch(`${proxyUrl}/api/extract`, {
+  const res = await fetch(`${proxyUrl}/api/download`, {
     method: "POST",
     headers,
     body: JSON.stringify({ url }),
   });
 
   if (!res.ok) return null;
-  const data = await res.json();
-  if (!data.audioUrl) return null;
 
-  // Download the audio stream through the proxy
-  const audioRes = await fetch(`${proxyUrl}/api/download?url=${encodeURIComponent(data.audioUrl)}`, {
-    headers: process.env.YT_PROXY_SECRET ? { "x-api-secret": process.env.YT_PROXY_SECRET } : {},
-  });
-  if (!audioRes.ok) return null;
-
-  const buffer = await audioRes.arrayBuffer();
-  const title = data.title?.replace(/[^\w\s-]/g, "").trim().substring(0, 80) || "youtube-audio";
+  const buffer = await res.arrayBuffer();
+  const title = res.headers.get("X-Audio-Title") || "youtube-audio";
+  const ct = res.headers.get("Content-Type") || "audio/webm";
 
   return new NextResponse(buffer, {
     headers: {
-      "Content-Type": data.contentType || "audio/webm",
+      "Content-Type": ct,
       "Content-Disposition": `attachment; filename="audio"`,
       "X-Audio-Title": title,
     },
