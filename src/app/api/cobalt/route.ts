@@ -10,6 +10,18 @@ const COBALT_INSTANCES = [
   "https://cobalt-api.ayo.tf",
 ];
 
+const STRATEGY_TIMEOUT = 15_000; // 15s per strategy
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
 // Strategy order: yt-dlp → RapidAPI (paid) → ytdl-core → Cobalt
 export async function POST(req: NextRequest) {
   const { url } = await req.json();
@@ -20,14 +32,14 @@ export async function POST(req: NextRequest) {
 
   // 1. yt-dlp (most maintained, free)
   try {
-    const result = await tryYtDlp(url);
+    const result = await withTimeout(tryYtDlp(url), STRATEGY_TIMEOUT, "yt-dlp");
     if (result) return result;
   } catch { /* next */ }
 
   // 2. RapidAPI (paid — set RAPIDAPI_KEY env var)
   if (process.env.RAPIDAPI_KEY) {
     try {
-      const result = await tryRapidApi(url);
+      const result = await withTimeout(tryRapidApi(url), STRATEGY_TIMEOUT, "RapidAPI");
       if (result) return result;
     } catch { /* next */ }
   }
@@ -35,7 +47,7 @@ export async function POST(req: NextRequest) {
   // 3. ytdl-core (free fallback)
   if (ytdl.validateURL(url)) {
     try {
-      const result = await tryYtdl(url);
+      const result = await withTimeout(tryYtdl(url), STRATEGY_TIMEOUT, "ytdl-core");
       if (result) return result;
     } catch { /* next */ }
   }
@@ -43,7 +55,7 @@ export async function POST(req: NextRequest) {
   // 4. Cobalt instances (free fallback)
   for (const instance of COBALT_INSTANCES) {
     try {
-      const result = await tryCobalt(instance, url);
+      const result = await withTimeout(tryCobalt(instance, url), STRATEGY_TIMEOUT, instance);
       if (result) return result;
     } catch { continue; }
   }
