@@ -200,6 +200,8 @@ interface RemixStore {
   setSequencerOpen: (open: boolean) => void;
   addSequencerSlot: (deck: DeckId, bankIndex: number) => void;
   removeSequencerSlot: (deck: DeckId, slotIndex: number) => void;
+  moveSequencerSlot: (deck: DeckId, fromIndex: number, toIndex: number) => void;
+  clearSequencerTrack: (deck: DeckId) => void;
   playSequencer: () => Promise<void>;
   stopSequencer: () => void;
   lockBPM: () => void;
@@ -898,6 +900,22 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       track.splice(slotIndex, 1);
       return { [trackKey]: track };
     });
+  },
+
+  moveSequencerSlot: (id, fromIndex, toIndex) => {
+    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
+    set((s) => {
+      const track = [...(s[trackKey] as number[])];
+      if (fromIndex < 0 || fromIndex >= track.length || toIndex < 0 || toIndex >= track.length) return {};
+      const [item] = track.splice(fromIndex, 1);
+      track.splice(toIndex, 0, item);
+      return { [trackKey]: track };
+    });
+  },
+
+  clearSequencerTrack: (id) => {
+    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
+    set({ [trackKey]: [] });
   },
 
   playSequencer: async () => {

@@ -957,45 +957,86 @@ function Sequencer() {
   const playing = useRemixStore((s) => s.sequencerPlaying);
   const addSlot = useRemixStore((s) => s.addSequencerSlot);
   const removeSlot = useRemixStore((s) => s.removeSequencerSlot);
+  const moveSlot = useRemixStore((s) => s.moveSequencerSlot);
+  const clearTrack = useRemixStore((s) => s.clearSequencerTrack);
   const playSeq = useRemixStore((s) => s.playSequencer);
   const stopSeq = useRemixStore((s) => s.stopSequencer);
 
+  const arrowBtn: React.CSSProperties = {
+    fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent",
+    fontSize: "9px", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center",
+    border: "1px solid #444", padding: 0, lineHeight: 1,
+  };
+
   const renderTrack = (id: "A" | "B", bank: typeof deckA.loopBank, slots: number[]) => (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
-        <span className="text-[9px] uppercase tracking-[0.15em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", minWidth: "50px" }}>
-          DECK {id}
-        </span>
+        <div className="flex flex-col items-center gap-0.5" style={{ minWidth: "40px" }}>
+          <span className="text-[9px] uppercase tracking-[0.15em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+            DECK {id}
+          </span>
+          {slots.length > 0 && (
+            <button
+              onClick={() => clearTrack(id)}
+              className="text-[6px] uppercase"
+              style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}
+            >
+              CLEAR
+            </button>
+          )}
+        </div>
         <div className="flex-1 flex items-center gap-1 overflow-x-auto py-1">
           {slots.map((bankIdx, slotIdx) => {
             const loop = bank[bankIdx];
             if (!loop) return null;
+            const dur = loop.end - loop.start;
             return (
               <div
                 key={slotIdx}
-                className="flex items-center gap-1 px-2 py-1 border border-[#333] shrink-0"
-                style={{ background: "rgba(200,169,110,0.1)" }}
+                className="flex flex-col items-center shrink-0 border border-[#333]"
+                style={{ background: "rgba(200,169,110,0.1)", minWidth: "60px" }}
               >
-                <span className="text-[7px] uppercase" style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)" }}>
-                  {loop.name}
+                <div className="flex items-center justify-between w-full px-1.5 py-1">
+                  <span className="text-[8px] uppercase" style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)" }}>
+                    {loop.name}
+                  </span>
+                  <button
+                    onClick={() => removeSlot(id, slotIdx)}
+                    className="text-[7px]"
+                    style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}
+                  >
+                    X
+                  </button>
+                </div>
+                <span className="text-[6px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>
+                  {dur.toFixed(2)}S
                 </span>
-                <button
-                  onClick={() => removeSlot(id, slotIdx)}
-                  className="text-[7px]"
-                  style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}
-                >
-                  X
-                </button>
+                <div className="flex items-center gap-1 py-0.5">
+                  <button
+                    onClick={() => moveSlot(id, slotIdx, slotIdx - 1)}
+                    disabled={slotIdx === 0}
+                    style={{ ...arrowBtn, opacity: slotIdx === 0 ? 0.2 : 1 }}
+                  >
+                    &lt;
+                  </button>
+                  <button
+                    onClick={() => moveSlot(id, slotIdx, slotIdx + 1)}
+                    disabled={slotIdx === slots.length - 1}
+                    style={{ ...arrowBtn, opacity: slotIdx === slots.length - 1 ? 0.2 : 1 }}
+                  >
+                    &gt;
+                  </button>
+                </div>
               </div>
             );
           })}
           {slots.length === 0 && (
-            <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>EMPTY</span>
+            <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>EMPTY — ADD LOOPS BELOW</span>
           )}
         </div>
       </div>
       {bank.length > 0 && (
-        <div className="flex items-center gap-1 pl-[58px]">
+        <div className="flex items-center gap-1 pl-[48px] flex-wrap">
           <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>ADD:</span>
           {bank.map((loop, i) => (
             <button
@@ -1004,13 +1045,16 @@ function Sequencer() {
               className="text-[7px] px-1.5 py-0.5 border border-[#444]"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", background: "transparent" }}
             >
-              {loop.name}
+              {loop.name} ({(loop.end - loop.start).toFixed(1)}S)
             </button>
           ))}
         </div>
       )}
     </div>
   );
+
+  const hasAnyLoops = deckA.loopBank.length > 0 || deckB.loopBank.length > 0;
+  const hasSlots = tracksA.length > 0 || tracksB.length > 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -1024,17 +1068,20 @@ function Sequencer() {
         <div className="flex items-center gap-2">
           <button
             onClick={playing ? stopSeq : playSeq}
-            disabled={tracksA.length === 0 && tracksB.length === 0}
+            disabled={!hasSlots}
             className={detailBtnClass(playing)}
-            style={{ ...detailBtnStyle, opacity: (tracksA.length === 0 && tracksB.length === 0) ? 0.4 : 1 }}
+            style={{ ...detailBtnStyle, opacity: !hasSlots ? 0.4 : 1 }}
           >
             {playing ? "STOP" : "PLAY"}
           </button>
         </div>
       </div>
-      {renderTrack("A", deckA.loopBank, tracksA)}
-      {renderTrack("B", deckB.loopBank, tracksB)}
-      {deckA.loopBank.length === 0 && deckB.loopBank.length === 0 && (
+      {hasAnyLoops ? (
+        <>
+          {deckA.loopBank.length > 0 && renderTrack("A", deckA.loopBank, tracksA)}
+          {deckB.loopBank.length > 0 && renderTrack("B", deckB.loopBank, tracksB)}
+        </>
+      ) : (
         <span className="text-[8px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>
           BANK LOOPS FROM EACH DECK TO BUILD SEQUENCES
         </span>
@@ -1118,7 +1165,6 @@ export default function RemixPage() {
   const syncPlay = useRemixStore((s) => s.syncPlay);
   const deckA = useRemixStore((s) => s.deckA);
   const deckB = useRemixStore((s) => s.deckB);
-  const sequencerOpen = useRemixStore((s) => s.sequencerOpen);
   const lockBPM = useRemixStore((s) => s.lockBPM);
   const bpmLocked = useRemixStore((s) => s.bpmLocked);
   const download = useRemixStore((s) => s.download);
@@ -1229,11 +1275,9 @@ export default function RemixPage() {
           </div>
 
           {/* Sequencer */}
-          {sequencerOpen && (
-            <div className="zone-inset boot-stagger boot-delay-3">
-              <Sequencer />
-            </div>
-          )}
+          <div className="zone-inset boot-stagger boot-delay-3">
+            <Sequencer />
+          </div>
 
           {/* Master output bus */}
           <div className="zone-inset boot-stagger boot-delay-4">
