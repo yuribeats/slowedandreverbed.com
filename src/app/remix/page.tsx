@@ -58,7 +58,6 @@ function Deck({ id }: { id: DeckId }) {
   const [reverbDetail, setReverbDetail] = useState(false);
   const [toneDetail, setToneDetail] = useState(false);
   const [satDetail, setSatDetail] = useState(false);
-  const [fineness, setFineness] = useState(0.0001); // seconds per unit
 
   const rate = 1.0 + deck.params.speed;
   const pitchSemitones = deck.params.pitch ?? 0;
@@ -219,73 +218,62 @@ function Deck({ id }: { id: DeckId }) {
         onScrub={(pos) => scrub(id, pos)}
       />
 
-      {/* Loop IN/OUT fine-tune */}
-      {deck.sourceBuffer && (deck.regionStart > 0 || deck.regionEnd > 0) && (
-        <div className="zone-engraved">
-          <div className="flex items-center gap-3 justify-center">
-            {/* IN knob */}
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="label" style={{ fontSize: "8px", margin: 0 }}>IN</div>
-              <input
-                type="range"
-                min={0}
-                max={deck.sourceBuffer.duration}
-                step={fineness}
-                value={deck.regionStart}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  const end = deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer!.duration;
-                  if (v < end) setRegion(id, v, deck.regionEnd);
-                }}
-                className="w-[80px]"
-                style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
-              />
-              <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                {deck.regionStart.toFixed(5)}S
-              </span>
-            </div>
-
-            {/* OUT knob */}
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="label" style={{ fontSize: "8px", margin: 0 }}>OUT</div>
-              <input
-                type="range"
-                min={0}
-                max={deck.sourceBuffer.duration}
-                step={fineness}
-                value={deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  if (v > deck.regionStart) setRegion(id, deck.regionStart, v);
-                }}
-                className="w-[80px]"
-                style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
-              />
-              <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                {(deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration).toFixed(5)}S
-              </span>
-            </div>
-
-            {/* Fineness slider */}
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="label" style={{ fontSize: "8px", margin: 0 }}>FINE</div>
-              <input
-                type="range"
-                min={0.00001}
-                max={0.1}
-                step={0.00001}
-                value={fineness}
-                onChange={(e) => setFineness(parseFloat(e.target.value))}
-                className="w-[60px]"
-                style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
-              />
-              <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                {fineness >= 0.001 ? (fineness * 1000).toFixed(1) + "MS" : (fineness * 1000000).toFixed(0) + "US"}
-              </span>
+      {/* Loop IN/OUT fine-tune — ±0.5s window centered on current point */}
+      {deck.sourceBuffer && (deck.regionStart > 0 || deck.regionEnd > 0) && (() => {
+        const dur = deck.sourceBuffer!.duration;
+        const inVal = deck.regionStart;
+        const outVal = deck.regionEnd > 0 ? deck.regionEnd : dur;
+        const window = 0.5;
+        const step = 0.0001;
+        const inMin = Math.max(0, inVal - window);
+        const inMax = Math.min(outVal - step, inVal + window);
+        const outMin = Math.max(inVal + step, outVal - window);
+        const outMax = Math.min(dur, outVal + window);
+        return (
+          <div className="zone-engraved">
+            <div className="flex items-center gap-4 justify-center">
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="label" style={{ fontSize: "8px", margin: 0 }}>IN</div>
+                <input
+                  type="range"
+                  min={inMin}
+                  max={inMax}
+                  step={step}
+                  value={inVal}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (v < outVal) setRegion(id, v, deck.regionEnd);
+                  }}
+                  className="w-[120px]"
+                  style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
+                />
+                <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                  {inVal.toFixed(4)}S
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="label" style={{ fontSize: "8px", margin: 0 }}>OUT</div>
+                <input
+                  type="range"
+                  min={outMin}
+                  max={outMax}
+                  step={step}
+                  value={outVal}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (v > inVal) setRegion(id, deck.regionStart, v);
+                  }}
+                  className="w-[120px]"
+                  style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "20px" }}
+                />
+                <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                  {outVal.toFixed(4)}S
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Stem isolation */}
       {deck.sourceBuffer && (
