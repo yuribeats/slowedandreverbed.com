@@ -50,6 +50,8 @@ function Deck({ id }: { id: DeckId }) {
   const seek = useRemixStore((s) => s.seek);
   const scrub = useRemixStore((s) => s.scrub);
   const calculateBPMFromLoop = useRemixStore((s) => s.calculateBPMFromLoop);
+  const addLoopToBank = useRemixStore((s) => s.addLoopToBank);
+  const removeFromBank = useRemixStore((s) => s.removeFromBank);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [stepMode, setStepMode] = useState(false);
@@ -209,18 +211,59 @@ function Deck({ id }: { id: DeckId }) {
         </div>
       )}
 
-      {/* BPM from loop + Key finder */}
+      {/* BPM from loop + Key finder + Loop bank */}
       {deck.sourceBuffer && (
-        <div className="flex items-center gap-4 justify-center">
-          <button
-            onClick={() => calculateBPMFromLoop(id)}
-            disabled={deck.regionStart === 0 && deck.regionEnd === 0}
-            className={detailBtnClass(false)}
-            style={{ ...detailBtnStyle, opacity: (deck.regionStart === 0 && deck.regionEnd === 0) ? 0.4 : 1 }}
-          >
-            CALC BPM FROM LOOP
-          </button>
-          <PianoKeyboard />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-4 justify-center">
+            <button
+              onClick={() => calculateBPMFromLoop(id)}
+              disabled={deck.regionStart === 0 && deck.regionEnd === 0}
+              className={detailBtnClass(false)}
+              style={{ ...detailBtnStyle, opacity: (deck.regionStart === 0 && deck.regionEnd === 0) ? 0.4 : 1 }}
+            >
+              CALC BPM FROM LOOP
+            </button>
+            <button
+              onClick={() => addLoopToBank(id)}
+              disabled={deck.regionStart === 0 && deck.regionEnd === 0}
+              className={detailBtnClass(false)}
+              style={{ ...detailBtnStyle, opacity: (deck.regionStart === 0 && deck.regionEnd === 0) ? 0.4 : 1 }}
+            >
+              ADD TO BANK
+            </button>
+            <PianoKeyboard />
+          </div>
+          {deck.loopBank.length > 0 && (
+            <div className="flex flex-wrap gap-1 justify-center">
+              {deck.loopBank.map((loop, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-1 px-1.5 py-0.5 border border-[#333]"
+                  style={{ background: "rgba(200,169,110,0.08)" }}
+                >
+                  <span className="text-[7px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                    {loop.name} ({(loop.end - loop.start).toFixed(1)}S)
+                  </span>
+                  <button
+                    onClick={() => {
+                      setRegion(id, loop.start, loop.end);
+                    }}
+                    className="text-[7px]"
+                    style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)" }}
+                  >
+                    LOAD
+                  </button>
+                  <button
+                    onClick={() => removeFromBank(id, i)}
+                    className="text-[7px]"
+                    style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -252,9 +295,9 @@ function Deck({ id }: { id: DeckId }) {
         </div>
       </div>
 
-      {/* Effect faders */}
+      {/* Speed / Pitch / Volume */}
       <div className="zone-engraved">
-        <div className="grid grid-cols-5 gap-2" style={{ justifyItems: "center" }}>
+        <div className="grid grid-cols-3 gap-2" style={{ justifyItems: "center" }}>
           {/* Speed */}
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
@@ -289,6 +332,27 @@ function Deck({ id }: { id: DeckId }) {
             <button onClick={() => setStepMode(!stepMode)} className={detailBtnClass(stepMode)} style={detailBtnStyle}>STEP</button>
           </div>
 
+          {/* Volume */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="relative h-[100px] w-[36px] flex justify-center">
+              <div className="slider-track h-full" />
+              <input
+                type="range" min="0" max="1" step="0.01"
+                value={deck.volume}
+                onChange={(e) => setVolume(id, parseFloat(e.target.value))}
+                className="absolute h-full"
+                style={{ ...faderStyle, width: "36px" }}
+              />
+            </div>
+            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>VOL</div>
+            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.volume * 100)}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Reverb / Tone / Saturation */}
+      <div className="zone-engraved">
+        <div className="grid grid-cols-3 gap-2" style={{ justifyItems: "center" }}>
           {/* Reverb */}
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
@@ -490,21 +554,6 @@ function Deck({ id }: { id: DeckId }) {
         </div>
       )}
 
-      {/* Volume fader */}
-      <div className="zone-inset flex items-center gap-3 justify-center py-3">
-        <div className="label" style={{ margin: 0, fontSize: "9px", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>VOL</div>
-        <div className="relative h-[120px] w-[40px] flex justify-center">
-          <div className="slider-track h-full" />
-          <input
-            type="range" min="0" max="1" step="0.01"
-            value={deck.volume}
-            onChange={(e) => setVolume(id, parseFloat(e.target.value))}
-            className="absolute h-full"
-            style={faderStyle}
-          />
-        </div>
-        <span className="text-[10px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.volume * 100)}%</span>
-      </div>
     </div>
   );
 }
@@ -513,8 +562,10 @@ function MasterBus() {
   const masterBus = useRemixStore((s) => s.masterBus);
   const setMasterBus = useRemixStore((s) => s.setMasterBus);
   const [showCompDetail, setShowCompDetail] = useState(false);
+  const [showLimDetail, setShowLimDetail] = useState(false);
 
   const compPct = Math.round(masterBus.compAmount * 100);
+  const limPct = Math.round(masterBus.limiterAmount * 100);
 
   // Compute displayed compressor values
   const amt = masterBus.compAmount;
@@ -524,6 +575,12 @@ function MasterBus() {
   const release = masterBus.compRelease ?? 0.15;
   const knee = masterBus.compKnee ?? 10;
   const makeup = masterBus.compMakeup ?? (amt * 12);
+
+  // Compute displayed limiter values
+  const limAmt = masterBus.limiterAmount;
+  const limThreshold = masterBus.limiterThreshold ?? (-1 - limAmt * 12);
+  const limRelease = masterBus.limiterRelease ?? (0.01 + limAmt * 0.1);
+  const limKnee = masterBus.limiterKnee ?? 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -536,9 +593,9 @@ function MasterBus() {
         </span>
       </div>
 
-      {/* EQ + Comp faders */}
+      {/* EQ + Comp + Limiter faders */}
       <div className="zone-engraved">
-        <div className="grid grid-cols-4 gap-2" style={{ justifyItems: "center" }}>
+        <div className="grid grid-cols-5 gap-2" style={{ justifyItems: "center" }}>
           {/* Low */}
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
@@ -601,19 +658,26 @@ function MasterBus() {
             </div>
             <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>COMP</div>
             <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{compPct}%</span>
+            <button onClick={() => setShowCompDetail(!showCompDetail)} className={detailBtnClass(showCompDetail)} style={detailBtnStyle}>DETAIL</button>
+          </div>
+
+          {/* Limiter */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="relative h-[100px] w-[36px] flex justify-center">
+              <div className="slider-track h-full" />
+              <input
+                type="range" min="0" max="1" step="0.01"
+                value={masterBus.limiterAmount}
+                onChange={(e) => setMasterBus("limiterAmount", parseFloat(e.target.value))}
+                className="absolute h-full"
+                style={{ ...faderStyle, width: "36px" }}
+              />
+            </div>
+            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>LIMIT</div>
+            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{limPct}%</span>
+            <button onClick={() => setShowLimDetail(!showLimDetail)} className={detailBtnClass(showLimDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
         </div>
-      </div>
-
-      {/* Comp detail toggle */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowCompDetail(!showCompDetail)}
-          className="text-[9px] uppercase tracking-[0.15em] px-2 py-0.5 border border-[#555]"
-          style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
-        >
-          {showCompDetail ? "HIDE" : "DETAIL"}
-        </button>
       </div>
 
       {/* Comp detail panel */}
@@ -718,6 +782,156 @@ function MasterBus() {
           </div>
         </div>
       )}
+
+      {/* Limiter detail panel */}
+      {showLimDetail && (
+        <div className="zone-engraved">
+          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>LIMITER DETAIL</div>
+          <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
+            {/* Threshold */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="-20" max="0" step="0.5"
+                  value={limThreshold}
+                  onChange={(e) => setMasterBus("limiterThreshold", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>CEILING</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{limThreshold.toFixed(1)}dB</span>
+            </div>
+
+            {/* Release */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="0.001" max="0.3" step="0.001"
+                  value={limRelease}
+                  onChange={(e) => setMasterBus("limiterRelease", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>REL</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(limRelease * 1000).toFixed(0)}ms</span>
+            </div>
+
+            {/* Knee */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative h-[80px] w-[36px] flex justify-center">
+                <div className="slider-track h-full" />
+                <input
+                  type="range" min="0" max="6" step="0.5"
+                  value={limKnee}
+                  onChange={(e) => setMasterBus("limiterKnee", parseFloat(e.target.value))}
+                  className="absolute h-full"
+                  style={{ ...faderStyle, width: "36px" }}
+                />
+              </div>
+              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>KNEE</div>
+              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{limKnee.toFixed(1)}dB</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Sequencer() {
+  const deckA = useRemixStore((s) => s.deckA);
+  const deckB = useRemixStore((s) => s.deckB);
+  const tracksA = useRemixStore((s) => s.sequencerTracksA);
+  const tracksB = useRemixStore((s) => s.sequencerTracksB);
+  const playing = useRemixStore((s) => s.sequencerPlaying);
+  const addSlot = useRemixStore((s) => s.addSequencerSlot);
+  const removeSlot = useRemixStore((s) => s.removeSequencerSlot);
+  const playSeq = useRemixStore((s) => s.playSequencer);
+  const stopSeq = useRemixStore((s) => s.stopSequencer);
+
+  const renderTrack = (id: "A" | "B", bank: typeof deckA.loopBank, slots: number[]) => (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] uppercase tracking-[0.15em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", minWidth: "50px" }}>
+          DECK {id}
+        </span>
+        <div className="flex-1 flex items-center gap-1 overflow-x-auto py-1">
+          {slots.map((bankIdx, slotIdx) => {
+            const loop = bank[bankIdx];
+            if (!loop) return null;
+            return (
+              <div
+                key={slotIdx}
+                className="flex items-center gap-1 px-2 py-1 border border-[#333] shrink-0"
+                style={{ background: "rgba(200,169,110,0.1)" }}
+              >
+                <span className="text-[7px] uppercase" style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)" }}>
+                  {loop.name}
+                </span>
+                <button
+                  onClick={() => removeSlot(id, slotIdx)}
+                  className="text-[7px]"
+                  style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}
+                >
+                  X
+                </button>
+              </div>
+            );
+          })}
+          {slots.length === 0 && (
+            <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>EMPTY</span>
+          )}
+        </div>
+      </div>
+      {bank.length > 0 && (
+        <div className="flex items-center gap-1 pl-[58px]">
+          <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>ADD:</span>
+          {bank.map((loop, i) => (
+            <button
+              key={i}
+              onClick={() => addSlot(id, i)}
+              className="text-[7px] px-1.5 py-0.5 border border-[#444]"
+              style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", background: "transparent" }}
+            >
+              {loop.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span
+          className="text-sm tracking-[2px] uppercase"
+          style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
+        >
+          SEQUENCER
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={playing ? stopSeq : playSeq}
+            disabled={tracksA.length === 0 && tracksB.length === 0}
+            className={detailBtnClass(playing)}
+            style={{ ...detailBtnStyle, opacity: (tracksA.length === 0 && tracksB.length === 0) ? 0.4 : 1 }}
+          >
+            {playing ? "STOP" : "PLAY"}
+          </button>
+        </div>
+      </div>
+      {renderTrack("A", deckA.loopBank, tracksA)}
+      {renderTrack("B", deckB.loopBank, tracksB)}
+      {deckA.loopBank.length === 0 && deckB.loopBank.length === 0 && (
+        <span className="text-[8px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>
+          BANK LOOPS FROM EACH DECK TO BUILD SEQUENCES
+        </span>
+      )}
     </div>
   );
 }
@@ -728,6 +942,8 @@ export default function RemixPage() {
   const syncPlay = useRemixStore((s) => s.syncPlay);
   const deckA = useRemixStore((s) => s.deckA);
   const deckB = useRemixStore((s) => s.deckB);
+  const sequencerOpen = useRemixStore((s) => s.sequencerOpen);
+  const setSequencerOpen = useRemixStore((s) => s.setSequencerOpen);
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
@@ -744,13 +960,22 @@ export default function RemixPage() {
             >
               REMIX
             </span>
-            <a
-              href="/"
-              className="ml-auto text-[10px] uppercase tracking-[0.15em] px-2 py-0.5 border border-[#777]"
-              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
-            >
-              MAIN
-            </a>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={() => setSequencerOpen(!sequencerOpen)}
+                className={detailBtnClass(sequencerOpen)}
+                style={detailBtnStyle}
+              >
+                SEQ
+              </button>
+              <a
+                href="/"
+                className="text-[10px] uppercase tracking-[0.15em] px-2 py-0.5 border border-[#777]"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+              >
+                MAIN
+              </a>
+            </div>
           </div>
 
           {/* Two decks side by side */}
@@ -806,6 +1031,13 @@ export default function RemixPage() {
             </div>
             <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>CROSSFADER</div>
           </div>
+
+          {/* Sequencer */}
+          {sequencerOpen && (
+            <div className="zone-inset boot-stagger boot-delay-3">
+              <Sequencer />
+            </div>
+          )}
 
           {/* Master output bus */}
           <div className="zone-inset boot-stagger boot-delay-4">

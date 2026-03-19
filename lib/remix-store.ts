@@ -60,6 +60,12 @@ interface DeckNodes {
 
 type StemType = "vocals" | "drums" | "bass" | "other";
 
+interface BankedLoop {
+  name: string;
+  start: number;
+  end: number;
+}
+
 interface DeckState {
   sourceBuffer: AudioBuffer | null;
   sourceFilename: string | null;
@@ -78,6 +84,7 @@ interface DeckState {
   activeStem: StemType | null;
   stemBuffers: Partial<Record<StemType, AudioBuffer>> | null;
   isStemLoading: boolean;
+  loopBank: BankedLoop[];
 }
 
 type DeckId = "A" | "B";
@@ -100,6 +107,7 @@ const defaultDeck = (): DeckState => ({
   activeStem: null,
   stemBuffers: null,
   isStemLoading: false,
+  loopBank: [],
 });
 
 interface MasterBusParams {
@@ -107,13 +115,19 @@ interface MasterBusParams {
   eqMid: number;       // -20 to +20 dB
   eqHigh: number;      // -20 to +20 dB
   compAmount: number;   // 0–1 single knob
-  // Detail overrides
+  // Compressor detail overrides
   compThreshold?: number;  // -60 to 0 dB
   compRatio?: number;      // 1 to 20
   compAttack?: number;     // 0.001 to 0.5 s
   compRelease?: number;    // 0.01 to 1 s
   compKnee?: number;       // 0 to 40 dB
   compMakeup?: number;     // 0 to 24 dB
+  // Limiter
+  limiterAmount: number;   // 0–1 single knob
+  // Limiter detail overrides
+  limiterThreshold?: number;  // -20 to 0 dB
+  limiterRelease?: number;    // 0.001 to 0.3 s
+  limiterKnee?: number;       // 0 to 6 dB
 }
 
 function expandCompressor(m: MasterBusParams) {
@@ -128,11 +142,23 @@ function expandCompressor(m: MasterBusParams) {
   };
 }
 
+function expandLimiter(m: MasterBusParams) {
+  const amt = m.limiterAmount;
+  return {
+    threshold: m.limiterThreshold ?? (-1 - amt * 12), // -1 to -13 dB
+    ratio: 20,       // brick wall
+    attack: 0.001,   // 1ms — fast attack
+    release: m.limiterRelease ?? (0.01 + amt * 0.1),
+    knee: m.limiterKnee ?? 0,
+  };
+}
+
 const defaultMasterBus: MasterBusParams = {
   eqLow: 0,
   eqMid: 0,
   eqHigh: 0,
   compAmount: 0,
+  limiterAmount: 0,
 };
 
 interface RemixStore {
@@ -140,6 +166,12 @@ interface RemixStore {
   deckB: DeckState;
   crossfader: number;
   masterBus: MasterBusParams;
+
+  // Sequencer
+  sequencerOpen: boolean;
+  sequencerTracksA: number[];  // indices into deckA.loopBank
+  sequencerTracksB: number[];  // indices into deckB.loopBank
+  sequencerPlaying: boolean;
 
   loadFile: (deck: DeckId, file: File) => Promise<void>;
   play: (deck: DeckId) => Promise<void>;
@@ -157,15 +189,23 @@ interface RemixStore {
   scrub: (deck: DeckId, position: number) => void;
   syncPlay: () => Promise<void>;
   calculateBPMFromLoop: (deck: DeckId) => void;
+  addLoopToBank: (deck: DeckId) => void;
+  removeFromBank: (deck: DeckId, index: number) => void;
+  setSequencerOpen: (open: boolean) => void;
+  addSequencerSlot: (deck: DeckId, bankIndex: number) => void;
+  removeSequencerSlot: (deck: DeckId, slotIndex: number) => void;
+  playSequencer: () => Promise<void>;
+  stopSequencer: () => void;
 }
 
-/* ─── Shared output bus: merger → EQ → compressor → makeup → destination ─── */
+/* ─── Shared output bus: merger → EQ → compressor → makeup → limiter → destination ─── */
 let sharedMerger: GainNode | null = null;
 let masterLow: BiquadFilterNode | null = null;
 let masterMid: BiquadFilterNode | null = null;
 let masterHigh: BiquadFilterNode | null = null;
 let masterComp: DynamicsCompressorNode | null = null;
 let masterMakeup: GainNode | null = null;
+let masterLimiter: DynamicsCompressorNode | null = null;
 
 function getSharedMerger(): GainNode {
   const ctx = getAudioContext();
@@ -198,12 +238,20 @@ function getSharedMerger(): GainNode {
     masterMakeup = ctx.createGain();
     masterMakeup.gain.value = 1;
 
+    masterLimiter = ctx.createDynamicsCompressor();
+    masterLimiter.threshold.value = -1;
+    masterLimiter.ratio.value = 20;
+    masterLimiter.attack.value = 0.001;
+    masterLimiter.release.value = 0.01;
+    masterLimiter.knee.value = 0;
+
     sharedMerger.connect(masterLow);
     masterLow.connect(masterMid);
     masterMid.connect(masterHigh);
     masterHigh.connect(masterComp);
     masterComp.connect(masterMakeup);
-    masterMakeup.connect(ctx.destination);
+    masterMakeup.connect(masterLimiter);
+    masterLimiter.connect(ctx.destination);
   }
   return sharedMerger;
 }
@@ -337,11 +385,19 @@ function deckKey(id: DeckId): "deckA" | "deckB" {
 const deckGeneration: Record<string, number> = { A: 0, B: 0 };
 
 /* ─── Store ─── */
+/* ─── Sequencer playback sources ─── */
+let seqSourcesA: AudioBufferSourceNode[] = [];
+let seqSourcesB: AudioBufferSourceNode[] = [];
+
 export const useRemixStore = create<RemixStore>((set, get) => ({
   deckA: defaultDeck(),
   deckB: defaultDeck(),
   crossfader: 0,
   masterBus: { ...defaultMasterBus },
+  sequencerOpen: false,
+  sequencerTracksA: [],
+  sequencerTracksB: [],
+  sequencerPlaying: false,
 
   loadFile: async (id, file) => {
     const dk = deckKey(id);
@@ -706,5 +762,135 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       masterComp.knee.value = comp.knee;
       masterMakeup.gain.value = Math.pow(10, comp.makeup / 20); // dB to linear
     }
+
+    // Update limiter
+    const limKeys = ["limiterAmount", "limiterThreshold", "limiterRelease", "limiterKnee"];
+    if (limKeys.includes(key as string) && masterLimiter) {
+      const lim = expandLimiter(mb);
+      masterLimiter.threshold.value = lim.threshold;
+      masterLimiter.ratio.value = lim.ratio;
+      masterLimiter.attack.value = lim.attack;
+      masterLimiter.release.value = lim.release;
+      masterLimiter.knee.value = lim.knee;
+    }
+  },
+
+  addLoopToBank: (id) => {
+    const dk = deckKey(id);
+    const deck = getDeck(get(), id);
+    if (!deck.sourceBuffer) return;
+    const rEnd = deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration;
+    if (deck.regionStart >= rEnd) return;
+    const name = `LOOP ${deck.loopBank.length + 1}`;
+    const loop: BankedLoop = { name, start: deck.regionStart, end: rEnd };
+    set((s) => ({
+      [dk]: { ...s[dk], loopBank: [...s[dk].loopBank, loop] },
+    }));
+  },
+
+  removeFromBank: (id, index) => {
+    const dk = deckKey(id);
+    set((s) => {
+      const bank = [...s[dk].loopBank];
+      bank.splice(index, 1);
+      return { [dk]: { ...s[dk], loopBank: bank } };
+    });
+    // Also remove any sequencer references to this index
+    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
+    set((s) => ({
+      [trackKey]: (s[trackKey] as number[]).filter((i) => i !== index).map((i) => i > index ? i - 1 : i),
+    }));
+  },
+
+  setSequencerOpen: (open) => set({ sequencerOpen: open }),
+
+  addSequencerSlot: (id, bankIndex) => {
+    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
+    set((s) => ({
+      [trackKey]: [...(s[trackKey] as number[]), bankIndex],
+    }));
+  },
+
+  removeSequencerSlot: (id, slotIndex) => {
+    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
+    set((s) => {
+      const track = [...(s[trackKey] as number[])];
+      track.splice(slotIndex, 1);
+      return { [trackKey]: track };
+    });
+  },
+
+  playSequencer: async () => {
+    get().stopSequencer();
+
+    const ctx = getAudioContext();
+    if (ctx.state === "suspended") await ctx.resume();
+
+    const { deckA, deckB, sequencerTracksA, sequencerTracksB } = get();
+    const cfGains = getCrossfaderGains(get().crossfader);
+
+    // Schedule all loops for a track
+    const scheduleDeck = (
+      deck: DeckState,
+      trackSlots: number[],
+      cfGain: number
+    ): AudioBufferSourceNode[] => {
+      if (!deck.sourceBuffer || trackSlots.length === 0) return [];
+      const buf = (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
+      const expanded = expandParams(deck.params);
+      const sources: AudioBufferSourceNode[] = [];
+      let offset = 0;
+
+      for (const bankIdx of trackSlots) {
+        const loop = deck.loopBank[bankIdx];
+        if (!loop) continue;
+
+        const loopDur = loop.end - loop.start;
+        const playDur = loopDur / expanded.rate; // real-time duration at this rate
+
+        const nodes = buildDeckGraph(
+          ctx, buf, deck.params,
+          loop.start, loopDur,
+          deck.volume, cfGain,
+          () => {}
+        );
+        // Override the start time — schedule at precise offset from now
+        // buildDeckGraph already called source.start, so we stop and reschedule
+        try { nodes.source.stop(); } catch { /* ok */ }
+
+        // Create a fresh source for precise scheduling
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.playbackRate.value = expanded.rate;
+        src.connect(nodes.lowShelf);
+        src.start(ctx.currentTime + offset, loop.start, loopDur);
+        sources.push(src);
+
+        offset += playDur;
+      }
+      return sources;
+    };
+
+    seqSourcesA = scheduleDeck(deckA, sequencerTracksA, cfGains.a);
+    seqSourcesB = scheduleDeck(deckB, sequencerTracksB, cfGains.b);
+
+    set({ sequencerPlaying: true });
+
+    // Auto-stop when all sources finish
+    const allSources = [...seqSourcesA, ...seqSourcesB];
+    if (allSources.length > 0) {
+      const last = allSources[allSources.length - 1];
+      last.onended = () => {
+        set({ sequencerPlaying: false });
+      };
+    }
+  },
+
+  stopSequencer: () => {
+    for (const s of seqSourcesA) { try { s.stop(); } catch { /* ok */ } }
+    for (const s of seqSourcesB) { try { s.stop(); } catch { /* ok */ } }
+    seqSourcesA = [];
+    seqSourcesB = [];
+    set({ sequencerPlaying: false });
   },
 }));
