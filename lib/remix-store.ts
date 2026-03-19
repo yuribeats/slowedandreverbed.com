@@ -154,6 +154,7 @@ interface RemixStore {
   setRegion: (deck: DeckId, start: number, end: number) => void;
   seek: (deck: DeckId, position: number) => Promise<void>;
   scrub: (deck: DeckId, position: number) => void;
+  syncPlay: () => Promise<void>;
 }
 
 /* ─── Shared output bus: merger → EQ → compressor → makeup → destination ─── */
@@ -566,6 +567,25 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   scrub: (id, position) => {
     const dk = deckKey(id);
     set((s) => ({ [dk]: { ...s[dk], pauseOffset: position } }));
+  },
+
+  syncPlay: async () => {
+    const { deckA, deckB } = get();
+    const hasA = !!deckA.sourceBuffer;
+    const hasB = !!deckB.sourceBuffer;
+    if (!hasA && !hasB) return;
+
+    // Stop both first
+    if (hasA) get().stop("A");
+    if (hasB) get().stop("B");
+
+    const ctx = getAudioContext();
+    if (ctx.state === "suspended") await ctx.resume();
+
+    // Start both — play() is async but the actual source.start() inside
+    // happens on the same AudioContext so they'll be sample-aligned
+    if (hasA) get().play("A");
+    if (hasB) get().play("B");
   },
 
   setStem: (id, stem) => {

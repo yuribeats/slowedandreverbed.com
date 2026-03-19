@@ -662,6 +662,9 @@ function MasterBus() {
 export default function RemixPage() {
   const crossfader = useRemixStore((s) => s.crossfader);
   const setCrossfader = useRemixStore((s) => s.setCrossfader);
+  const syncPlay = useRemixStore((s) => s.syncPlay);
+  const deckA = useRemixStore((s) => s.deckA);
+  const deckB = useRemixStore((s) => s.deckB);
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
@@ -694,6 +697,21 @@ export default function RemixPage() {
             </div>
             <div className="zone-inset">
               <Deck id="B" />
+            </div>
+          </div>
+
+          {/* Sync start */}
+          <div className="flex justify-center boot-stagger boot-delay-3">
+            <div className="flex flex-col items-center">
+              <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>SYNC START</span>
+              <button
+                onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
+                disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
+                className="rocker-switch"
+                style={{ width: "60px", height: "44px" }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+              </button>
             </div>
           </div>
 
