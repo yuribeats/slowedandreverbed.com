@@ -70,7 +70,9 @@ async function tryRapidApi(url: string): Promise<NextResponse | null> {
   const data = await res.json();
   if (data.status !== "ok" || !data.link) return null;
 
-  const audioRes = await fetch(data.link);
+  const audioRes = await fetch(data.link, {
+    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+  });
   if (!audioRes.ok) return null;
 
   const buffer = await audioRes.arrayBuffer();
