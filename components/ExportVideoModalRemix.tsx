@@ -21,12 +21,14 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
     setExporting(true);
 
     try {
-      // Step 1: Generate cover image
       setStatus("GENERATING COVER...");
+      console.log("[EXPORT] Step 1: generating cover...");
       const coverBlob = await generateCover(artist.trim(), title.trim());
+      console.log("[EXPORT] Cover generated:", coverBlob.size, "bytes");
 
-      // Step 2: Send to generate-video API
       setStatus("GENERATING VIDEO...");
+      console.log("[EXPORT] Step 2: sending to /api/generate-video...");
+      console.log("[EXPORT] Audio blob:", audioBlob.size, "bytes, type:", audioBlob.type);
       const formData = new FormData();
       formData.append("audio", audioBlob, "audio.wav");
       formData.append("image", coverBlob, "cover.png");
@@ -38,13 +40,15 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
         body: formData,
       });
 
+      console.log("[EXPORT] Response status:", res.status);
       const data = await res.json();
+      console.log("[EXPORT] Response data:", JSON.stringify(data));
       if (!res.ok) {
         throw new Error(data.error || "VIDEO GENERATION FAILED");
       }
 
-      // Step 3: Download via Pinata URL
       setStatus("DOWNLOADING...");
+      console.log("[EXPORT] Step 3: downloading from", data.url);
       const a = document.createElement("a");
       a.href = data.url;
       a.download = `${defaultFilename}.mp4`;
@@ -54,11 +58,11 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
       document.body.removeChild(a);
 
       setStatus("DONE");
+      console.log("[EXPORT] Complete");
       setTimeout(() => onClose(), 2000);
     } catch (e) {
-      console.error(e);
+      console.error("[EXPORT] Error:", e);
       setStatus("ERROR: " + (e instanceof Error ? e.message : "FAILED"));
-      setTimeout(() => setStatus(""), 5000);
       setExporting(false);
     }
   };

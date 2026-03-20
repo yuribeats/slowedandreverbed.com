@@ -1095,9 +1095,11 @@ export default function Home() {
     if (!deckA.sourceBuffer || renderingMp4) return;
     setRenderingMp4(true);
     try {
+      console.log("[MP4] Starting offline render...");
       const buf = (deckA.activeStem && deckA.stemBuffers?.[deckA.activeStem]) || deckA.sourceBuffer;
       const rStart = deckA.regionStart;
       const rEnd = deckA.regionEnd > 0 ? deckA.regionEnd : buf.duration;
+      console.log("[MP4] Region:", rStart, "to", rEnd, "duration:", rEnd - rStart);
       const sr = buf.sampleRate;
       const s0 = Math.floor(rStart * sr);
       const s1 = Math.ceil(rEnd * sr);
@@ -1107,6 +1109,7 @@ export default function Home() {
         channelData.push(buf.getChannelData(c).slice(s0, s1));
       }
       const expanded = expandParams(deckA.params);
+      console.log("[MP4] Rendering offline with rate:", expanded.rate);
       const result = await renderOffline({
         channelData,
         sampleRate: sr,
@@ -1114,6 +1117,7 @@ export default function Home() {
         length,
         params: expanded,
       });
+      console.log("[MP4] Offline render done, length:", result.length);
       const offCtx = new OfflineAudioContext(result.numberOfChannels, result.length, result.sampleRate);
       const mixBuf = offCtx.createBuffer(result.numberOfChannels, result.length, result.sampleRate);
       for (let c = 0; c < result.numberOfChannels; c++) {
@@ -1125,9 +1129,10 @@ export default function Home() {
       src.start(0);
       const rendered = await offCtx.startRendering();
       const wavBlob = encodeWAV(rendered);
+      console.log("[MP4] WAV blob created:", wavBlob.size, "bytes");
       setMp4ExportBlob(wavBlob);
     } catch (e) {
-      console.error("MP4 render error:", e);
+      console.error("[MP4] Render error:", e);
     } finally {
       setRenderingMp4(false);
     }
