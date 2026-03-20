@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { PinataSDK } from "pinata";
 
+export const dynamic = "force-dynamic";
+
 function getPinata() {
   return new PinataSDK({
     pinataJwt: process.env.PINATA_JWT!,

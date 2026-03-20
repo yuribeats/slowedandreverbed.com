@@ -12,6 +12,8 @@ interface GalleryItem {
   createdAt: string;
 }
 
+const textStyle: React.CSSProperties = { fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, color: "#000" };
+
 export default function GalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,25 +29,22 @@ export default function GalleryPage() {
   }, []);
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 sm:p-8">
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: "#fff" }}>
       <div className="w-full max-w-[1100px] flex flex-col gap-5">
-        <div className="console flex flex-col gap-5">
+        <div className="flex flex-col gap-5">
           {/* Header */}
-          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1">
-            <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
-              <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
-            </div>
+          <div className="flex items-center gap-4 px-3">
             <span
               className="text-lg sm:text-xl tracking-[2px] uppercase"
-              style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
+              style={textStyle}
             >
               GALLERY
             </span>
             <div className="ml-auto">
               <Link
                 href="/"
-                className="text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 border border-[#777]"
-                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
+                style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
               >
                 BACK
               </Link>
@@ -56,21 +55,21 @@ export default function GalleryPage() {
           {loading ? (
             <div
               className="text-[11px] uppercase tracking-wider text-center py-8"
-              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+              style={textStyle}
             >
               LOADING...
             </div>
           ) : items.length === 0 ? (
             <div
               className="text-[11px] uppercase tracking-wider text-center py-8"
-              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", opacity: 0.5 }}
+              style={{ ...textStyle, opacity: 0.5 }}
             >
               NO EXPORTS YET
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 boot-stagger boot-delay-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((item) => (
-                <div key={item.id} className="zone-inset flex flex-col gap-2">
+                <div key={item.id} className="flex flex-col gap-2 border-2 border-black p-2">
                   <video
                     src={item.url}
                     controls
@@ -78,22 +77,22 @@ export default function GalleryPage() {
                     className="w-full aspect-square object-cover"
                     style={{ background: "#000" }}
                   />
-                  <div className="flex flex-col gap-0.5 px-1">
+                  <div className="flex flex-col gap-0.5">
                     <span
-                      className="text-[11px] uppercase tracking-wider truncate"
-                      style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)" }}
+                      className="text-[13px] uppercase tracking-wider truncate"
+                      style={textStyle}
                     >
                       {item.artist}
                     </span>
                     <span
-                      className="text-[10px] uppercase tracking-wider truncate"
-                      style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+                      className="text-[11px] uppercase tracking-wider truncate"
+                      style={{ ...textStyle, opacity: 0.7 }}
                     >
                       {item.title}
                     </span>
                     <span
-                      className="text-[8px] uppercase tracking-wider"
-                      style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", opacity: 0.4 }}
+                      className="text-[9px] uppercase tracking-wider"
+                      style={{ ...textStyle, opacity: 0.4 }}
                     >
                       {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
                     </span>
