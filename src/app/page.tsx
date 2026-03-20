@@ -1157,7 +1157,6 @@ export default function Home() {
               SLOWED AND REVERBED MACHINE
             </span>
             <div className="ml-auto flex items-center gap-2">
-              <Link href="/remix" className={detailBtnClass(false)} style={detailBtnStyle}>REMIX</Link>
               <Link href="/gallery" className={detailBtnClass(false)} style={detailBtnStyle}>GALLERY</Link>
               <button
                 onClick={() => setSeqOpen(!seqOpen)}

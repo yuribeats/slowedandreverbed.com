@@ -1264,7 +1264,6 @@ export default function RemixPage() {
               REMIX
             </span>
             <div className="ml-auto flex items-center gap-2">
-              <Link href="/" className={detailBtnClass(false)} style={detailBtnStyle}>MAIN</Link>
               <Link href="/gallery" className={detailBtnClass(false)} style={detailBtnStyle}>GALLERY</Link>
               <button
                 onClick={() => setSeqOpen(!seqOpen)}
