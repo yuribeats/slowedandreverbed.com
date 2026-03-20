@@ -41,11 +41,12 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
       });
 
       console.log("[EXPORT] Response status:", res.status);
-      const data = await res.json();
-      console.log("[EXPORT] Response data:", JSON.stringify(data));
+      const text = await res.text();
+      console.log("[EXPORT] Response body:", text.substring(0, 500));
       if (!res.ok) {
-        throw new Error(data.error || "VIDEO GENERATION FAILED");
+        throw new Error(`SERVER ${res.status}: ${text.substring(0, 100)}`);
       }
+      const data = JSON.parse(text);
 
       setStatus("DOWNLOADING...");
       console.log("[EXPORT] Step 3: downloading from", data.url);
