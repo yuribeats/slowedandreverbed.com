@@ -27,16 +27,19 @@ function runFfmpeg(args: string[]): Promise<{ stdout: string; stderr: string }> 
 }
 
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const audioFile = formData.get("audio") as File | null;
-  const imageFile = formData.get("image") as File | null;
-  const artist = (formData.get("artist") as string) || "UNKNOWN";
-  const title = (formData.get("title") as string) || "UNTITLED";
+  const body = await request.json();
+  const { audioCid, imageCid, artist, title } = body as {
+    audioCid: string;
+    imageCid: string;
+    artist: string;
+    title: string;
+  };
 
-  if (!audioFile || !imageFile) {
-    return NextResponse.json({ error: "Missing audio or image" }, { status: 400 });
+  if (!audioCid || !imageCid) {
+    return NextResponse.json({ error: "Missing audioCid or imageCid" }, { status: 400 });
   }
 
+  const gateway = process.env.PINATA_GATEWAY!;
   const id = crypto.randomUUID();
   const tmp = tmpdir();
   const audioPath = join(tmp, `${id}-audio.wav`);
@@ -44,10 +47,22 @@ export async function POST(request: NextRequest) {
   const outPath = join(tmp, `${id}-output.mp4`);
 
   try {
-    const [audioData, imgData] = await Promise.all([
-      audioFile.arrayBuffer(),
-      imageFile.arrayBuffer(),
+    // Download audio and image from Pinata
+    console.log("Downloading audio and image from Pinata...");
+    const [audioRes, imgRes] = await Promise.all([
+      fetch(`https://${gateway}/files/${audioCid}`),
+      fetch(`https://${gateway}/files/${imageCid}`),
     ]);
+
+    if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`);
+    if (!imgRes.ok) throw new Error(`Failed to download image: ${imgRes.status}`);
+
+    const [audioData, imgData] = await Promise.all([
+      audioRes.arrayBuffer(),
+      imgRes.arrayBuffer(),
+    ]);
+
+    console.log("Audio size:", audioData.byteLength, "Image size:", imgData.byteLength);
 
     await Promise.all([
       writeFile(audioPath, Buffer.from(audioData)),
@@ -75,20 +90,20 @@ export async function POST(request: NextRequest) {
     const videoData = await readFile(outPath);
     console.log("Video size:", videoData.length, "bytes");
 
-    // Upload to Pinata instead of returning raw binary (avoids Vercel body size limit)
-    console.log("Uploading to Pinata...");
+    // Upload to Pinata
+    console.log("Uploading video to Pinata...");
     const pinata = getPinata();
     const videoFile = new File([videoData], `${id}.mp4`, { type: "video/mp4" });
     const upload = await pinata.upload.public.file(videoFile)
       .name(`driftwave-export-${id}.mp4`)
       .keyvalues({
         type: "driftwave-video",
-        artist: artist,
-        title: title,
+        artist: artist || "UNKNOWN",
+        title: title || "UNTITLED",
         createdAt: new Date().toISOString(),
       });
 
-    const videoUrl = `https://${process.env.PINATA_GATEWAY}/files/${upload.cid}`;
+    const videoUrl = `https://${gateway}/files/${upload.cid}`;
     console.log("Uploaded to Pinata:", videoUrl);
 
     // Cleanup temp files

@@ -9,6 +9,30 @@ interface Props {
   onClose: () => void;
 }
 
+async function uploadToPinata(blob: Blob, filename: string): Promise<string> {
+  // Get signed upload URL from our server
+  const urlRes = await fetch("/api/pinata-upload-url", { method: "POST" });
+  if (!urlRes.ok) throw new Error("Failed to get upload URL");
+  const { url } = await urlRes.json();
+
+  // Upload directly to Pinata using signed URL
+  const formData = new FormData();
+  formData.append("file", blob, filename);
+
+  const uploadRes = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!uploadRes.ok) {
+    const text = await uploadRes.text();
+    throw new Error(`Pinata upload failed: ${uploadRes.status} ${text.substring(0, 100)}`);
+  }
+
+  const data = await uploadRes.json();
+  return data.data?.cid || data.cid;
+}
+
 export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onClose }: Props) {
   const [artist, setArtist] = useState("");
   const [title, setTitle] = useState("");
@@ -21,35 +45,46 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
     setExporting(true);
 
     try {
+      // Step 1: Generate cover image
       setStatus("GENERATING COVER...");
-      console.log("[EXPORT] Step 1: generating cover...");
+      console.log("[EXPORT] Generating cover...");
       const coverBlob = await generateCover(artist.trim(), title.trim());
-      console.log("[EXPORT] Cover generated:", coverBlob.size, "bytes");
+      console.log("[EXPORT] Cover:", coverBlob.size, "bytes");
 
+      // Step 2: Upload audio and image to Pinata directly
+      setStatus("UPLOADING AUDIO...");
+      console.log("[EXPORT] Uploading audio:", audioBlob.size, "bytes");
+      const audioCid = await uploadToPinata(audioBlob, "audio.wav");
+      console.log("[EXPORT] Audio CID:", audioCid);
+
+      setStatus("UPLOADING COVER...");
+      console.log("[EXPORT] Uploading cover...");
+      const imageCid = await uploadToPinata(coverBlob, "cover.png");
+      console.log("[EXPORT] Image CID:", imageCid);
+
+      // Step 3: Generate video (server downloads from Pinata, runs ffmpeg)
       setStatus("GENERATING VIDEO...");
-      console.log("[EXPORT] Step 2: sending to /api/generate-video...");
-      console.log("[EXPORT] Audio blob:", audioBlob.size, "bytes, type:", audioBlob.type);
-      const formData = new FormData();
-      formData.append("audio", audioBlob, "audio.wav");
-      formData.append("image", coverBlob, "cover.png");
-      formData.append("artist", artist.trim());
-      formData.append("title", title.trim());
-
+      console.log("[EXPORT] Generating video...");
       const res = await fetch("/api/generate-video", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audioCid,
+          imageCid,
+          artist: artist.trim(),
+          title: title.trim(),
+        }),
       });
 
-      console.log("[EXPORT] Response status:", res.status);
       const text = await res.text();
-      console.log("[EXPORT] Response body:", text.substring(0, 500));
+      console.log("[EXPORT] Response:", res.status, text.substring(0, 200));
       if (!res.ok) {
         throw new Error(`SERVER ${res.status}: ${text.substring(0, 100)}`);
       }
       const data = JSON.parse(text);
 
+      // Step 4: Download
       setStatus("DOWNLOADING...");
-      console.log("[EXPORT] Step 3: downloading from", data.url);
       const a = document.createElement("a");
       a.href = data.url;
       a.download = `${defaultFilename}.mp4`;
@@ -59,7 +94,6 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
       document.body.removeChild(a);
 
       setStatus("DONE");
-      console.log("[EXPORT] Complete");
       setTimeout(() => onClose(), 2000);
     } catch (e) {
       console.error("[EXPORT] Error:", e);
