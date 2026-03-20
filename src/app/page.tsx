@@ -992,8 +992,12 @@ function Manual({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex flex-col gap-3 text-[10px] leading-[1.6]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>DECKS</div>
-            <div>LOAD A TRACK INTO EACH DECK USING THE LOAD BUTTON. EACH DECK HAS INDEPENDENT CONTROLS FOR SPEED, PITCH, VOLUME, REVERB, TONE, AND SATURATION.</div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOADING TRACKS</div>
+            <div>LOAD A TRACK INTO A DECK USING THE LOAD BUTTON (LOCAL FILE) OR PASTE A YOUTUBE URL AND HIT GO. EACH DECK HAS INDEPENDENT CONTROLS FOR SPEED, PITCH, VOLUME, REVERB, TONE, AND SATURATION.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>TWO DECKS</div>
+            <div>STARTS WITH ONE DECK. HIT ADD A SECOND DECK TO SHOW DECK B. CLICK (HIDE) ON DECK B TO COLLAPSE BACK TO SINGLE DECK. SYNC CONTROLS AND CROSSFADER ONLY APPEAR WHEN BOTH DECKS ARE VISIBLE.</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SPEED + PITCH</div>
@@ -1003,13 +1007,13 @@ function Manual({ onClose }: { onClose: () => void }) {
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>BPM</div>
-            <div>SELECT A 4-BAR LOOP REGION ON THE WAVEFORM, THEN HIT CALC BPM FROM LOOP. FORMULA: 240 / LOOP LENGTH IN SECONDS.</div>
+            <div>SELECT A LOOP REGION ON THE WAVEFORM, THEN HIT CALC BPM FROM LOOP. FORMULA: 240 / LOOP LENGTH IN SECONDS.</div>
             <div>CLICK THE BPM VALUE IN THE DISPLAY TO TYPE A NEW BPM. SPEED (AND PITCH IF LINKED) ADJUSTS AUTOMATICALLY.</div>
             <div>BPM UPDATES IN REAL TIME AS YOU ADJUST SPEED.</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOOP FINE-TUNE</div>
-            <div>WHEN A REGION IS SELECTED, IN/OUT ROTARY KNOBS APPEAR. DRAG UP TO NUDGE FORWARD, DOWN TO NUDGE BACK. 0.1MS RESOLUTION OVER A +/-0.5S WINDOW.</div>
+            <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE LOOP BOUNDARIES. STEP SIZE SLIDER ADJUSTS FROM 0.1MS TO 1S (LOGARITHMIC).</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>PIANO KEYBOARD</div>
@@ -1023,11 +1027,23 @@ function Manual({ onClose }: { onClose: () => void }) {
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SYNC + LOCK</div>
             <div>SYNC START: STARTS BOTH DECKS SIMULTANEOUSLY WITH SAMPLE-ACCURATE TIMING.</div>
-            <div>LOCK BPM: DECK A IS THE ALPHA. ADJUSTS DECK B&apos;S SPEED TO MATCH DECK A&apos;S CURRENT BPM. WHILE LOCKED, SPEED AND PITCH CHANGES ON DECK A AUTOMATICALLY PROPAGATE TO DECK B. CLICK AGAIN TO UNLOCK.</div>
+            <div>LOCK BPM: DECK A IS THE ALPHA. ADJUSTS DECK B&apos;S SPEED TO MATCH DECK A&apos;S CURRENT BPM. WHILE LOCKED, CHANGES ON DECK A PROPAGATE TO DECK B. CLICK AGAIN TO UNLOCK.</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>CROSSFADER</div>
-            <div>CENTER = BOTH DECKS FULL VOLUME. LEFT = DECK A ONLY. RIGHT = DECK B ONLY.</div>
+            <div>CENTER = BOTH DECKS FULL VOLUME. LEFT = DECK A ONLY. RIGHT = DECK B ONLY. ONLY VISIBLE WHEN BOTH DECKS ARE SHOWING.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>RECORDING</div>
+            <div>ARM THE REC BUTTON (APPEARS WITH BOTH DECKS). RECORDING STARTS ON SYNC START AND CAPTURES THE LIVE MIX. WHEN DECK A STOPS, THE RECORDING ENDS AND THE MP4 EXPORT MODAL OPENS AUTOMATICALLY.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>MP4 EXPORT</div>
+            <div>HIT MP4 IN THE HEADER TO RENDER DECK A&apos;S AUDIO WITH ALL EFFECTS APPLIED. ENTER ARTIST AND TITLE. THE VIDEO IS GENERATED WITH RANDOM COVER ART AND STORED ON PINATA. DOWNLOADS AUTOMATICALLY.</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>GALLERY</div>
+            <div>ALL EXPORTED MP4S ARE SAVED TO THE GALLERY. ACCESS IT FROM THE GALLERY LINK IN THE HEADER.</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>STEM ISOLATION</div>
@@ -1044,6 +1060,11 @@ function Manual({ onClose }: { onClose: () => void }) {
             <div>REVERB DETAIL: WET/DRY, SIZE (DURATION), DECAY.</div>
             <div>TONE DETAIL: 5-BAND PARAMETRIC EQ (LOW, MID, HIGH, FREQ SWEEP, PEAK GAIN).</div>
             <div>SAT DETAIL: DRIVE, MIX, TONE (POST-SATURATION FILTER).</div>
+          </div>
+          <div>
+            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>KEYBOARD SHORTCUTS</div>
+            <div>+ / - : ZOOM WAVEFORM IN/OUT</div>
+            <div>F : ZOOM TO FIT SELECTED REGION</div>
           </div>
         </div>
       </div>
