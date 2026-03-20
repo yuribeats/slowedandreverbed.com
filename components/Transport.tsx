@@ -6,7 +6,7 @@ import { getAudioContext } from "../lib/audio-context";
 
 const btnBase = "rocker-switch";
 
-export default function Transport() {
+export default function Transport({ onExportVideo }: { onExportVideo?: () => void }) {
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const isPlaying = useStore((s) => s.isPlaying);
   const isExporting = useStore((s) => s.isExporting);
@@ -103,15 +103,28 @@ export default function Transport() {
         </button>
       </div>
 
-      {/* Download */}
+      {/* Download WAV */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isExporting ? "WAIT" : "DOWNLOAD"}</span>
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isExporting ? "WAIT" : "WAV"}</span>
           <div className="led-cutout">
             <div className={`led-rect ${isExporting ? "led-green-on" : "led-green"}`} />
           </div>
         </div>
         <button onClick={download} disabled={off || isExporting} className={btnBase}>
+          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+        </button>
+      </div>
+
+      {/* Export MP4 */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="label" style={{ margin: 0, fontSize: "10px" }}>MP4</span>
+          <div className="led-cutout">
+            <div className="led-rect led-green" />
+          </div>
+        </div>
+        <button onClick={onExportVideo} disabled={off || isExporting} className={btnBase}>
           <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
         </button>
       </div>

@@ -7,6 +7,7 @@ import Transport from "../../components/Transport";
 import ProgressBar from "../../components/ProgressBar";
 import Playlist from "../../components/Playlist";
 import Toast from "../../components/Toast";
+import ExportVideoModal from "../../components/ExportVideoModal";
 import { useStore } from "../../lib/store";
 
 function snapToSemitone(speed: number): number {
@@ -45,6 +46,7 @@ export default function Home() {
   const [reverbDetail, setReverbDetail] = useState(false);
   const [toneDetail, setToneDetail] = useState(false);
   const [satDetail, setSatDetail] = useState(false);
+  const [showVideoExport, setShowVideoExport] = useState(false);
 
   const rate = 1.0 + params.speed;
   const semitones = 12 * Math.log2(rate);
@@ -109,7 +111,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 boot-stagger boot-delay-3">
             {/* Transport */}
             <div className="zone-inset">
-              <Transport />
+              <Transport onExportVideo={() => setShowVideoExport(true)} />
               <div className="label" style={{ fontSize: "14px", color: "var(--text-dark)" }}>TRANSPORT</div>
             </div>
 
@@ -467,6 +469,10 @@ export default function Home() {
         <Playlist />
         <Toast />
       </div>
+
+      {showVideoExport && (
+        <ExportVideoModal onClose={() => setShowVideoExport(false)} />
+      )}
     </main>
   );
 }
