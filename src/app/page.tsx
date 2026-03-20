@@ -1090,10 +1090,12 @@ export default function Home() {
   const [showDeckB, setShowDeckB] = useState(false);
   const [mp4ExportBlob, setMp4ExportBlob] = useState<Blob | null>(null);
   const [renderingMp4, setRenderingMp4] = useState(false);
+  const [mp4Error, setMp4Error] = useState("");
 
   const handleMP4 = async () => {
     if (!deckA.sourceBuffer || renderingMp4) return;
     setRenderingMp4(true);
+    setMp4Error("");
     try {
       console.log("[MP4] Starting offline render...");
       const buf = (deckA.activeStem && deckA.stemBuffers?.[deckA.activeStem]) || deckA.sourceBuffer;
@@ -1133,6 +1135,7 @@ export default function Home() {
       setMp4ExportBlob(wavBlob);
     } catch (e) {
       console.error("[MP4] Render error:", e);
+      setMp4Error(e instanceof Error ? e.message : "RENDER FAILED");
     } finally {
       setRenderingMp4(false);
     }
@@ -1167,9 +1170,9 @@ export default function Home() {
                 onClick={handleMP4}
                 disabled={!deckA.sourceBuffer || renderingMp4}
                 className={detailBtnClass(false)}
-                style={{ ...detailBtnStyle, opacity: !deckA.sourceBuffer ? 0.4 : 1 }}
+                style={{ ...detailBtnStyle, opacity: !deckA.sourceBuffer ? 0.4 : 1, color: mp4Error ? "#c82828" : "var(--text-dark)" }}
               >
-                {renderingMp4 ? "RENDERING..." : "MP4"}
+                {renderingMp4 ? "RENDERING..." : mp4Error ? mp4Error : "MP4"}
               </button>
               <button
                 onClick={() => setManualOpen(true)}

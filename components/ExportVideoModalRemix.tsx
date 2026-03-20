@@ -131,6 +131,12 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
           {exporting ? status : "EXPORT MP4"}
         </button>
 
+        {!exporting && status && (
+          <div className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: status.startsWith("ERROR") ? "#c82828" : "var(--accent-gold)" }}>
+            {status}
+          </div>
+        )}
+
         <div className="text-[9px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
           GENERATES A VIDEO WITH YOUR RECORDED MIX + RANDOM COVER ART
         </div>
