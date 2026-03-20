@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import { useStore } from "../lib/store";
 import { getAudioContext } from "../lib/audio-context";
 
@@ -11,13 +11,16 @@ export default function Transport() {
   const isPlaying = useStore((s) => s.isPlaying);
   const isExporting = useStore((s) => s.isExporting);
   const isLoading = useStore((s) => s.isLoading);
+  const error = useStore((s) => s.error);
   const play = useStore((s) => s.play);
   const stop = useStore((s) => s.stop);
   const eject = useStore((s) => s.eject);
   const loadFile = useStore((s) => s.loadFile);
+  const loadFromYouTube = useStore((s) => s.loadFromYouTube);
   const randomize = useStore((s) => s.randomize);
   const download = useStore((s) => s.download);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [ytUrl, setYtUrl] = useState("");
 
   const off = !sourceBuffer;
 
@@ -40,7 +43,16 @@ export default function Transport() {
     [loadFile]
   );
 
+  const handleYouTube = useCallback(async () => {
+    if (!ytUrl.trim()) return;
+    const ctx = getAudioContext();
+    await ctx.resume();
+    await loadFromYouTube(ytUrl.trim());
+    setYtUrl("");
+  }, [ytUrl, loadFromYouTube]);
+
   return (
+    <div className="flex flex-col gap-3">
     <div className="flex items-center gap-4 flex-wrap justify-center">
       <input ref={inputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileSelect} />
 
@@ -103,6 +115,34 @@ export default function Transport() {
           <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
         </button>
       </div>
+    </div>
+
+    {/* YouTube URL input */}
+    <div className="flex gap-2 items-center">
+      <input
+        type="text"
+        value={ytUrl}
+        onChange={(e) => setYtUrl(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") handleYouTube(); }}
+        placeholder="PASTE YOUTUBE URL"
+        disabled={isLoading}
+        className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[11px] uppercase tracking-wider"
+        style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
+      />
+      <button
+        onClick={handleYouTube}
+        disabled={isLoading || !ytUrl.trim()}
+        className="border border-[#333] px-3 py-1 text-[10px] uppercase tracking-wider disabled:opacity-30"
+        style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+      >
+        {isLoading ? "LOADING..." : "LOAD"}
+      </button>
+    </div>
+    {error && (
+      <div className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
+        {error}
+      </div>
+    )}
     </div>
   );
 }
