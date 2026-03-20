@@ -1,29 +1,3 @@
-const MUSEUM_IMAGE_SOURCE = "https://museum.ink/imagedata.json";
-
-interface ImageEntry {
-  name: string;
-  url: string;
-}
-
-let cachedImages: ImageEntry[] | null = null;
-
-async function getRandomImage(): Promise<string> {
-  if (!cachedImages) {
-    const res = await fetch(MUSEUM_IMAGE_SOURCE);
-    const data = await res.json();
-    cachedImages = data.images || [];
-  }
-
-  if (!cachedImages || cachedImages.length === 0) {
-    throw new Error("No images available");
-  }
-
-  const entry = cachedImages[Math.floor(Math.random() * cachedImages.length)];
-  // museum images have relative URLs like /images/filename.jpg
-  const imageUrl = entry.url.startsWith("http") ? entry.url : `https://museum.ink${entry.url}`;
-  return imageUrl;
-}
-
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -65,7 +39,6 @@ export async function generateCover(
   const textWidth = SIZE - PADDING * 2;
   const artistY = PADDING;
 
-  // Stretch text to fill width
   ctx.save();
   const artistMeasure = ctx.measureText(artist.toUpperCase());
   const artistScale = textWidth / artistMeasure.width;
@@ -74,15 +47,12 @@ export async function generateCover(
   ctx.fillText(artist.toUpperCase(), 0, 0);
   ctx.restore();
 
-  // Random image (middle)
+  // Random image (middle) — fetched from our server proxy to avoid CORS
   const imageY = artistY + TEXT_HEIGHT + GAP;
   const imageHeight = SIZE - PADDING * 2 - TEXT_HEIGHT * 2 - GAP * 2;
 
   try {
-    const imageUrl = await getRandomImage();
-    const img = await loadImage(imageUrl);
-
-    // Draw image, cover-fit into the rectangle
+    const img = await loadImage("/api/random-image");
     const imgAspect = img.width / img.height;
     const boxAspect = textWidth / imageHeight;
 

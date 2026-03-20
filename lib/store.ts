@@ -51,6 +51,8 @@ interface AppStore {
   nodes: AudioNodes | null;
   startedAt: number;
   pauseOffset: number;
+  regionStart: number;
+  regionEnd: number;
 
   playlist: PlaylistItem[];
 
@@ -68,6 +70,8 @@ interface AppStore {
   loadShare: (id: string) => Promise<void>;
   loadPlaylistItem: (item: PlaylistItem) => Promise<void>;
   seek: (time: number) => void;
+  scrub: (time: number) => void;
+  setRegion: (start: number, end: number) => void;
   fetchPlaylist: () => Promise<void>;
   eject: () => void;
   clearError: () => void;
@@ -266,6 +270,8 @@ export const useStore = create<AppStore>((set, get) => ({
   nodes: null,
   startedAt: 0,
   pauseOffset: 0,
+  regionStart: 0,
+  regionEnd: 0,
 
   playlist: loadPlaylist(),
 
@@ -649,6 +655,17 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ pauseOffset: clamped });
       get().play();
     }
+  },
+
+  scrub: (time: number) => {
+    const { sourceBuffer } = get();
+    if (!sourceBuffer) return;
+    const clamped = Math.max(0, Math.min(time, sourceBuffer.duration));
+    set({ pauseOffset: clamped });
+  },
+
+  setRegion: (start: number, end: number) => {
+    set({ regionStart: start, regionEnd: end });
   },
 
   eject: () => {
