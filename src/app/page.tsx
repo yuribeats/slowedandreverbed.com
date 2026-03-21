@@ -1082,7 +1082,12 @@ export default function Home() {
   const bpmLocked = useRemixStore((s) => s.bpmLocked);
   const recordArmed = useRemixStore((s) => s.recordArmed);
   const isRecording = useRemixStore((s) => s.isRecording);
+  const isConvertingWav = useRemixStore((s) => s.isConvertingWav);
   const armRecord = useRemixStore((s) => s.armRecord);
+  const pendingRecording = useRemixStore((s) => s.pendingRecording);
+  const clearPendingRecording = useRemixStore((s) => s.clearPendingRecording);
+  const downloadRecordingWAV = useRemixStore((s) => s.downloadRecordingWAV);
+  const exportRecordingMP4 = useRemixStore((s) => s.exportRecordingMP4);
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const [manualOpen, setManualOpen] = useState(false);
@@ -1169,7 +1174,6 @@ export default function Home() {
                 <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>REC</span>
                 <button
                   onClick={() => armRecord()}
-                  disabled={isRecording}
                   className="rocker-switch"
                   style={{
                     width: "60px", height: "44px",
@@ -1189,7 +1193,7 @@ export default function Home() {
                   color: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "var(--text-dark)",
                   opacity: isRecording || recordArmed ? 1 : 0.4,
                 }}>
-                  {isRecording ? "RECORDING" : recordArmed ? "ARMED" : "OFF"}
+                  {isRecording ? "STOP" : recordArmed ? "ARMED" : "OFF"}
                 </span>
               </div>
               <div className="flex flex-col items-center">
@@ -1249,6 +1253,42 @@ export default function Home() {
                 <span className="label" style={{ margin: 0, fontSize: "10px", minWidth: "20px" }}>B</span>
               </div>
               <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>CROSSFADER</div>
+            </div>
+          )}
+
+          {/* Recording complete — export options */}
+          {pendingRecording && (
+            <div className="zone-inset flex flex-col items-center gap-3 py-4">
+              <span
+                className="text-[11px] tracking-[2px] uppercase"
+                style={{ color: "var(--accent-gold)", fontFamily: "var(--font-display)" }}
+              >
+                RECORDING COMPLETE
+              </span>
+              <div className="flex gap-4">
+                <button
+                  onClick={downloadRecordingWAV}
+                  disabled={isConvertingWav}
+                  className="border border-[var(--accent-gold)] px-4 py-2 text-[11px] uppercase tracking-wider disabled:opacity-50"
+                  style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+                >
+                  {isConvertingWav ? "CONVERTING..." : "DOWNLOAD WAV"}
+                </button>
+                <button
+                  onClick={exportRecordingMP4}
+                  className="border-2 border-[var(--accent-gold)] px-4 py-2 text-[11px] uppercase tracking-wider"
+                  style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+                >
+                  EXPORT MP4
+                </button>
+                <button
+                  onClick={clearPendingRecording}
+                  className="border border-[#333] px-4 py-2 text-[11px] uppercase tracking-wider"
+                  style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                >
+                  DISCARD
+                </button>
+              </div>
             </div>
           )}
 
