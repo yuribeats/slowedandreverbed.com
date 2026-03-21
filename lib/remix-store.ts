@@ -244,6 +244,7 @@ interface RemixStore {
   exportMP4: () => Promise<void>;
   armRecord: () => void;
   stopRecording: () => void;
+  setBPM: (deck: DeckId, bpm: number) => void;
   toggleAutomation: (deck: DeckId) => void;
   addAutomationPoint: (deck: DeckId, time: number, value: number) => void;
   removeAutomationPoint: (deck: DeckId, index: number) => void;
@@ -1036,6 +1037,15 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     // 4 bars: BPM = 240 / loopLength (no rounding — precision matters for lock)
     const bpm = 240 / loopLength;
     set((s) => ({ [dk]: { ...s[dk], calculatedBPM: bpm } }));
+  },
+
+  setBPM: (id, bpm) => {
+    const dk = deckKey(id);
+    const deck = getDeck(get(), id);
+    if (!deck.sourceBuffer || bpm <= 0) return;
+    // Store the base BPM at current speed — so calculatedBPM is the "original" BPM
+    const rate = 1.0 + deck.params.speed;
+    set((s) => ({ [dk]: { ...s[dk], calculatedBPM: bpm / rate } }));
   },
 
   setStem: (id, stem) => {

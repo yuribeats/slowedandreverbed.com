@@ -56,6 +56,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const calculateBPMFromLoop = useRemixStore((s) => s.calculateBPMFromLoop);
   const addLoopToBank = useRemixStore((s) => s.addLoopToBank);
   const removeFromBank = useRemixStore((s) => s.removeFromBank);
+  const setBPM = useRemixStore((s) => s.setBPM);
   const toggleAutomation = useRemixStore((s) => s.toggleAutomation);
   const addAutomationPoint = useRemixStore((s) => s.addAutomationPoint);
   const removeAutomationPoint = useRemixStore((s) => s.removeAutomationPoint);
@@ -115,10 +116,17 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
   const handleBPMSubmit = () => {
     const newBPM = parseFloat(bpmInput);
-    if (!deck.calculatedBPM || isNaN(newBPM) || newBPM <= 0) {
+    if (isNaN(newBPM) || newBPM <= 0) {
       setEditingBPM(false);
       return;
     }
+    if (!deck.calculatedBPM) {
+      // No BPM set yet — just set it as the base BPM
+      setBPM(id, newBPM);
+      setEditingBPM(false);
+      return;
+    }
+    // Adjust speed to match the target BPM
     const newRate = newBPM / deck.calculatedBPM;
     const newSpeed = newRate - 1.0;
     const clamped = Math.max(-0.5, Math.min(0.5, newSpeed));
@@ -210,9 +218,9 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             ) : (
               <span
                 style={{ color: "var(--crt-bright)" }}
-                onClick={() => { if (adjustedBPM) { setBpmInput(adjustedBPM.toFixed(3)); setEditingBPM(true); } }}
+                onClick={() => { setBpmInput(adjustedBPM ? adjustedBPM.toFixed(3) : ""); setEditingBPM(true); }}
               >
-                BPM: {adjustedBPM !== null ? adjustedBPM.toFixed(3) : "—"}
+                BPM: {adjustedBPM !== null ? adjustedBPM.toFixed(3) : "TAP TO SET"}
               </span>
             )}
             <span style={{ color: "var(--crt-bright)" }}>PITCH: {displaySemitones >= 0 ? "+" : ""}{displaySemitones.toFixed(1)}ST</span>
