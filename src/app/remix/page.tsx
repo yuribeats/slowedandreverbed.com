@@ -1249,6 +1249,8 @@ export default function RemixPage() {
   const exportRecordingMP4 = useRemixStore((s) => s.exportRecordingMP4);
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
+  const exportMP4 = useRemixStore((s) => s.exportMP4);
+  const isExporting = useRemixStore((s) => s.isExporting);
   const [manualOpen, setManualOpen] = useState(false);
   const [seqOpen, setSeqOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(true);
@@ -1269,6 +1271,14 @@ export default function RemixPage() {
               REMIX
             </span>
             <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={exportMP4}
+                disabled={isExporting || (!deckA.sourceBuffer && !deckB.sourceBuffer)}
+                className="border-2 border-[var(--accent-gold)] px-3 py-1 text-[10px] uppercase tracking-wider disabled:opacity-30"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+              >
+                {isExporting ? "RENDERING..." : "EXPORT MP4"}
+              </button>
               <Link href="/gallery" className={detailBtnClass(false)} style={detailBtnStyle}>GALLERY</Link>
               <button
                 onClick={() => setSeqOpen(!seqOpen)}
