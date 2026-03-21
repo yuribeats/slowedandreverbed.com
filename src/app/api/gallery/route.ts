@@ -10,6 +10,21 @@ function getPinata() {
   });
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const { id } = await request.json();
+    if (!id) {
+      return NextResponse.json({ error: "Missing file id" }, { status: 400 });
+    }
+    const pinata = getPinata();
+    await pinata.files.public.delete([id]);
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error("gallery delete error:", e);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
+}
+
 export async function GET() {
   try {
     const pinata = getPinata();

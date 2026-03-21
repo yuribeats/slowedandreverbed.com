@@ -17,6 +17,8 @@ const textStyle: React.CSSProperties = { fontFamily: "Helvetica, Arial, sans-ser
 export default function GalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     fetch("/api/gallery")
@@ -27,6 +29,21 @@ export default function GalleryPage() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  async function handleDelete(id: string) {
+    setDeleting(id);
+    try {
+      const res = await fetch("/api/gallery", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        setItems((prev) => prev.filter((item) => item.id !== id));
+      }
+    } catch {}
+    setDeleting(null);
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: "#fff" }}>
@@ -40,7 +57,14 @@ export default function GalleryPage() {
             >
               GALLERY
             </span>
-            <div className="ml-auto">
+            <div className="ml-auto flex gap-2">
+              <button
+                onClick={() => setEditMode(!editMode)}
+                className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
+                style={{ ...textStyle, fontSize: "10px", background: editMode ? "#000" : "transparent", color: editMode ? "#fff" : "#000" }}
+              >
+                {editMode ? "DONE" : "EDIT"}
+              </button>
               <Link
                 href="/"
                 className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
@@ -69,7 +93,17 @@ export default function GalleryPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((item) => (
-                <div key={item.id} className="flex flex-col gap-2 border-2 border-black p-2">
+                <div key={item.id} className="flex flex-col gap-2 border-2 border-black p-2 relative">
+                  {editMode && (
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      disabled={deleting === item.id}
+                      className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center border-2 border-black"
+                      style={{ ...textStyle, fontSize: "14px", background: "#fff", lineHeight: 1 }}
+                    >
+                      {deleting === item.id ? "..." : "X"}
+                    </button>
+                  )}
                   <video
                     src={item.url}
                     controls
