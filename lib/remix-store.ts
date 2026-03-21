@@ -588,10 +588,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       try { deck.nodes.source.stop(); } catch { /* ok */ }
     }
 
-    // Stop recording when deck A stops
-    if (id === "A" && get().isRecording) {
-      get().stopRecording();
-    }
   },
 
   pause: (id) => {
@@ -1226,7 +1222,10 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
   armRecord: () => {
     const { recordArmed, isRecording } = get();
-    if (isRecording) return; // can't arm while recording
+    if (isRecording) {
+      get().stopRecording();
+      return;
+    }
     set({ recordArmed: !recordArmed });
   },
 

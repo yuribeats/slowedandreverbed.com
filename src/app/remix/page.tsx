@@ -1317,7 +1317,6 @@ export default function RemixPage() {
               <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>REC</span>
               <button
                 onClick={() => armRecord()}
-                disabled={isRecording}
                 className="rocker-switch"
                 style={{
                   width: "60px", height: "44px",
@@ -1337,7 +1336,7 @@ export default function RemixPage() {
                 color: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "var(--text-dark)",
                 opacity: isRecording || recordArmed ? 1 : 0.4,
               }}>
-                {isRecording ? "RECORDING" : recordArmed ? "ARMED" : "OFF"}
+                {isRecording ? "STOP" : recordArmed ? "ARMED" : "OFF"}
               </span>
             </div>
             <div className="flex flex-col items-center">

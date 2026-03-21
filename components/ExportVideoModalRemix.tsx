@@ -9,28 +9,6 @@ interface Props {
   onClose: () => void;
 }
 
-async function uploadToPinata(blob: Blob, filename: string): Promise<string> {
-  const urlRes = await fetch("/api/pinata-upload-url", { method: "POST" });
-  if (!urlRes.ok) throw new Error("Failed to get upload URL");
-  const { url } = await urlRes.json();
-
-  const formData = new FormData();
-  formData.append("file", blob, filename);
-
-  const uploadRes = await fetch(url, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!uploadRes.ok) {
-    const text = await uploadRes.text();
-    throw new Error(`Pinata upload failed: ${uploadRes.status} ${text.substring(0, 100)}`);
-  }
-
-  const data = await uploadRes.json();
-  return data.data?.cid || data.cid;
-}
-
 export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onClose }: Props) {
   const [artist, setArtist] = useState("");
   const [title, setTitle] = useState("");
@@ -43,8 +21,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setCustomImage(url);
+    setCustomImage(URL.createObjectURL(file));
     setCustomImageName(file.name);
   };
 
@@ -54,33 +31,29 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
     setExporting(true);
 
     try {
+      // Step 1: Generate cover
       setStatus("GENERATING COVER...");
       const coverBlob = await generateCover(artist.trim(), title.trim(), customImage || undefined);
 
-      setStatus("UPLOADING AUDIO...");
-      const audioCid = await uploadToPinata(audioBlob, "audio.wav");
-
-      setStatus("UPLOADING COVER...");
-      const imageCid = await uploadToPinata(coverBlob, "cover.png");
-
+      // Step 2: Send audio + cover directly to generate-video
       setStatus("GENERATING VIDEO...");
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "audio.wav");
+      formData.append("image", coverBlob, "cover.png");
+      formData.append("artist", artist.trim());
+      formData.append("title", title.trim());
+
       const res = await fetch("/api/generate-video", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          audioCid,
-          imageCid,
-          artist: artist.trim(),
-          title: title.trim(),
-        }),
+        body: formData,
       });
 
-      const text = await res.text();
+      const data = await res.json();
       if (!res.ok) {
-        throw new Error(`SERVER ${res.status}: ${text.substring(0, 100)}`);
+        throw new Error(data.error || `SERVER ${res.status}`);
       }
-      const data = JSON.parse(text);
 
+      // Step 3: Download
       setStatus("DOWNLOADING...");
       const a = document.createElement("a");
       a.href = data.url;

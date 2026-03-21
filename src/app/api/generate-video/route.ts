@@ -27,16 +27,17 @@ function runFfmpeg(args: string[]): Promise<{ stdout: string; stderr: string }> 
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { audioCid, imageCid, artist, title } = body as {
-    audioCid: string;
-    imageCid: string;
-    artist: string;
-    title: string;
-  };
+  const formData = await request.formData();
+  const audioFile = formData.get("audio") as File | null;
+  const imageFile = formData.get("image") as File | null;
+  const artist = (formData.get("artist") as string) || "UNKNOWN";
+  const title = (formData.get("title") as string) || "UNTITLED";
 
-  if (!audioCid || !imageCid) {
-    return NextResponse.json({ error: "Missing audioCid or imageCid" }, { status: 400 });
+  if (!audioFile || !imageFile) {
+    return NextResponse.json(
+      { error: `Missing ${!audioFile ? "audio" : "image"} file` },
+      { status: 400 }
+    );
   }
 
   const gateway = process.env.PINATA_GATEWAY!;
@@ -47,19 +48,10 @@ export async function POST(request: NextRequest) {
   const outPath = join(tmp, `${id}-output.mp4`);
 
   try {
-    // Download audio and image from Pinata
-    console.log("Downloading audio and image from Pinata...");
-    const [audioRes, imgRes] = await Promise.all([
-      fetch(`https://${gateway}/files/${audioCid}`),
-      fetch(`https://${gateway}/files/${imageCid}`),
-    ]);
-
-    if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`);
-    if (!imgRes.ok) throw new Error(`Failed to download image: ${imgRes.status}`);
-
+    // Write uploaded files to disk
     const [audioData, imgData] = await Promise.all([
-      audioRes.arrayBuffer(),
-      imgRes.arrayBuffer(),
+      audioFile.arrayBuffer(),
+      imageFile.arrayBuffer(),
     ]);
 
     console.log("Audio size:", audioData.byteLength, "Image size:", imgData.byteLength);
@@ -69,6 +61,7 @@ export async function POST(request: NextRequest) {
       writeFile(imgPath, Buffer.from(imgData)),
     ]);
 
+    // Generate video
     console.log("Running ffmpeg...");
     await runFfmpeg([
       "-y",
@@ -91,15 +84,15 @@ export async function POST(request: NextRequest) {
     console.log("Video size:", videoData.length, "bytes");
 
     // Upload to Pinata
-    console.log("Uploading video to Pinata...");
+    console.log("Uploading to gallery...");
     const pinata = getPinata();
     const videoFile = new File([videoData], `${id}.mp4`, { type: "video/mp4" });
     const upload = await pinata.upload.public.file(videoFile)
       .name(`driftwave-export-${id}.mp4`)
       .keyvalues({
         type: "driftwave-video",
-        artist: artist || "UNKNOWN",
-        title: title || "UNTITLED",
+        artist,
+        title,
         createdAt: new Date().toISOString(),
       });
 
@@ -121,10 +114,8 @@ export async function POST(request: NextRequest) {
       unlink(outPath).catch(() => {}),
     ]);
 
-    console.error("generate-video error:", e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Video generation failed" },
-      { status: 500 }
-    );
+    const msg = e instanceof Error ? e.message : "Video generation failed";
+    console.error("generate-video error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
