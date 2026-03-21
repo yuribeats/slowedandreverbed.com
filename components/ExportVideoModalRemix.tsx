@@ -9,6 +9,14 @@ interface Props {
   onClose: () => void;
 }
 
+const STEPS = [
+  "UPLOADING AUDIO...",
+  "GENERATING COVER...",
+  "GENERATING VIDEO...",
+  "DOWNLOADING...",
+  "DONE",
+] as const;
+
 async function uploadToPinata(blob: Blob, filename: string): Promise<string> {
   const urlRes = await fetch("/api/pinata-upload-url", { method: "POST" });
   if (!urlRes.ok) throw new Error("Failed to get upload URL");
@@ -30,11 +38,15 @@ async function uploadToPinata(blob: Blob, filename: string): Promise<string> {
 export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onClose }: Props) {
   const [artist, setArtist] = useState("");
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState("");
+  const [step, setStep] = useState(-1);
+  const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [customImage, setCustomImage] = useState<string | null>(null);
   const [customImageName, setCustomImageName] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const progress = step < 0 ? 0 : Math.min(((step + 1) / STEPS.length) * 100, 100);
+  const status = step >= 0 && step < STEPS.length ? STEPS[step] : "";
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,18 +59,19 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
     if (!artist.trim() || !title.trim()) return;
 
     setExporting(true);
+    setError("");
 
     try {
-      // Upload audio to Pinata (bypasses body size limit)
-      setStatus("UPLOADING AUDIO...");
+      // Step 0: Upload audio to Pinata
+      setStep(0);
       const audioCid = await uploadToPinata(audioBlob, "audio.webm");
 
-      // Generate cover image
-      setStatus("GENERATING COVER...");
+      // Step 1: Generate cover
+      setStep(1);
       const coverBlob = await generateCover(artist.trim(), title.trim(), customImage || undefined);
 
-      // Send CID + cover to generate-video
-      setStatus("GENERATING VIDEO...");
+      // Step 2: Generate video
+      setStep(2);
       const formData = new FormData();
       formData.append("audioCid", audioCid);
       formData.append("image", coverBlob, "cover.png");
@@ -81,8 +94,8 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
         throw new Error(data.error || `SERVER ${res.status}`);
       }
 
-      // Download
-      setStatus("DOWNLOADING...");
+      // Step 3: Download
+      setStep(3);
       const a = document.createElement("a");
       a.href = data.url;
       a.download = `${defaultFilename}.mp4`;
@@ -91,11 +104,12 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
       a.click();
       document.body.removeChild(a);
 
-      setStatus("DONE");
+      // Step 4: Done
+      setStep(4);
       setTimeout(() => onClose(), 2000);
     } catch (e) {
       console.error("[EXPORT] Error:", e);
-      setStatus("ERROR: " + (e instanceof Error ? e.message : "FAILED"));
+      setError(e instanceof Error ? e.message : "FAILED");
       setExporting(false);
     }
   };
@@ -179,18 +193,45 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
           )}
         </div>
 
-        <button
-          onClick={handleExport}
-          disabled={exporting || !artist.trim() || !title.trim()}
-          className="border-2 border-[var(--accent-gold)] px-4 py-3 text-[12px] uppercase tracking-wider disabled:opacity-30"
-          style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
-        >
-          {exporting ? status : "EXPORT MP4"}
-        </button>
+        {/* Progress bar */}
+        {exporting && (
+          <div className="flex flex-col gap-2">
+            <div
+              className="relative h-[6px] w-full"
+              style={{ background: "#1a1a1a", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.6)" }}
+            >
+              <div
+                className="absolute inset-y-0 left-0"
+                style={{
+                  width: `${progress}%`,
+                  background: "var(--accent-gold)",
+                  transition: "width 0.4s ease-out",
+                }}
+              />
+            </div>
+            <span
+              className="text-[10px] uppercase tracking-wider text-center"
+              style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)" }}
+            >
+              {status}
+            </span>
+          </div>
+        )}
 
-        {!exporting && status && (
-          <div className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: status.startsWith("ERROR") ? "#c82828" : "var(--accent-gold)" }}>
-            {status}
+        {!exporting && (
+          <button
+            onClick={handleExport}
+            disabled={!artist.trim() || !title.trim()}
+            className="border-2 border-[var(--accent-gold)] px-4 py-3 text-[12px] uppercase tracking-wider disabled:opacity-30"
+            style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+          >
+            EXPORT MP4
+          </button>
+        )}
+
+        {error && (
+          <div className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#c82828" }}>
+            ERROR: {error}
           </div>
         )}
 
