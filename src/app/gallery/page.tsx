@@ -87,6 +87,15 @@ function GalleryContent() {
             >
               GALLERY
             </span>
+            <a
+              href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[9px] uppercase tracking-wider border-2 border-black px-2 py-1"
+              style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
+            >
+              YOUTUBE
+            </a>
             <div className="ml-auto flex gap-2">
               {isAdmin && (
                 <button
