@@ -510,8 +510,40 @@ function deckKey(id: DeckId): "deckA" | "deckB" {
   return id === "A" ? "deckA" : "deckB";
 }
 
+/* ─── Compact 16-bit PCM WAV for video export (much smaller than 32-bit float) ─── */
+function encodeWAV16(rendered: AudioBuffer, targetSR: number): Blob {
+  const nch = rendered.numberOfChannels;
+  const srcSR = rendered.sampleRate;
+  const ratio = srcSR / targetSR;
+  const numSamples = Math.floor(rendered.length / ratio);
+  const dataSize = numSamples * nch * 2;
+  const buf = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buf);
+  const w = (o: number, s: string) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); view.setUint32(4, 36 + dataSize, true); w(8, "WAVE");
+  w(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, nch, true); view.setUint32(24, targetSR, true);
+  view.setUint32(28, targetSR * nch * 2, true); view.setUint16(32, nch * 2, true);
+  view.setUint16(34, 16, true); w(36, "data"); view.setUint32(40, dataSize, true);
+  let offset = 44;
+  const channels: Float32Array[] = [];
+  for (let c = 0; c < nch; c++) channels.push(rendered.getChannelData(c));
+  for (let i = 0; i < numSamples; i++) {
+    const srcIdx = i * ratio;
+    const idx = Math.floor(srcIdx);
+    const frac = srcIdx - idx;
+    for (let c = 0; c < nch; c++) {
+      const ch = channels[c];
+      const s = idx + 1 < ch.length ? ch[idx] * (1 - frac) + ch[idx + 1] * frac : ch[idx];
+      view.setInt16(offset, Math.max(-32768, Math.min(32767, Math.round(s * 32767))), true);
+      offset += 2;
+    }
+  }
+  return new Blob([buf], { type: "audio/wav" });
+}
+
 /* ─── Offline render: mix both decks → master bus → normalized WAV ─── */
-async function renderMixToWAV(get: () => RemixStore): Promise<Blob | null> {
+async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<Blob | null> {
   const { deckA, deckB, crossfader, masterBus } = get();
   const hasA = !!deckA.sourceBuffer;
   const hasB = !!deckB.sourceBuffer;
@@ -647,6 +679,9 @@ async function renderMixToWAV(get: () => RemixStore): Promise<Blob | null> {
     }
   }
 
+  // For video export: 16-bit 22050Hz (~8x smaller than 32-bit 44100Hz)
+  // ffmpeg re-encodes to AAC anyway so full quality isn't needed
+  if (forVideo) return encodeWAV16(rendered, 22050);
   return encodeWAV(rendered);
 }
 
@@ -1384,7 +1419,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   exportMP4: async () => {
     set({ isExporting: true });
     try {
-      const blob = await renderMixToWAV(get);
+      const blob = await renderMixToWAV(get, true);
       if (!blob) return;
       set({ pendingVideoExport: blob });
     } finally {

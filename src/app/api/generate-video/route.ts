@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const gateway = process.env.PINATA_GATEWAY!;
   const id = crypto.randomUUID();
   const tmp = tmpdir();
-  const audioPath = join(tmp, `${id}-audio.webm`);
+  const audioPath = join(tmp, `${id}-audio.wav`);
   const imgPath = join(tmp, `${id}-cover.png`);
   const outPath = join(tmp, `${id}-output.mp4`);
 
@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
     console.log("Running ffmpeg...");
     await runFfmpeg([
       "-y",
+      "-framerate", "2",
       "-loop", "1",
       "-i", imgPath,
       "-i", audioPath,
@@ -84,7 +85,8 @@ export async function POST(request: NextRequest) {
       "-c:a", "aac",
       "-b:a", "192k",
       "-pix_fmt", "yuv420p",
-      "-vf", "scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:black",
+      "-vf", "scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black",
+      "-r", "2",
       "-shortest",
       "-movflags", "+faststart",
       outPath,
