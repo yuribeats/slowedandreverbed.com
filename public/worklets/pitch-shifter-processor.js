@@ -1,24 +1,28 @@
 /**
  * Granular pitch shifter AudioWorklet.
- * Two overlapping Hann-windowed grains read from a circular buffer
- * at a modified rate. When a grain expires it resets near the write head.
- * Hann windows offset by half grain size sum to 1.0 (constant power).
+ * Four overlapping Hann-windowed grains read from a circular buffer
+ * at a modified rate. Larger grain size and more overlap for smoother results.
  */
 class PitchShifterProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
     this.pitchFactor = 1.0;
-    this.bufLen = 8192;
-    this.grainSize = 2048;
-    this.halfGrain = this.grainSize / 2;
+    this.bufLen = 65536;
+    this.grainSize = 8192;
+    this.numGrains = 4;
+    this.grainSpacing = this.grainSize / this.numGrains;
 
     // Circular buffers per channel (max 2)
     this.buf = [new Float32Array(this.bufLen), new Float32Array(this.bufLen)];
     this.wPos = 0;
 
-    // Two read heads (shared across channels since they read same positions)
-    this.rPos = [0, this.halfGrain];
-    this.rPhase = [0, this.halfGrain];
+    // Read heads and phases for each grain
+    this.rPos = new Float64Array(this.numGrains);
+    this.rPhase = new Float64Array(this.numGrains);
+    for (let g = 0; g < this.numGrains; g++) {
+      this.rPos[g] = 0;
+      this.rPhase[g] = g * this.grainSpacing;
+    }
 
     // Pre-compute Hann window
     this.win = new Float32Array(this.grainSize);
@@ -56,14 +60,15 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
         this.buf[c][this.wPos & mask] = input[c][i];
       }
 
-      // Sum output from two staggered grains
+      // Sum output from all staggered grains
       for (let c = 0; c < chCount; c++) output[c][i] = 0;
 
-      for (let g = 0; g < 2; g++) {
+      for (let g = 0; g < this.numGrains; g++) {
         const rp = this.rPos[g];
         const idx = Math.floor(rp) & mask;
         const frac = rp - Math.floor(rp);
-        const w = this.win[this.rPhase[g]];
+        const phase = Math.floor(this.rPhase[g]) % this.grainSize;
+        const w = this.win[phase];
 
         for (let c = 0; c < chCount; c++) {
           const s = this.buf[c][idx] * (1 - frac) + this.buf[c][(idx + 1) & mask] * frac;
@@ -79,6 +84,12 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
           this.rPhase[g] = 0;
           this.rPos[g] = this.wPos - this.grainSize;
         }
+      }
+
+      // Normalize by number of grains overlap (Hann windows with 4 grains sum to ~2.0)
+      const norm = 2.0 / this.numGrains;
+      for (let c = 0; c < chCount; c++) {
+        output[c][i] *= norm;
       }
 
       this.wPos++;
