@@ -37,8 +37,13 @@ function generateIR(ctx: AudioContext, duration: number, decay: number): AudioBu
 /* ─── Automation interpolation ─── */
 function getAutomationValue(points: AutomationPoint[], time: number): number {
   if (points.length === 0) return 1;
-  if (time <= points[0].time) return points[0].value;
-  if (time >= points[points.length - 1].time) return points[points.length - 1].value;
+  // Before first point: interpolate from 1.0 to first point
+  if (time <= points[0].time) {
+    // At or before the first point, ramp from unity
+    return 1;
+  }
+  // After last point: return 1.0 (back to unity)
+  if (time >= points[points.length - 1].time) return 1;
   for (let i = 0; i < points.length - 1; i++) {
     if (time >= points[i].time && time <= points[i + 1].time) {
       const t = (time - points[i].time) / (points[i + 1].time - points[i].time);
@@ -412,18 +417,31 @@ function buildDeckGraph(
   deckGain.gain.value = volume * crossfaderGain;
 
   // Automation gain (separate node so volume fader still works independently)
+  // Line starts and ends at 1.0 (unity), points dip/boost in between
   const autoGain = ctx.createGain();
   if (automationPoints && automationPoints.length > 0) {
     const rate = expanded.rate;
     const now = ctx.currentTime;
-    // Set initial value
+    // Start at unity (or interpolated value if resuming mid-automation)
     const autoVal = getAutomationValue(automationPoints, offset);
     autoGain.gain.setValueAtTime(autoVal, now);
-    // Schedule ramps for each automation point that's after the current offset
-    for (const pt of automationPoints) {
-      if (pt.time <= offset) continue;
-      const when = now + (pt.time - offset) / rate;
-      autoGain.gain.linearRampToValueAtTime(pt.value, when);
+    // Ramp to first point from unity if we're before it
+    if (offset < automationPoints[0].time) {
+      const when = now + (automationPoints[0].time - offset) / rate;
+      autoGain.gain.linearRampToValueAtTime(automationPoints[0].value, when);
+    }
+    // Schedule ramps between points
+    for (let i = 0; i < automationPoints.length; i++) {
+      if (automationPoints[i].time <= offset) continue;
+      const when = now + (automationPoints[i].time - offset) / rate;
+      autoGain.gain.linearRampToValueAtTime(automationPoints[i].value, when);
+    }
+    // Return to unity after last point
+    const lastPt = automationPoints[automationPoints.length - 1];
+    if (lastPt.time > offset) {
+      const returnTime = now + (lastPt.time - offset) / rate;
+      autoGain.gain.setValueAtTime(lastPt.value, returnTime);
+      autoGain.gain.linearRampToValueAtTime(1.0, returnTime + 0.01);
     }
   }
 

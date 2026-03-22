@@ -92,19 +92,13 @@ export default function VolumeAutomation({
 
     // Draw automation line + filled area
     if (points.length > 0) {
-      // Build the line path
+      // Build the line path — always start and end at 100%
       const linePath: { x: number; y: number }[] = [];
-      const firstX = timeToX(points[0].time);
-      if (firstX > 0) {
-        linePath.push({ x: 0, y: valueToY(points[0].value) });
-      }
+      linePath.push({ x: 0, y: valueToY(1) });
       for (let i = 0; i < points.length; i++) {
         linePath.push({ x: timeToX(points[i].time), y: valueToY(points[i].value) });
       }
-      const lastX = timeToX(points[points.length - 1].time);
-      if (lastX < w) {
-        linePath.push({ x: w, y: valueToY(points[points.length - 1].value) });
-      }
+      linePath.push({ x: w, y: valueToY(1) });
 
       // Filled area under the line
       ctx.beginPath();
