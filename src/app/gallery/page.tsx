@@ -30,6 +30,8 @@ function GalleryContent() {
   const isAdmin = searchParams.get("admin") === "1";
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadResult, setUploadResult] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch("/api/gallery")
@@ -40,6 +42,23 @@ function GalleryContent() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  async function handleYouTubeUpload(item: GalleryItem) {
+    setUploading(item.id);
+    try {
+      const res = await fetch("/api/youtube/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: item.url, artist: item.artist, title: item.title }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "UPLOAD FAILED");
+      setUploadResult((prev) => ({ ...prev, [item.id]: data.youtubeUrl }));
+    } catch (e) {
+      setUploadResult((prev) => ({ ...prev, [item.id]: e instanceof Error ? e.message : "FAILED" }));
+    }
+    setUploading(null);
+  }
 
   async function handleDelete(id: string) {
     setDeleting(id);
@@ -145,6 +164,36 @@ function GalleryContent() {
                       {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
                     </span>
                   </div>
+                  {isAdmin && (
+                    <div className="mt-1">
+                      {uploadResult[item.id] ? (
+                        uploadResult[item.id].startsWith("http") ? (
+                          <a
+                            href={uploadResult[item.id]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] uppercase tracking-wider"
+                            style={{ ...textStyle, fontSize: "9px", color: "#228B22" }}
+                          >
+                            UPLOADED — VIEW ON YOUTUBE
+                          </a>
+                        ) : (
+                          <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>
+                            {uploadResult[item.id]}
+                          </span>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => handleYouTubeUpload(item)}
+                          disabled={uploading === item.id}
+                          className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                          style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: uploading === item.id ? 0.4 : 1 }}
+                        >
+                          {uploading === item.id ? "UPLOADING..." : "UPLOAD TO YOUTUBE"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
