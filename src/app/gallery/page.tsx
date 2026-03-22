@@ -168,6 +168,7 @@ function GalleryContent() {
       if (playlistTracks[i].status === "done") continue;
       await downloadTrack(i);
       setPlaylistProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+      await new Promise((r) => setTimeout(r, 2000));
     }
     setPlaylistDownloading(false);
   }
