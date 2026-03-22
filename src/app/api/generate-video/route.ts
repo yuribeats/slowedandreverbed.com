@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
   const imageFile = formData.get("image") as File | null;
   const artist = (formData.get("artist") as string) || "UNKNOWN";
   const title = (formData.get("title") as string) || "UNTITLED";
+  const watermark = formData.get("watermark") === "true";
 
   if (!audioCid) {
     return NextResponse.json({ error: "Missing audioCid" }, { status: 400 });
@@ -51,8 +52,10 @@ export async function POST(request: NextRequest) {
   const id = crypto.randomUUID();
   const tmp = tmpdir();
   const audioPath = join(tmp, `${id}-audio.wav`);
+  const mixedPath = join(tmp, `${id}-mixed.wav`);
   const imgPath = join(tmp, `${id}-cover.png`);
   const outPath = join(tmp, `${id}-output.mp4`);
+  const watermarkPath = join(process.cwd(), "public", "watermark.mp3");
 
   try {
     // Download audio from Pinata, write cover directly
@@ -71,6 +74,21 @@ export async function POST(request: NextRequest) {
       writeFile(imgPath, Buffer.from(imgData)),
     ]);
 
+    // Mix watermark into audio if enabled
+    let finalAudioPath = audioPath;
+    if (watermark) {
+      console.log("Mixing watermark...");
+      await runFfmpeg([
+        "-y",
+        "-i", audioPath,
+        "-i", watermarkPath,
+        "-filter_complex", "[1:a]adelay=0|0[w];[0:a][w]amix=inputs=2:duration=first:dropout_transition=0",
+        "-c:a", "pcm_s16le",
+        mixedPath,
+      ]);
+      finalAudioPath = mixedPath;
+    }
+
     // Generate video
     console.log("Running ffmpeg...");
     await runFfmpeg([
@@ -78,7 +96,7 @@ export async function POST(request: NextRequest) {
       "-framerate", "2",
       "-loop", "1",
       "-i", imgPath,
-      "-i", audioPath,
+      "-i", finalAudioPath,
       "-c:v", "libx264",
       "-preset", "ultrafast",
       "-tune", "stillimage",
@@ -115,6 +133,7 @@ export async function POST(request: NextRequest) {
     // Cleanup
     await Promise.all([
       unlink(audioPath).catch(() => {}),
+      unlink(mixedPath).catch(() => {}),
       unlink(imgPath).catch(() => {}),
       unlink(outPath).catch(() => {}),
     ]);
@@ -123,6 +142,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     await Promise.all([
       unlink(audioPath).catch(() => {}),
+      unlink(mixedPath).catch(() => {}),
       unlink(imgPath).catch(() => {}),
       unlink(outPath).catch(() => {}),
     ]);
