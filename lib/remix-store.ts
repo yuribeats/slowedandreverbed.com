@@ -22,13 +22,23 @@ function makeSaturationCurve(drive: number): Float32Array<ArrayBuffer> {
 }
 
 /* ─── Impulse response ─── */
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
+}
+
 function generateIR(ctx: AudioContext, duration: number, decay: number): AudioBuffer {
   const length = Math.ceil(ctx.sampleRate * duration);
   const ir = ctx.createBuffer(2, length, ctx.sampleRate);
+  const seed = Math.round(duration * 1000) * 7919 + Math.round(decay * 1000) * 104729 + ctx.sampleRate;
+  const rand = seededRandom(seed);
   for (let c = 0; c < 2; c++) {
     const data = ir.getChannelData(c);
     for (let i = 0; i < length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+      data[i] = (rand() * 2 - 1) * Math.pow(1 - i / length, decay);
     }
   }
   return ir;

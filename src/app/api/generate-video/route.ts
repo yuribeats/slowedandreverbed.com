@@ -74,15 +74,15 @@ export async function POST(request: NextRequest) {
       writeFile(imgPath, Buffer.from(imgData)),
     ]);
 
-    // Mix watermark into audio if enabled
+    // Prepend watermark before the track (watermark plays over silence, then track starts)
     let finalAudioPath = audioPath;
     if (watermark) {
-      console.log("Mixing watermark...");
+      console.log("Prepending watermark...");
       await runFfmpeg([
         "-y",
-        "-i", audioPath,
         "-i", watermarkPath,
-        "-filter_complex", "[1:a]volume=6dB,adelay=0|0[w];[0:a][w]amix=inputs=2:duration=first:dropout_transition=0,volume=2",
+        "-i", audioPath,
+        "-filter_complex", "[0:a]volume=6dB[w];[w][1:a]concat=n=2:v=0:a=1",
         "-c:a", "pcm_s16le",
         mixedPath,
       ]);
