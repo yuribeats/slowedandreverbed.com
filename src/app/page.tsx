@@ -68,6 +68,11 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [nudgeStep, setNudgeStep] = useState(0.001);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [deckMenuOpen, setDeckMenuOpen] = useState(false);
+  const [showYouTube, setShowYouTube] = useState(false);
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const [showVocals, setShowVocals] = useState(false);
+  const [showKeyFinder, setShowKeyFinder] = useState(false);
 
   const rate = 1.0 + deck.params.speed;
   const pitchSemitones = deck.params.pitch ?? 0;
@@ -281,30 +286,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onScrub={(pos) => scrub(id, pos)}
           />
         </div>
-        {deck.sourceBuffer && (
-          <div className="flex justify-center mt-1">
-            <button
-              onClick={() => {
-                const el = waveformWrapRef.current;
-                if (!el) return;
-                if (document.fullscreenElement) {
-                  document.exitFullscreen();
-                  setIsFullscreen(false);
-                } else {
-                  el.requestFullscreen().then(() => setIsFullscreen(true));
-                  const onExit = () => {
-                    if (!document.fullscreenElement) { setIsFullscreen(false); document.removeEventListener("fullscreenchange", onExit); }
-                  };
-                  document.addEventListener("fullscreenchange", onExit);
-                }
-              }}
-              className={detailBtnClass(false)}
-              style={detailBtnStyle}
-            >
-              {isFullscreen ? "EXIT FULLSCREEN" : "FULLSCREEN"}
-            </button>
-          </div>
-        )}
       </div>
 
 
@@ -367,34 +348,74 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         );
       })()}
 
-      {/* Stem isolation */}
+      {/* Tools menu */}
       {deck.sourceBuffer && (
-        <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-2 justify-center">
-            <button
-              onClick={() => setStem(id, "vocals")}
-              disabled={deck.isStemLoading}
-              className={detailBtnClass(deck.activeStem === "vocals" && !deck.isStemLoading)}
-              style={{
-                ...detailBtnStyle,
-                opacity: deck.isStemLoading ? 0.5 : 1,
-              }}
-            >
-              {deck.isStemLoading ? "SEPARATING..." : "ISOLATE VOCALS"}
-            </button>
-          </div>
-          {deck.stemError && (
-            <span className="text-[11px]" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
-              {deck.stemError.toUpperCase()}
-            </span>
+        <div className="relative flex flex-col items-center gap-2">
+          <button
+            onClick={() => setDeckMenuOpen(!deckMenuOpen)}
+            className={detailBtnClass(deckMenuOpen)}
+            style={{ ...detailBtnStyle, padding: "4px 16px" }}
+          >
+            TOOLS
+          </button>
+          {deckMenuOpen && (
+            <div className="border-2 border-[#555] bg-[var(--bg-base)] z-50 flex flex-col" style={{ minWidth: "200px" }}>
+              <button
+                onClick={() => { setShowYouTube(!showYouTube); setDeckMenuOpen(false); }}
+                className="text-[13px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                style={{ fontFamily: "var(--font-tech)", color: showYouTube ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
+              >
+                YOUTUBE URL
+              </button>
+              <button
+                onClick={() => { setShowFullscreen(!showFullscreen); setDeckMenuOpen(false); const el = waveformWrapRef.current; if (!el) return; if (document.fullscreenElement) { document.exitFullscreen(); setIsFullscreen(false); } else { el.requestFullscreen().then(() => setIsFullscreen(true)); const onExit = () => { if (!document.fullscreenElement) { setIsFullscreen(false); document.removeEventListener("fullscreenchange", onExit); } }; document.addEventListener("fullscreenchange", onExit); } }}
+                className="text-[13px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+              >
+                FULLSCREEN
+              </button>
+              <button
+                onClick={() => { setShowVocals(!showVocals); setDeckMenuOpen(false); }}
+                className="text-[13px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                style={{ fontFamily: "var(--font-tech)", color: showVocals ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
+              >
+                ISOLATE VOCALS
+              </button>
+              <button
+                onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
+                className="text-[13px] uppercase tracking-[0.15em] px-4 py-2 text-left"
+                style={{ fontFamily: "var(--font-tech)", color: showKeyFinder ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
+              >
+                KEY FINDER
+              </button>
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Key finder */}
-      {deck.sourceBuffer && (
-        <div className="flex items-center gap-4 justify-center">
-          <PianoKeyboard />
+          {/* Conditionally shown tools */}
+          {showVocals && (
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-2 justify-center">
+                <button
+                  onClick={() => setStem(id, "vocals")}
+                  disabled={deck.isStemLoading}
+                  className={detailBtnClass(deck.activeStem === "vocals" && !deck.isStemLoading)}
+                  style={{ ...detailBtnStyle, opacity: deck.isStemLoading ? 0.5 : 1 }}
+                >
+                  {deck.isStemLoading ? "SEPARATING..." : "ISOLATE VOCALS"}
+                </button>
+              </div>
+              {deck.stemError && (
+                <span className="text-[11px]" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
+                  {deck.stemError.toUpperCase()}
+                </span>
+              )}
+            </div>
+          )}
+          {showKeyFinder && (
+            <div className="flex items-center gap-4 justify-center">
+              <PianoKeyboard />
+            </div>
+          )}
         </div>
       )}
 
@@ -427,44 +448,46 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       </div>
 
       {/* YouTube URL input */}
-      <div className="flex gap-2 items-center">
-        <input
-          type="text"
-          value={ytUrl}
-          onChange={(e) => setYtUrl(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && ytUrl.trim()) {
+      {showYouTube && (
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            value={ytUrl}
+            onChange={(e) => setYtUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && ytUrl.trim()) {
+                const ctx = getAudioContext();
+                ctx.resume().then(() => loadFromYouTube(id, ytUrl.trim()));
+                setYtUrl("");
+              }
+            }}
+            placeholder="PASTE YOUTUBE URL"
+            disabled={deck.isLoading}
+            className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[16px] uppercase tracking-wider placeholder:text-black"
+            style={{ fontFamily: "var(--font-tech)", color: "#000", outline: "none" }}
+          />
+          <button
+            onClick={() => {
+              if (!ytUrl.trim()) return;
               const ctx = getAudioContext();
               ctx.resume().then(() => loadFromYouTube(id, ytUrl.trim()));
               setYtUrl("");
-            }
-          }}
-          placeholder="PASTE YOUTUBE URL"
-          disabled={deck.isLoading}
-          className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[16px] uppercase tracking-wider placeholder:text-black"
-          style={{ fontFamily: "var(--font-tech)", color: "#000", outline: "none" }}
-        />
-        <button
-          onClick={() => {
-            if (!ytUrl.trim()) return;
-            const ctx = getAudioContext();
-            ctx.resume().then(() => loadFromYouTube(id, ytUrl.trim()));
-            setYtUrl("");
-          }}
-          disabled={deck.isLoading || !ytUrl.trim()}
-          className="border-2 border-[#555] px-3 py-2 text-[15px] uppercase tracking-wider disabled:opacity-30"
-          style={{ fontFamily: "var(--font-tech)", color: "#000", background: "transparent" }}
-        >
-          {deck.isLoading ? "LOADING..." : "GO"}
-        </button>
-      </div>
+            }}
+            disabled={deck.isLoading || !ytUrl.trim()}
+            className="border-2 border-[#555] px-3 py-2 text-[15px] uppercase tracking-wider disabled:opacity-30"
+            style={{ fontFamily: "var(--font-tech)", color: "#000", background: "transparent" }}
+          >
+            {deck.isLoading ? "LOADING..." : "GO"}
+          </button>
+        </div>
+      )}
       {deck.error && (
         <div className="text-[12px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
           {deck.error}
         </div>
       )}
 
-      {/* Speed / Pitch / Volume */}
+      {/* All controls: Speed/Pitch/Vol on top, Reverb/Tone/Sat below */}
       <div className="zone-engraved">
         <div className="grid grid-cols-3 gap-2" style={{ justifyItems: "center" }}>
           <div className="flex flex-col items-center gap-1">
@@ -541,11 +564,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.volume * 100)}%</span>
           </div>
         </div>
-      </div>
-
-      {/* Reverb / Tone / Saturation */}
-      <div className="zone-engraved">
-        <div className="grid grid-cols-3 gap-2" style={{ justifyItems: "center" }}>
+        <div className="grid grid-cols-3 gap-2 mt-4" style={{ justifyItems: "center" }}>
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
               <div className="slider-track h-full" />
@@ -995,7 +1014,7 @@ export default function Home() {
       <div className="w-full max-w-[1100px] flex flex-col gap-5">
         <div className="console flex flex-col gap-5">
           {/* Header */}
-          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1">
+          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1 relative" style={{ zIndex: 100 }}>
             <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
               <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
             </div>
@@ -1005,7 +1024,7 @@ export default function Home() {
             >
               SLOWED AND REVERBED MACHINE
             </span>
-            <div className="ml-auto relative">
+            <div className="ml-auto relative" style={{ zIndex: 100 }}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className={detailBtnClass(menuOpen)}
@@ -1014,7 +1033,7 @@ export default function Home() {
                 MENU
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 border-2 border-[#555] bg-[var(--bg-base)] z-50 flex flex-col" style={{ minWidth: "160px" }}>
+                <div className="absolute right-0 top-full mt-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "160px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
                   <button
                     onClick={() => { setManualOpen(true); setMenuOpen(false); }}
                     className="text-[16px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
