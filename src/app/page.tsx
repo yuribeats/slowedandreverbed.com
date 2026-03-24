@@ -8,7 +8,6 @@ import WaveformDisplay from "../../components/WaveformDisplay";
 import PianoKeyboard from "../../components/PianoKeyboard";
 import Toast from "../../components/Toast";
 import ExportVideoModalRemix from "../../components/ExportVideoModalRemix";
-import VolumeAutomation from "../../components/VolumeAutomation";
 import Link from "next/link";
 
 type DeckId = "A" | "B";
@@ -60,14 +59,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const setRegion = useRemixStore((s) => s.setRegion);
   const seek = useRemixStore((s) => s.seek);
   const scrub = useRemixStore((s) => s.scrub);
-  const calculateBPMFromLoop = useRemixStore((s) => s.calculateBPMFromLoop);
-  const addLoopToBank = useRemixStore((s) => s.addLoopToBank);
-  const removeFromBank = useRemixStore((s) => s.removeFromBank);
-  const setBPM = useRemixStore((s) => s.setBPM);
-  const toggleAutomation = useRemixStore((s) => s.toggleAutomation);
-  const addAutomationPoint = useRemixStore((s) => s.addAutomationPoint);
-  const removeAutomationPoint = useRemixStore((s) => s.removeAutomationPoint);
-  const moveAutomationPoint = useRemixStore((s) => s.moveAutomationPoint);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [stepMode, setStepMode] = useState(true);
@@ -85,10 +76,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const satPct = Math.round((deck.params.saturation ?? 0) * 100);
   const toneLabel = deck.params.tone === 0 ? "FLAT" : deck.params.tone < 0 ? "DARK" : "BRIGHT";
   const expanded = expandParams(deck.params);
-  const adjustedBPM = deck.calculatedBPM ? (deck.calculatedBPM * rate) : null;
-
-  const [bpmInput, setBpmInput] = useState("");
-  const [editingBPM, setEditingBPM] = useState(false);
   const [ytUrl, setYtUrl] = useState("");
   const [baseKey, setBaseKey] = useState<number | null>(null); // index into NOTE_NAMES, null = not set
   const [editingKey, setEditingKey] = useState(false);
@@ -125,28 +112,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     setParam(id, "pitchSpeedLinked", linked ? 0 : 1);
   };
 
-  const handleBPMSubmit = () => {
-    const newBPM = parseFloat(bpmInput);
-    if (isNaN(newBPM) || newBPM <= 0) {
-      setEditingBPM(false);
-      return;
-    }
-    if (!deck.calculatedBPM) {
-      // No BPM set yet — just set it as the base BPM
-      setBPM(id, newBPM);
-      setEditingBPM(false);
-      return;
-    }
-    // Adjust speed to match the target BPM
-    const newRate = newBPM / deck.calculatedBPM;
-    const newSpeed = newRate - 1.0;
-    const clamped = Math.max(-0.5, Math.min(0.5, newSpeed));
-    setParam(id, "speed", clamped);
-    if (linked) {
-      setParam(id, "pitch", 12 * Math.log2(1.0 + clamped));
-    }
-    setEditingBPM(false);
-  };
 
   const handleLoad = useCallback(() => {
     getAudioContext();
@@ -212,28 +177,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
         {deck.sourceBuffer && (
           <div className="flex gap-3 text-[10px] items-center" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "12px" }}>
-            {editingBPM ? (
-              <span style={{ color: "var(--crt-bright)" }}>
-                BPM:{" "}
-                <input
-                  type="text"
-                  autoFocus
-                  value={bpmInput}
-                  onChange={(e) => setBpmInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleBPMSubmit(); if (e.key === "Escape") setEditingBPM(false); }}
-                  onBlur={handleBPMSubmit}
-                  className="bg-transparent border-b border-[var(--crt-bright)] outline-none text-[12px] w-[50px]"
-                  style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}
-                />
-              </span>
-            ) : (
-              <span
-                style={{ color: "var(--crt-bright)" }}
-                onClick={() => { setBpmInput(adjustedBPM ? adjustedBPM.toFixed(3) : ""); setEditingBPM(true); }}
-              >
-                BPM: {adjustedBPM !== null ? adjustedBPM.toFixed(3) : "TAP TO SET"}
-              </span>
-            )}
             {editingKey ? (
               <span style={{ color: "var(--crt-bright)" }}>
                 KEY:{" "}
@@ -283,20 +226,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         onScrub={(pos) => scrub(id, pos)}
       />
 
-      {/* Volume automation lane */}
-      {deck.sourceBuffer && (
-        <VolumeAutomation
-          enabled={deck.automationEnabled}
-          points={deck.automationPoints}
-          duration={deck.sourceBuffer.duration}
-          regionStart={deck.regionStart}
-          regionEnd={deck.regionEnd}
-          onToggle={() => toggleAutomation(id)}
-          onAddPoint={(t, v) => addAutomationPoint(id, t, v)}
-          onRemovePoint={(i) => removeAutomationPoint(id, i)}
-          onMovePoint={(i, t, v) => moveAutomationPoint(id, i, t, v)}
-        />
-      )}
 
       {/* Loop IN/OUT nudge controls */}
       {deck.sourceBuffer && (deck.regionStart > 0 || deck.regionEnd > 0) && (() => {
@@ -335,10 +264,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   type="range" min={-3} max={0} step={0.1}
                   value={Math.log10(nudgeStep)}
                   onChange={(e) => setNudgeStep(Math.pow(10, parseFloat(e.target.value)))}
-                  className="w-[50px]"
+                  className="w-[100px]"
                   style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "16px" }}
                 />
-                <span className="text-[6px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                <span className="text-[10px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
                   {nudgeStep >= 0.1 ? nudgeStep.toFixed(1) + "S" : (nudgeStep * 1000).toFixed(1) + "MS"}
                 </span>
               </div>
@@ -392,59 +321,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       )}
 
-      {/* BPM from loop + Key finder + Loop bank */}
+      {/* Key finder */}
       {deck.sourceBuffer && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-4 justify-center">
-            <button
-              onClick={() => calculateBPMFromLoop(id)}
-              disabled={deck.regionStart === 0 && deck.regionEnd === 0}
-              className={detailBtnClass(false)}
-              style={{ ...detailBtnStyle, opacity: (deck.regionStart === 0 && deck.regionEnd === 0) ? 0.4 : 1 }}
-            >
-              CALC BPM FROM LOOP
-            </button>
-            <button
-              onClick={() => addLoopToBank(id)}
-              disabled={deck.regionStart === 0 && deck.regionEnd === 0}
-              className={detailBtnClass(false)}
-              style={{ ...detailBtnStyle, opacity: (deck.regionStart === 0 && deck.regionEnd === 0) ? 0.4 : 1 }}
-            >
-              ADD TO BANK
-            </button>
-            <PianoKeyboard />
-          </div>
-          {deck.loopBank.length > 0 && (
-            <div className="flex flex-wrap gap-1 justify-center">
-              {deck.loopBank.map((loop, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1 px-1.5 py-0.5 border border-[#333]"
-                  style={{ background: "rgba(200,169,110,0.08)" }}
-                >
-                  <span className="text-[7px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                    {loop.name} ({(loop.end - loop.start).toFixed(1)}S)
-                  </span>
-                  <button
-                    onClick={() => {
-                      setRegion(id, loop.start, loop.end);
-                    }}
-                    className="text-[7px]"
-                    style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)" }}
-                  >
-                    LOAD
-                  </button>
-                  <button
-                    onClick={() => removeFromBank(id, i)}
-                    className="text-[7px]"
-                    style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="flex items-center gap-4 justify-center">
+          <PianoKeyboard />
         </div>
       )}
 
@@ -491,8 +371,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           }}
           placeholder="PASTE YOUTUBE URL"
           disabled={deck.isLoading}
-          className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[10px] uppercase tracking-wider"
-          style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
+          className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[13px] uppercase tracking-wider"
+          style={{ fontFamily: "var(--font-tech)", color: "#fff", outline: "none" }}
         />
         <button
           onClick={() => {
@@ -502,10 +382,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             setYtUrl("");
           }}
           disabled={deck.isLoading || !ytUrl.trim()}
-          className="border border-[#333] px-2 py-1 text-[9px] uppercase tracking-wider disabled:opacity-30"
-          style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+          className="border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider disabled:opacity-30"
+          style={{ fontFamily: "var(--font-tech)", color: "#fff", background: "transparent" }}
         >
-          {deck.isLoading ? "LOADING..." : "YT"}
+          {deck.isLoading ? "LOADING..." : "GO"}
         </button>
       </div>
       {deck.error && (
@@ -939,146 +819,6 @@ function MasterBus() {
   );
 }
 
-function Sequencer() {
-  const deckA = useRemixStore((s) => s.deckA);
-  const deckB = useRemixStore((s) => s.deckB);
-  const tracksA = useRemixStore((s) => s.sequencerTracksA);
-  const tracksB = useRemixStore((s) => s.sequencerTracksB);
-  const playing = useRemixStore((s) => s.sequencerPlaying);
-  const addSlot = useRemixStore((s) => s.addSequencerSlot);
-  const removeSlot = useRemixStore((s) => s.removeSequencerSlot);
-  const moveSlot = useRemixStore((s) => s.moveSequencerSlot);
-  const clearTrack = useRemixStore((s) => s.clearSequencerTrack);
-  const playSeq = useRemixStore((s) => s.playSequencer);
-  const stopSeq = useRemixStore((s) => s.stopSequencer);
-
-  const arrowBtn: React.CSSProperties = {
-    fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent",
-    fontSize: "9px", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center",
-    border: "1px solid #444", padding: 0, lineHeight: 1,
-  };
-
-  const renderTrack = (id: "A" | "B", bank: typeof deckA.loopBank, slots: number[]) => (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2">
-        <div className="flex flex-col items-center gap-0.5" style={{ minWidth: "40px" }}>
-          <span className="text-[9px] uppercase tracking-[0.15em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-            DECK {id}
-          </span>
-          {slots.length > 0 && (
-            <button
-              onClick={() => clearTrack(id)}
-              className="text-[6px] uppercase"
-              style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}
-            >
-              CLEAR
-            </button>
-          )}
-        </div>
-        <div className="flex-1 flex items-center gap-1 overflow-x-auto py-1">
-          {slots.map((bankIdx, slotIdx) => {
-            const loop = bank[bankIdx];
-            if (!loop) return null;
-            const dur = loop.end - loop.start;
-            return (
-              <div
-                key={slotIdx}
-                className="flex flex-col items-center shrink-0 border border-[#333]"
-                style={{ background: "rgba(200,169,110,0.1)", minWidth: "60px" }}
-              >
-                <div className="flex items-center justify-between w-full px-1.5 py-1">
-                  <span className="text-[8px] uppercase" style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)" }}>
-                    {loop.name}
-                  </span>
-                  <button
-                    onClick={() => removeSlot(id, slotIdx)}
-                    className="text-[7px]"
-                    style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}
-                  >
-                    X
-                  </button>
-                </div>
-                <span className="text-[6px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>
-                  {dur.toFixed(2)}S
-                </span>
-                <div className="flex items-center gap-1 py-0.5">
-                  <button
-                    onClick={() => moveSlot(id, slotIdx, slotIdx - 1)}
-                    disabled={slotIdx === 0}
-                    style={{ ...arrowBtn, opacity: slotIdx === 0 ? 0.2 : 1 }}
-                  >
-                    &lt;
-                  </button>
-                  <button
-                    onClick={() => moveSlot(id, slotIdx, slotIdx + 1)}
-                    disabled={slotIdx === slots.length - 1}
-                    style={{ ...arrowBtn, opacity: slotIdx === slots.length - 1 ? 0.2 : 1 }}
-                  >
-                    &gt;
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {slots.length === 0 && (
-            <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>EMPTY — ADD LOOPS BELOW</span>
-          )}
-        </div>
-      </div>
-      {bank.length > 0 && (
-        <div className="flex items-center gap-1 pl-[48px] flex-wrap">
-          <span className="text-[7px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>ADD:</span>
-          {bank.map((loop, i) => (
-            <button
-              key={i}
-              onClick={() => addSlot(id, i)}
-              className="text-[7px] px-1.5 py-0.5 border border-[#444]"
-              style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", background: "transparent" }}
-            >
-              {loop.name} ({(loop.end - loop.start).toFixed(1)}S)
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  const hasAnyLoops = deckA.loopBank.length > 0 || deckB.loopBank.length > 0;
-  const hasSlots = tracksA.length > 0 || tracksB.length > 0;
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span
-          className="text-sm tracking-[2px] uppercase"
-          style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
-        >
-          SEQUENCER
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={playing ? stopSeq : playSeq}
-            disabled={!hasSlots}
-            className={detailBtnClass(playing)}
-            style={{ ...detailBtnStyle, opacity: !hasSlots ? 0.4 : 1 }}
-          >
-            {playing ? "STOP" : "PLAY"}
-          </button>
-        </div>
-      </div>
-      {hasAnyLoops ? (
-        <>
-          {deckA.loopBank.length > 0 && renderTrack("A", deckA.loopBank, tracksA)}
-          {deckB.loopBank.length > 0 && renderTrack("B", deckB.loopBank, tracksB)}
-        </>
-      ) : (
-        <span className="text-[8px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>
-          BANK LOOPS FROM EACH DECK TO BUILD SEQUENCES
-        </span>
-      )}
-    </div>
-  );
-}
 
 function Manual({ onClose }: { onClose: () => void }) {
   return (
@@ -1104,23 +844,12 @@ function Manual({ onClose }: { onClose: () => void }) {
             <div>STEP: SNAPS PITCH TO SEMITONE INTERVALS.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>BPM</div>
-            <div>SELECT A LOOP REGION ON THE WAVEFORM, THEN HIT CALC BPM FROM LOOP. FORMULA: 240 / LOOP LENGTH IN SECONDS.</div>
-            <div>CLICK THE BPM VALUE IN THE DISPLAY TO TYPE A NEW BPM. SPEED (AND PITCH IF LINKED) ADJUSTS AUTOMATICALLY.</div>
-            <div>BPM UPDATES IN REAL TIME AS YOU ADJUST SPEED.</div>
-          </div>
-          <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOOP FINE-TUNE</div>
             <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE LOOP BOUNDARIES. STEP SIZE SLIDER ADJUSTS FROM 0.1MS TO 1S (LOGARITHMIC).</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>PIANO KEYBOARD</div>
             <div>ONE OCTAVE SINE WAVE GENERATOR FOR FINDING THE KEY BY EAR. OVERLAY A NOTE ON YOUR SAMPLE. OCTAVE UP/DOWN BUTTONS. LATCH HOLDS A NOTE UNTIL YOU PRESS ANOTHER OR THE SAME KEY AGAIN.</div>
-          </div>
-          <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOOP BANK + SEQUENCER</div>
-            <div>SELECT A REGION AND HIT ADD TO BANK TO SAVE IT. BANKED LOOPS APPEAR BELOW WITH LOAD (RECALL) AND X (DELETE).</div>
-            <div>HIT SEQ IN THE HEADER TO OPEN THE SEQUENCER. TWO TRACKS (DECK A, DECK B). ADD BANKED LOOPS TO BUILD A SEQUENCE. HIT PLAY TO PLAY THROUGH.</div>
           </div>
           <div>
             <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SYNC + LOCK</div>
@@ -1186,7 +915,6 @@ export default function Home() {
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const [manualOpen, setManualOpen] = useState(false);
-  const [seqOpen, setSeqOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(false);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
@@ -1207,13 +935,6 @@ export default function Home() {
               SLOWED AND REVERBED MACHINE
             </span>
             <div className="ml-auto flex items-center gap-2 sm:gap-3">
-              <button
-                onClick={() => setSeqOpen(!seqOpen)}
-                className={detailBtnClass(seqOpen)}
-                style={detailBtnStyle}
-              >
-                SEQ
-              </button>
               <button
                 onClick={() => setManualOpen(true)}
                 className={detailBtnClass(false)}
@@ -1238,13 +959,6 @@ export default function Home() {
               </Link>
             </div>
           </div>
-
-          {/* Sequencer — above decks when open */}
-          {seqOpen && (
-            <div className="zone-inset boot-stagger boot-delay-1">
-              <Sequencer />
-            </div>
-          )}
 
           {/* Decks */}
           <div className={`grid gap-5 boot-stagger boot-delay-2 ${showDeckB ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
