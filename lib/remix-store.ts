@@ -128,6 +128,7 @@ interface DeckState {
   gridlockEnabled: boolean;
   gridOffsetMs: number;
   gridFirstTransient: number;
+  gridLockedSectionDur: number; // seconds — frozen at toggle-on
 }
 
 type DeckId = "A" | "B";
@@ -157,6 +158,7 @@ const defaultDeck = (): DeckState => ({
   gridlockEnabled: false,
   gridOffsetMs: 0,
   gridFirstTransient: 0,
+  gridLockedSectionDur: 0,
 });
 
 interface MasterBusParams {
@@ -272,6 +274,7 @@ interface RemixStore {
   moveAutomationPoint: (deck: DeckId, index: number, time: number, value: number) => void;
   toggleGridlock: (deck: DeckId) => void;
   setGridOffset: (deck: DeckId, ms: number) => void;
+  lockGridSectionDur: (deck: DeckId) => void;
 }
 
 /* ─── Shared output bus: merger → EQ → compressor → makeup → limiter → destination ─── */
@@ -1517,7 +1520,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
     if (deck.gridlockEnabled) {
-      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: false, gridOffsetMs: 0, gridFirstTransient: 0 } }));
+      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: false, gridOffsetMs: 0, gridFirstTransient: 0, gridLockedSectionDur: 0 } }));
     } else {
       // Detect first transient: scan first 10s of channel 0
       let firstTransient = 0;
@@ -1537,12 +1540,24 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           }
         }
       }
-      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: true, gridOffsetMs: 0, gridFirstTransient: firstTransient } }));
+      // Lock section duration: 4 bars at current BPM, or 0 if no BPM yet
+      const currentRate = 1.0 + deck.params.speed;
+      const lockedDur = deck.calculatedBPM ? 960 / (deck.calculatedBPM * currentRate) : 0;
+      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: true, gridOffsetMs: 0, gridFirstTransient: firstTransient, gridLockedSectionDur: lockedDur } }));
     }
   },
 
   setGridOffset: (id, ms) => {
     const dk = deckKey(id);
     set((s) => ({ [dk]: { ...s[dk], gridOffsetMs: ms } }));
+  },
+
+  lockGridSectionDur: (id) => {
+    const dk = deckKey(id);
+    const deck = getDeck(get(), id);
+    if (!deck.gridlockEnabled || deck.gridLockedSectionDur > 0 || !deck.calculatedBPM) return;
+    const currentRate = 1.0 + deck.params.speed;
+    const lockedDur = 960 / (deck.calculatedBPM * currentRate);
+    set((s) => ({ [dk]: { ...s[dk], gridLockedSectionDur: lockedDur } }));
   },
 }));

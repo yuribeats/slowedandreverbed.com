@@ -90,6 +90,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const setBPM = useRemixStore((s) => s.setBPM);
   const toggleGridlock = useRemixStore((s) => s.toggleGridlock);
   const setGridOffset = useRemixStore((s) => s.setGridOffset);
+  const lockGridSectionDur = useRemixStore((s) => s.lockGridSectionDur);
   const recordArmed = useRemixStore((s) => s.recordArmed);
 
   // Clear key and BPM when source changes
@@ -100,6 +101,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     setEditingKey(false);
     setEditingBPM(false);
   }, [sourceId]);
+
+  // Lock grid section duration when BPM is set while GRIDLOCK is enabled
+  useEffect(() => {
+    if (deck.gridlockEnabled && deck.calculatedBPM && deck.gridLockedSectionDur <= 0) {
+      lockGridSectionDur(id);
+    }
+  }, [deck.gridlockEnabled, deck.calculatedBPM, deck.gridLockedSectionDur, lockGridSectionDur, id]);
 
   const handleSpeed = (v: number) => {
     if (linked) {
@@ -284,8 +292,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onRegionChange={(s, e) => setRegion(id, s, e)}
             onSeek={(pos) => seek(id, pos)}
             onScrub={(pos) => scrub(id, pos)}
-            gridEnabled={deck.gridlockEnabled && !!deck.calculatedBPM}
-            gridBPM={deck.calculatedBPM ? deck.calculatedBPM * rate : undefined}
+            gridEnabled={deck.gridlockEnabled && deck.gridLockedSectionDur > 0}
+            gridSectionDur={deck.gridLockedSectionDur > 0 ? deck.gridLockedSectionDur : undefined}
             gridAnchor={deck.gridlockEnabled ? deck.gridFirstTransient + deck.gridOffsetMs / 1000 : undefined}
             leftControls={
               <div className="relative shrink-0">
@@ -338,7 +346,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
       {/* GRIDLOCK section */}
       {deck.gridlockEnabled && deck.sourceBuffer && (() => {
-        if (!deck.calculatedBPM) {
+        if (!deck.calculatedBPM || deck.gridLockedSectionDur <= 0) {
           return (
             <div className="zone-engraved" style={{ borderColor: "rgba(200,40,40,0.4)" }}>
               <div className="text-[12px] text-center" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
@@ -347,8 +355,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             </div>
           );
         }
-        const displayBPM = deck.calculatedBPM * rate;
-        const sectionDur = 960 / displayBPM;
+        const sectionDur = deck.gridLockedSectionDur;
         const gridAnchor = deck.gridFirstTransient + deck.gridOffsetMs / 1000;
         const dur = deck.sourceBuffer!.duration;
         const inVal = deck.regionStart;
@@ -414,7 +421,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           const mpcUrl = "https://studio-2026-03-19.vercel.app/mpc.html";
           const mpcWin = window.open(mpcUrl, "driftwave-mpc");
           if (!mpcWin) return;
-          const msg = { type: "deck-export-mpc", loops };
+          const msg = { type: "deck-export-mpc", loops, bank: "A" };
           let attempts = 0;
           const trySend = setInterval(() => {
             attempts++;

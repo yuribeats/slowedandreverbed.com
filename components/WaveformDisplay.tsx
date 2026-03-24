@@ -21,7 +21,7 @@ interface Props {
   precomputedDuration?: number;
   perfStartedAt?: number; // performance.now()-based start time
   gridEnabled?: boolean;
-  gridBPM?: number;
+  gridSectionDur?: number; // seconds between grid lines (locked at toggle-on)
   gridAnchor?: number;
 }
 
@@ -79,7 +79,7 @@ export default function WaveformDisplay({
   precomputedDuration,
   perfStartedAt,
   gridEnabled,
-  gridBPM,
+  gridSectionDur,
   gridAnchor,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -225,23 +225,21 @@ export default function WaveformDisplay({
     ctx.stroke();
 
     // Grid lines (GRIDLOCK)
-    if (gridEnabled && gridBPM && gridBPM > 0 && gridAnchor != null) {
-      const sectionDur = 960 / gridBPM;
-      if (sectionDur > 0.01) {
-        ctx.strokeStyle = "#c82828";
-        ctx.lineWidth = 1;
-        const anchor = gridAnchor;
-        const firstN = Math.floor((viewStart - anchor) / sectionDur);
-        const lastN = Math.ceil((viewEnd - anchor) / sectionDur);
-        for (let n = firstN; n <= lastN; n++) {
-          const gt = anchor + n * sectionDur;
-          const gx = timeToX(gt);
-          if (gx >= -1 && gx <= w + 1) {
-            ctx.beginPath();
-            ctx.moveTo(gx, 0);
-            ctx.lineTo(gx, waveH);
-            ctx.stroke();
-          }
+    if (gridEnabled && gridSectionDur && gridSectionDur > 0.01 && gridAnchor != null) {
+      const sectionDur = gridSectionDur;
+      ctx.strokeStyle = "#c82828";
+      ctx.lineWidth = 1;
+      const anchor = gridAnchor;
+      const firstN = Math.floor((viewStart - anchor) / sectionDur);
+      const lastN = Math.ceil((viewEnd - anchor) / sectionDur);
+      for (let n = firstN; n <= lastN; n++) {
+        const gt = anchor + n * sectionDur;
+        const gx = timeToX(gt);
+        if (gx >= -1 && gx <= w + 1) {
+          ctx.beginPath();
+          ctx.moveTo(gx, 0);
+          ctx.lineTo(gx, waveH);
+          ctx.stroke();
         }
       }
     }
@@ -385,7 +383,7 @@ export default function WaveformDisplay({
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridBPM, gridAnchor]);
+  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridSectionDur, gridAnchor]);
 
   // Animation loop — only useEffect controls scheduling, draw never self-schedules
   useEffect(() => {
