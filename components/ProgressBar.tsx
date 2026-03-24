@@ -59,7 +59,7 @@ export default function ProgressBar() {
 
   return (
     <div className="flex items-center gap-3 flex-1">
-      <div className="px-2 py-1 text-[11px] font-[family-name:var(--font-tech)] w-14 text-center" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
+      <div className="px-2 py-1 text-[14px] font-[family-name:var(--font-tech)] w-14 text-center" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
         {formatTime(elapsed)}
       </div>
       <div
@@ -77,7 +77,7 @@ export default function ProgressBar() {
           }}
         />
       </div>
-      <div className="px-2 py-1 text-[11px] font-[family-name:var(--font-tech)] w-14 text-center" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
+      <div className="px-2 py-1 text-[14px] font-[family-name:var(--font-tech)] w-14 text-center" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
         {formatTime(duration)}
       </div>
     </div>

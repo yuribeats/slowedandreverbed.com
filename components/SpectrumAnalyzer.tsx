@@ -127,7 +127,7 @@ export default function SpectrumAnalyzer() {
 
   return (
     <div className="crt" style={{ height: "180px" }}>
-      <div className="absolute top-0 left-0 right-0 px-2 py-1 flex justify-between z-10" style={{ color: "var(--crt-bright)", borderBottom: "1px solid var(--crt-grid)", fontFamily: "var(--font-crt)", fontSize: "13px" }}>
+      <div className="absolute top-0 left-0 right-0 px-2 py-1 flex justify-between z-10" style={{ color: "var(--crt-bright)", borderBottom: "1px solid var(--crt-grid)", fontFamily: "var(--font-crt)", fontSize: "16px" }}>
         <span>OUTPUT LEVEL</span>
       </div>
       <div className="crt-grid w-full h-full pt-6 px-2 pb-2">

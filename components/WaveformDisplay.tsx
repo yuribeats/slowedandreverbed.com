@@ -498,13 +498,13 @@ export default function WaveformDisplay({
       {/* Time readout */}
       {audioBuffer && (
         <div className="flex items-center justify-between px-1">
-          <span className="text-[9px]" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "12px", textShadow: "0 0 4px var(--crt-dim)" }}>
+          <span className="text-[12px]" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "15px", textShadow: "0 0 4px var(--crt-dim)" }}>
             {formatTime(cursorDisplay)}
           </span>
-          <span className="text-[9px]" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "11px" }}>
+          <span className="text-[12px]" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "14px" }}>
             LOOP: {formatTime(regionDuration)}
           </span>
-          <span className="text-[9px]" style={{ color: "#555", fontFamily: "var(--font-crt)", fontSize: "11px" }}>
+          <span className="text-[12px]" style={{ color: "#555", fontFamily: "var(--font-crt)", fontSize: "14px" }}>
             {formatTime(duration)}
           </span>
         </div>
@@ -526,14 +526,14 @@ export default function WaveformDisplay({
       {audioBuffer && (
         <div className="flex items-center gap-2 justify-between">
           <div className="flex items-center gap-1">
-            <span className="text-[8px]" style={{ color: "#555", fontFamily: "var(--font-tech)" }}>
+            <span className="text-[11px]" style={{ color: "#555", fontFamily: "var(--font-tech)" }}>
               {zoom > 1 ? "SHIFT+DRAG TO PAN" : ""}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={zoomToRegion}
-              className="text-[9px] px-1.5 py-0 border border-[#555]"
+              className="text-[12px] px-1.5 py-0 border border-[#555]"
               style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
             >
               FIT
@@ -541,17 +541,17 @@ export default function WaveformDisplay({
             <button
               onClick={zoomOut}
               disabled={zoom <= 1}
-              className="text-[9px] px-1.5 py-0 border border-[#555]"
+              className="text-[12px] px-1.5 py-0 border border-[#555]"
               style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
             >
               −
             </button>
-            <span className="text-[8px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+            <span className="text-[11px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
               {zoom > 1 ? `${zoom.toFixed(1)}X` : "1X"}
             </span>
             <button
               onClick={zoomIn}
-              className="text-[9px] px-1.5 py-0 border border-[#555]"
+              className="text-[12px] px-1.5 py-0 border border-[#555]"
               style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
             >
               +

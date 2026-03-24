@@ -39,7 +39,7 @@ const faderStyle: React.CSSProperties = {
 };
 
 const detailBtnClass = (active: boolean) =>
-  `text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 border ${
+  `text-[11px] uppercase tracking-[0.15em] px-2 py-0.5 border ${
     active ? "border-[#333] bg-[rgba(255,115,0,0.15)]" : "border-[#777]"
   }`;
 
@@ -182,15 +182,15 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       <div className="display-bezel flex flex-col gap-2 p-3">
         <div className="flex items-center justify-between">
           <div
-            className="text-[10px] truncate crt-text"
-            style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "13px" }}
+            className="text-[13px] truncate crt-text"
+            style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "16px" }}
           >
             {deck.sourceFilename ? deck.sourceFilename.toUpperCase() : "NO TRACK"}
             {deck.isPlaying && " — PLAYING"}
           </div>
         </div>
         {deck.sourceBuffer && (
-          <div className="flex gap-4 text-[10px] items-center" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "12px" }}>
+          <div className="flex gap-4 text-[13px] items-center" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "15px" }}>
             {editingKey ? (
               <span style={{ color: "var(--crt-bright)" }}>
                 KEY:{" "}
@@ -201,7 +201,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                       onClick={() => { setBaseKey(i); setEditingKey(false); }}
                       className="px-1"
                       style={{
-                        fontFamily: "var(--font-crt)", fontSize: "11px",
+                        fontFamily: "var(--font-crt)", fontSize: "14px",
                         color: baseKey === i ? "var(--accent-gold)" : "var(--crt-bright)",
                         background: "transparent", border: "none",
                       }}
@@ -243,7 +243,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                     if (!isNaN(val) && val > 0) setBPM(id, val);
                     setEditingBPM(false);
                   }}
-                  className="bg-transparent border-b border-[var(--crt-bright)] outline-none text-[12px] w-[50px]"
+                  className="bg-transparent border-b border-[var(--crt-bright)] outline-none text-[15px] w-[50px]"
                   style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}
                 />
               </span>
@@ -323,24 +323,24 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         };
         const btnStyle: React.CSSProperties = {
           fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent",
-          fontSize: "12px", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "15px", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center",
           border: "1px solid #444",
         };
         return (
           <div className="zone-engraved">
             <div className="flex items-center gap-4 justify-center">
               <div className="flex flex-col items-center gap-1">
-                <div className="label" style={{ fontSize: "8px", margin: 0 }}>IN</div>
+                <div className="label" style={{ fontSize: "11px", margin: 0 }}>IN</div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => nudgeIn(-1)} style={btnStyle}>&lt;</button>
-                  <span className="text-[8px] w-[70px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                  <span className="text-[11px] w-[70px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
                     {inVal.toFixed(4)}S
                   </span>
                   <button onClick={() => nudgeIn(1)} style={btnStyle}>&gt;</button>
                 </div>
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <div className="label" style={{ fontSize: "7px", margin: 0 }}>STEP</div>
+                <div className="label" style={{ fontSize: "10px", margin: 0 }}>STEP</div>
                 <input
                   type="range" min={-3} max={0} step={0.1}
                   value={Math.log10(nudgeStep)}
@@ -348,15 +348,15 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   className="w-[100px]"
                   style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "16px" }}
                 />
-                <span className="text-[10px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                <span className="text-[13px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
                   {nudgeStep >= 0.1 ? nudgeStep.toFixed(1) + "S" : (nudgeStep * 1000).toFixed(1) + "MS"}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <div className="label" style={{ fontSize: "8px", margin: 0 }}>OUT</div>
+                <div className="label" style={{ fontSize: "11px", margin: 0 }}>OUT</div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => nudgeOut(-1)} style={btnStyle}>&lt;</button>
-                  <span className="text-[8px] w-[70px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+                  <span className="text-[11px] w-[70px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
                     {outVal.toFixed(4)}S
                   </span>
                   <button onClick={() => nudgeOut(1)} style={btnStyle}>&gt;</button>
@@ -384,7 +384,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             </button>
           </div>
           {deck.stemError && (
-            <span className="text-[8px]" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
+            <span className="text-[11px]" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
               {deck.stemError.toUpperCase()}
             </span>
           )}
@@ -401,25 +401,25 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {/* Transport buttons */}
       <div className="flex items-center gap-2 justify-center">
         <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>LOAD</span>
+          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>LOAD</span>
           <button onClick={handleLoad} disabled={deck.isLoading} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
         <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>START</span>
+          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>START</span>
           <button onClick={handleStart} disabled={!deck.sourceBuffer || deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
         <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>STOP</span>
+          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>STOP</span>
           <button onClick={() => stop(id)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
         <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>PAUSE</span>
+          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>PAUSE</span>
           <button onClick={() => pause(id)} disabled={!deck.sourceBuffer || !deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
@@ -441,7 +441,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           }}
           placeholder="PASTE YOUTUBE URL"
           disabled={deck.isLoading}
-          className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[13px] uppercase tracking-wider placeholder:text-black"
+          className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[16px] uppercase tracking-wider placeholder:text-black"
           style={{ fontFamily: "var(--font-tech)", color: "#000", outline: "none" }}
         />
         <button
@@ -452,14 +452,14 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             setYtUrl("");
           }}
           disabled={deck.isLoading || !ytUrl.trim()}
-          className="border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider disabled:opacity-30"
+          className="border-2 border-[#555] px-3 py-2 text-[15px] uppercase tracking-wider disabled:opacity-30"
           style={{ fontFamily: "var(--font-tech)", color: "#000", background: "transparent" }}
         >
           {deck.isLoading ? "LOADING..." : "GO"}
         </button>
       </div>
       {deck.error && (
-        <div className="text-[9px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
+        <div className="text-[12px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
           {deck.error}
         </div>
       )}
@@ -478,7 +478,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 style={{ ...faderStyle, width: "36px" }}
               />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>SPEED</div>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>SPEED</div>
             {editingSpeed ? (
               <form onSubmit={(e) => {
                 e.preventDefault();
@@ -491,13 +491,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   value={speedInput}
                   onChange={(e) => setSpeedInput(e.target.value)}
                   onBlur={() => setEditingSpeed(false)}
-                  className="bg-transparent border border-[#333] text-center w-[60px] text-[9px]"
+                  className="bg-transparent border border-[#333] text-center w-[60px] text-[12px]"
                   style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
                 />
               </form>
             ) : (
               <span
-                className="text-[9px]"
+                className="text-[12px]"
                 style={{ color: "var(--text-dark)" }}
                 onClick={() => { setSpeedInput(rate.toFixed(4)); setEditingSpeed(true); }}
               >
@@ -517,8 +517,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 style={{ ...faderStyle, width: "36px" }}
               />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>PITCH</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>PITCH</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>
               {baseKey !== null
                 ? semitoneToKey(baseKey, displaySemitones)
                 : `${displaySemitones >= 0 ? "+" : ""}${displaySemitones.toFixed(1)}ST`
@@ -537,8 +537,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 style={{ ...faderStyle, width: "36px" }}
               />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>VOL</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.volume * 100)}%</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>VOL</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.volume * 100)}%</span>
           </div>
         </div>
       </div>
@@ -557,8 +557,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 style={{ ...faderStyle, width: "36px" }}
               />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>REVERB</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{reverbPct}%</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>REVERB</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{reverbPct}%</span>
             <button onClick={() => setReverbDetail(!reverbDetail)} className={detailBtnClass(reverbDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
           <div className="flex flex-col items-center gap-1">
@@ -572,8 +572,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 style={{ ...faderStyle, width: "36px" }}
               />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>TONE</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{toneLabel}</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>TONE</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{toneLabel}</span>
             <button onClick={() => setToneDetail(!toneDetail)} className={detailBtnClass(toneDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
           <div className="flex flex-col items-center gap-1">
@@ -587,8 +587,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 style={{ ...faderStyle, width: "36px" }}
               />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>SAT</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{satPct}%</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>SAT</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{satPct}%</span>
             <button onClick={() => setSatDetail(!satDetail)} className={detailBtnClass(satDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
         </div>
@@ -597,7 +597,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {/* Reverb Detail */}
       {reverbDetail && (
         <div className="zone-engraved">
-          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>REVERB DETAIL</div>
+          <div className="label" style={{ fontSize: "12px", marginBottom: "8px", marginTop: 0 }}>REVERB DETAIL</div>
           <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -607,8 +607,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "reverbWetOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>WET/DRY</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.reverbWetOverride ?? expanded.reverbWet) * 100)}%</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>WET/DRY</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.reverbWetOverride ?? expanded.reverbWet) * 100)}%</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -618,8 +618,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "reverbDurationOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>SIZE</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDurationOverride ?? expanded.reverbDuration).toFixed(1)}S</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>SIZE</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDurationOverride ?? expanded.reverbDuration).toFixed(1)}S</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -629,8 +629,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "reverbDecayOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>DECAY</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDecayOverride ?? expanded.reverbDecay).toFixed(1)}</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>DECAY</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDecayOverride ?? expanded.reverbDecay).toFixed(1)}</span>
             </div>
           </div>
         </div>
@@ -639,7 +639,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {/* Tone Detail — Parametric EQ */}
       {toneDetail && (
         <div className="zone-engraved">
-          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>PARAMETRIC EQ</div>
+          <div className="label" style={{ fontSize: "12px", marginBottom: "8px", marginTop: 0 }}>PARAMETRIC EQ</div>
           <div className="grid grid-cols-5 gap-2" style={{ justifyItems: "center" }}>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -649,8 +649,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "eqLowOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>LOW</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqLowOverride ?? expanded.eqLow).toFixed(1)}</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>LOW</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqLowOverride ?? expanded.eqLow).toFixed(1)}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -660,8 +660,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "eqMidOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>MID</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqMidOverride ?? expanded.eqMid).toFixed(1)}</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>MID</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqMidOverride ?? expanded.eqMid).toFixed(1)}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -671,8 +671,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "eqHighOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>HIGH</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqHighOverride ?? expanded.eqHigh).toFixed(1)}</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>HIGH</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqHighOverride ?? expanded.eqHigh).toFixed(1)}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -682,8 +682,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "eqBumpFreqOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>FREQ</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.params.eqBumpFreqOverride ?? expanded.eqBumpFreq)}HZ</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>FREQ</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.params.eqBumpFreqOverride ?? expanded.eqBumpFreq)}HZ</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -693,8 +693,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "eqBumpGainOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>PEAK</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqBumpGainOverride ?? expanded.eqBumpGain).toFixed(1)}</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>PEAK</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqBumpGainOverride ?? expanded.eqBumpGain).toFixed(1)}</span>
             </div>
           </div>
         </div>
@@ -703,7 +703,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {/* Saturation Detail */}
       {satDetail && (
         <div className="zone-engraved">
-          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>SATURATION DETAIL</div>
+          <div className="label" style={{ fontSize: "12px", marginBottom: "8px", marginTop: 0 }}>SATURATION DETAIL</div>
           <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -713,8 +713,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "satDriveOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>DRIVE</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(deck.params.satDriveOverride ?? expanded.satDrive).toFixed(1)}</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>DRIVE</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(deck.params.satDriveOverride ?? expanded.satDrive).toFixed(1)}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -724,8 +724,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "satMixOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>MIX</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satMixOverride ?? expanded.satMix) * 100)}%</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>MIX</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satMixOverride ?? expanded.satMix) * 100)}%</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center">
@@ -735,8 +735,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   onChange={(e) => setParam(id, "satToneOverride", parseFloat(e.target.value))}
                   className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
               </div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>TONE</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satToneOverride ?? expanded.satTone) / 1000)}KHZ</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>TONE</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satToneOverride ?? expanded.satTone) / 1000)}KHZ</span>
             </div>
           </div>
         </div>
@@ -786,32 +786,32 @@ function MasterBus() {
               <div className="slider-track h-full" />
               <input type="range" min="-20" max="20" step="0.5" value={masterBus.eqLow} onChange={(e) => setMasterBus("eqLow", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>LOW</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqLow > 0 ? "+" : ""}{masterBus.eqLow.toFixed(1)}</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>LOW</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqLow > 0 ? "+" : ""}{masterBus.eqLow.toFixed(1)}</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
               <div className="slider-track h-full" />
               <input type="range" min="-20" max="20" step="0.5" value={masterBus.eqMid} onChange={(e) => setMasterBus("eqMid", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>MID</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqMid > 0 ? "+" : ""}{masterBus.eqMid.toFixed(1)}</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>MID</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqMid > 0 ? "+" : ""}{masterBus.eqMid.toFixed(1)}</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
               <div className="slider-track h-full" />
               <input type="range" min="-20" max="20" step="0.5" value={masterBus.eqHigh} onChange={(e) => setMasterBus("eqHigh", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>HIGH</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqHigh > 0 ? "+" : ""}{masterBus.eqHigh.toFixed(1)}</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>HIGH</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{masterBus.eqHigh > 0 ? "+" : ""}{masterBus.eqHigh.toFixed(1)}</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
               <div className="slider-track h-full" />
               <input type="range" min="0" max="1" step="0.01" value={masterBus.compAmount} onChange={(e) => setMasterBus("compAmount", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>COMP</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{compPct}%</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>COMP</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{compPct}%</span>
             <button onClick={() => setShowCompDetail(!showCompDetail)} className={detailBtnClass(showCompDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
           <div className="flex flex-col items-center gap-1">
@@ -819,8 +819,8 @@ function MasterBus() {
               <div className="slider-track h-full" />
               <input type="range" min="0" max="1" step="0.01" value={masterBus.limiterAmount} onChange={(e) => setMasterBus("limiterAmount", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
             </div>
-            <div className="label" style={{ fontSize: "9px", marginTop: "4px" }}>LIMIT</div>
-            <span className="text-[9px]" style={{ color: "var(--text-dark)" }}>{limPct}%</span>
+            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>LIMIT</div>
+            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{limPct}%</span>
             <button onClick={() => setShowLimDetail(!showLimDetail)} className={detailBtnClass(showLimDetail)} style={detailBtnStyle}>DETAIL</button>
           </div>
         </div>
@@ -831,33 +831,33 @@ function MasterBus() {
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2" style={{ justifyItems: "center" }}>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="-60" max="0" step="1" value={threshold} onChange={(e) => setMasterBus("compThreshold", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>THRESH</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{threshold.toFixed(0)}dB</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>THRESH</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{threshold.toFixed(0)}dB</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="1" max="20" step="0.5" value={ratio} onChange={(e) => setMasterBus("compRatio", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>RATIO</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{ratio.toFixed(1)}:1</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>RATIO</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{ratio.toFixed(1)}:1</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="0.001" max="0.5" step="0.001" value={attack} onChange={(e) => setMasterBus("compAttack", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>ATK</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(attack * 1000).toFixed(0)}ms</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>ATK</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(attack * 1000).toFixed(0)}ms</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="0.01" max="1" step="0.01" value={release} onChange={(e) => setMasterBus("compRelease", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>REL</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(release * 1000).toFixed(0)}ms</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>REL</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(release * 1000).toFixed(0)}ms</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="0" max="40" step="1" value={knee} onChange={(e) => setMasterBus("compKnee", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>KNEE</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{knee.toFixed(0)}dB</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>KNEE</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{knee.toFixed(0)}dB</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="0" max="24" step="0.5" value={makeup} onChange={(e) => setMasterBus("compMakeup", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>GAIN</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>+{makeup.toFixed(1)}dB</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>GAIN</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>+{makeup.toFixed(1)}dB</span>
             </div>
           </div>
         </div>
@@ -865,22 +865,22 @@ function MasterBus() {
 
       {showLimDetail && (
         <div className="zone-engraved">
-          <div className="label" style={{ fontSize: "9px", marginBottom: "8px", marginTop: 0 }}>LIMITER DETAIL</div>
+          <div className="label" style={{ fontSize: "12px", marginBottom: "8px", marginTop: 0 }}>LIMITER DETAIL</div>
           <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="-20" max="0" step="0.5" value={limThreshold} onChange={(e) => setMasterBus("limiterThreshold", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>CEILING</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{limThreshold.toFixed(1)}dB</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>CEILING</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{limThreshold.toFixed(1)}dB</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="0.001" max="0.3" step="0.001" value={limRelease} onChange={(e) => setMasterBus("limiterRelease", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>REL</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{(limRelease * 1000).toFixed(0)}ms</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>REL</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{(limRelease * 1000).toFixed(0)}ms</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="relative h-[80px] w-[36px] flex justify-center"><div className="slider-track h-full" /><input type="range" min="0" max="6" step="0.5" value={limKnee} onChange={(e) => setMasterBus("limiterKnee", parseFloat(e.target.value))} className="absolute h-full" style={{ ...faderStyle, width: "36px" }} /></div>
-              <div className="label" style={{ fontSize: "8px", marginTop: "4px" }}>KNEE</div>
-              <span className="text-[8px]" style={{ color: "var(--text-dark)" }}>{limKnee.toFixed(1)}dB</span>
+              <div className="label" style={{ fontSize: "11px", marginTop: "4px" }}>KNEE</div>
+              <span className="text-[11px]" style={{ color: "var(--text-dark)" }}>{limKnee.toFixed(1)}dB</span>
             </div>
           </div>
         </div>
@@ -898,67 +898,67 @@ function Manual({ onClose }: { onClose: () => void }) {
           <span className="text-sm tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}>MANUAL</span>
           <button onClick={onClose} className={detailBtnClass(false)} style={detailBtnStyle}>CLOSE</button>
         </div>
-        <div className="flex flex-col gap-3 text-[10px] leading-[1.6]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+        <div className="flex flex-col gap-3 text-[13px] leading-[1.6]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOADING TRACKS</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>LOADING TRACKS</div>
             <div>LOAD A TRACK INTO A DECK USING THE LOAD BUTTON (LOCAL FILE) OR PASTE A YOUTUBE URL AND HIT GO. EACH DECK HAS INDEPENDENT CONTROLS FOR SPEED, PITCH, VOLUME, REVERB, TONE, AND SATURATION.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>TWO DECKS</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>TWO DECKS</div>
             <div>STARTS WITH ONE DECK. HIT ADD A SECOND DECK TO SHOW DECK B. CLICK (HIDE) ON DECK B TO COLLAPSE BACK TO SINGLE DECK. SYNC CONTROLS AND CROSSFADER ONLY APPEAR WHEN BOTH DECKS ARE VISIBLE.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SPEED + PITCH</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>SPEED + PITCH</div>
             <div>LINKED (DEFAULT): SPEED AND PITCH MOVE TOGETHER LIKE A TURNTABLE. VARISPEED.</div>
             <div>UNLINKED: SPEED CHANGES TEMPO WITHOUT AFFECTING PITCH. PITCH SHIFTS WITHOUT AFFECTING TEMPO.</div>
             <div>STEP: SNAPS PITCH TO SEMITONE INTERVALS.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>LOOP FINE-TUNE</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>LOOP FINE-TUNE</div>
             <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE LOOP BOUNDARIES. STEP SIZE SLIDER ADJUSTS FROM 0.1MS TO 1S (LOGARITHMIC).</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>PIANO KEYBOARD</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>PIANO KEYBOARD</div>
             <div>ONE OCTAVE SINE WAVE GENERATOR FOR FINDING THE KEY BY EAR. OVERLAY A NOTE ON YOUR SAMPLE. OCTAVE UP/DOWN BUTTONS. LATCH HOLDS A NOTE UNTIL YOU PRESS ANOTHER OR THE SAME KEY AGAIN.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>SYNC + LOCK</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>SYNC + LOCK</div>
             <div>SYNC START: STARTS BOTH DECKS SIMULTANEOUSLY WITH SAMPLE-ACCURATE TIMING.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>CROSSFADER</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>CROSSFADER</div>
             <div>CENTER = BOTH DECKS FULL VOLUME. LEFT = DECK A ONLY. RIGHT = DECK B ONLY. ONLY VISIBLE WHEN BOTH DECKS ARE SHOWING.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>RECORDING</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>RECORDING</div>
             <div>ARM THE REC BUTTON (APPEARS WITH BOTH DECKS). RECORDING STARTS ON SYNC START AND CAPTURES THE LIVE MIX. WHEN DECK A STOPS, THE RECORDING ENDS AND THE MP4 EXPORT MODAL OPENS AUTOMATICALLY.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>EXPORT</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>EXPORT</div>
             <div>HIT EXPORT IN THE HEADER TO RENDER DECK A&apos;S AUDIO WITH ALL EFFECTS APPLIED. ENTER ARTIST AND TITLE. THE VIDEO IS GENERATED WITH RANDOM COVER ART AND STORED ON PINATA. DOWNLOADS AUTOMATICALLY.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>GALLERY</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>GALLERY</div>
             <div>ALL EXPORTED MP4S ARE SAVED TO THE GALLERY. ACCESS IT FROM THE GALLERY LINK IN THE HEADER.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>STEM ISOLATION</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>STEM ISOLATION</div>
             <div>CLICK ISOLATE VOCALS TO SEPARATE VOCALS USING ML (DEMUCS). FIRST USE TAKES 30-60 SECONDS. CLICK AGAIN TO TOGGLE OFF.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>OUTPUT BUS</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>OUTPUT BUS</div>
             <div>MASTER EQ (LOW/MID/HIGH), COMPRESSOR, AND LIMITER ON THE FINAL MIX. EACH HAS A DETAIL PANEL FOR FINE CONTROL.</div>
             <div>COMP: SINGLE KNOB MAPS TO THRESHOLD + RATIO + MAKEUP. DETAIL OVERRIDES INDIVIDUAL PARAMS.</div>
             <div>LIMIT: BRICK-WALL LIMITER AFTER THE COMPRESSOR. DETAIL CONTROLS CEILING, RELEASE, AND KNEE.</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>EFFECT DETAILS</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>EFFECT DETAILS</div>
             <div>REVERB DETAIL: WET/DRY, SIZE (DURATION), DECAY.</div>
             <div>TONE DETAIL: 5-BAND PARAMETRIC EQ (LOW, MID, HIGH, FREQ SWEEP, PEAK GAIN).</div>
             <div>SAT DETAIL: DRIVE, MIX, TONE (POST-SATURATION FILTER).</div>
           </div>
           <div>
-            <div className="text-[11px] mb-1" style={{ color: "var(--accent-gold)" }}>KEYBOARD SHORTCUTS</div>
+            <div className="text-[14px] mb-1" style={{ color: "var(--accent-gold)" }}>KEYBOARD SHORTCUTS</div>
             <div>+ / - : ZOOM WAVEFORM IN/OUT</div>
             <div>F : ZOOM TO FIT SELECTED REGION</div>
           </div>
@@ -985,6 +985,7 @@ export default function Home() {
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const [manualOpen, setManualOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(false);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
@@ -1004,38 +1005,51 @@ export default function Home() {
             >
               SLOWED AND REVERBED MACHINE
             </span>
-            <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <div className="ml-auto relative">
               <button
-                onClick={() => setManualOpen(true)}
-                className={detailBtnClass(false)}
-                style={detailBtnStyle}
+                onClick={() => setMenuOpen(!menuOpen)}
+                className={detailBtnClass(menuOpen)}
+                style={{ ...detailBtnStyle, padding: "4px 12px" }}
               >
-                MANUAL
+                MENU
               </button>
-              <button
-                onClick={exportMP4}
-                disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
-                className="text-[10px] sm:text-[11px] uppercase tracking-[0.15em] px-3 sm:px-4 py-1 sm:py-1.5 border-2"
-                style={{ fontFamily: "var(--font-tech)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1, color: "var(--accent-gold)", borderColor: "var(--accent-gold)" }}
-              >
-                {isExporting ? "RENDERING..." : "EXPORT MP4"}
-              </button>
-              <Link
-                href="/gallery"
-                className="text-[10px] sm:text-[11px] uppercase tracking-[0.15em] px-3 sm:px-4 py-1 sm:py-1.5 border-2"
-                style={{ fontFamily: "var(--font-tech)", background: "rgba(255,115,0,0.12)", color: "var(--accent-gold)", borderColor: "var(--accent-gold)" }}
-              >
-                GALLERY
-              </Link>
-              <a
-                href="https://everysong.site"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] sm:text-[11px] uppercase tracking-[0.15em] px-3 sm:px-4 py-1 sm:py-1.5 border-2"
-                style={{ fontFamily: "var(--font-tech)", background: "transparent", color: "var(--text-dark)", borderColor: "#555" }}
-              >
-                EVERY SONG
-              </a>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 border-2 border-[#555] bg-[var(--bg-base)] z-50 flex flex-col" style={{ minWidth: "160px" }}>
+                  <button
+                    onClick={() => { setManualOpen(true); setMenuOpen(false); }}
+                    className="text-[16px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                  >
+                    MANUAL
+                  </button>
+                  <button
+                    onClick={() => { exportMP4(); setMenuOpen(false); }}
+                    disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
+                    className="text-[16px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
+                  >
+                    {isExporting ? "RENDERING..." : "EXPORT MP4"}
+                  </button>
+                  <Link
+                    href="/gallery"
+                    onClick={() => setMenuOpen(false)}
+                    className="text-[16px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+                  >
+                    GALLERY
+                  </Link>
+                  <a
+                    href="https://everysong.site"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                    className="text-[16px] uppercase tracking-[0.15em] px-4 py-2 text-left"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                  >
+                    EVERY SONG
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1053,7 +1067,7 @@ export default function Home() {
                 <button
                   onClick={() => setShowDeckB(true)}
                   className={detailBtnClass(false)}
-                  style={{ ...detailBtnStyle, fontSize: "10px", padding: "6px 16px" }}
+                  style={{ ...detailBtnStyle, fontSize: "13px", padding: "6px 16px" }}
                 >
                   ADD A SECOND DECK
                 </button>
@@ -1065,7 +1079,7 @@ export default function Home() {
           {showDeckB && (
             <div className="flex justify-center gap-6 boot-stagger boot-delay-3">
               <div className="flex flex-col items-center">
-                <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>REC</span>
+                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>REC</span>
                 <button
                   onClick={() => armRecord()}
                   className="rocker-switch"
@@ -1082,7 +1096,7 @@ export default function Home() {
                     }}
                   />
                 </button>
-                <span className="text-[7px] mt-0.5" style={{
+                <span className="text-[10px] mt-0.5" style={{
                   fontFamily: "var(--font-tech)",
                   color: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "var(--text-dark)",
                   opacity: isRecording || recordArmed ? 1 : 0.4,
@@ -1091,7 +1105,7 @@ export default function Home() {
                 </span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="label" style={{ margin: 0, fontSize: "9px", marginBottom: "4px" }}>SYNC START</span>
+                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
                 <button
                   onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
                   disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
@@ -1108,7 +1122,7 @@ export default function Home() {
           {showDeckB && (
             <div className="zone-inset boot-stagger boot-delay-3">
               <div className="flex items-center gap-4">
-                <span className="label" style={{ margin: 0, fontSize: "10px", minWidth: "20px" }}>A</span>
+                <span className="label" style={{ margin: 0, fontSize: "13px", minWidth: "20px" }}>A</span>
                 <div className="flex-1 relative h-[40px] flex items-center">
                   <div
                     className="absolute inset-y-[14px] left-0 right-0"
@@ -1129,9 +1143,9 @@ export default function Home() {
                     style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "40px" }}
                   />
                 </div>
-                <span className="label" style={{ margin: 0, fontSize: "10px", minWidth: "20px" }}>B</span>
+                <span className="label" style={{ margin: 0, fontSize: "13px", minWidth: "20px" }}>B</span>
               </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>CROSSFADER</div>
+              <div className="label" style={{ fontSize: "15px", marginTop: "4px" }}>CROSSFADER</div>
             </div>
           )}
 
@@ -1139,7 +1153,7 @@ export default function Home() {
           {pendingRecording && (
             <div className="zone-inset flex flex-col items-center gap-3 py-4">
               <span
-                className="text-[11px] tracking-[2px] uppercase"
+                className="text-[14px] tracking-[2px] uppercase"
                 style={{ color: "var(--accent-gold)", fontFamily: "var(--font-display)" }}
               >
                 RECORDING COMPLETE
@@ -1148,21 +1162,21 @@ export default function Home() {
                 <button
                   onClick={downloadRecordingWAV}
                   disabled={isConvertingWav}
-                  className="border border-[var(--accent-gold)] px-4 py-2 text-[11px] uppercase tracking-wider disabled:opacity-50"
+                  className="border border-[var(--accent-gold)] px-4 py-2 text-[14px] uppercase tracking-wider disabled:opacity-50"
                   style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
                 >
                   {isConvertingWav ? "CONVERTING..." : "DOWNLOAD WAV"}
                 </button>
                 <button
                   onClick={exportRecordingMP4}
-                  className="border-2 border-[var(--accent-gold)] px-4 py-2 text-[11px] uppercase tracking-wider"
+                  className="border-2 border-[var(--accent-gold)] px-4 py-2 text-[14px] uppercase tracking-wider"
                   style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
                 >
                   EXPORT MP4
                 </button>
                 <button
                   onClick={clearPendingRecording}
-                  className="border border-[#333] px-4 py-2 text-[11px] uppercase tracking-wider"
+                  className="border border-[#333] px-4 py-2 text-[14px] uppercase tracking-wider"
                   style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
                 >
                   DISCARD

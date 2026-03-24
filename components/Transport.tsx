@@ -59,7 +59,7 @@ export default function Transport({ onExportVideo }: { onExportVideo?: () => voi
       {/* Load */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>LOAD</span>
+          <span className="label" style={{ margin: 0, fontSize: "13px" }}>LOAD</span>
           <div className="led-cutout">
             <div className={`led-rect ${isLoading ? "led-green-on" : sourceBuffer ? "led-green-on" : "led-green"}`} />
           </div>
@@ -76,7 +76,7 @@ export default function Transport({ onExportVideo }: { onExportVideo?: () => voi
       {/* Play/Stop */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isPlaying ? "STOP" : "PLAY"}</span>
+          <span className="label" style={{ margin: 0, fontSize: "13px" }}>{isPlaying ? "STOP" : "PLAY"}</span>
           <div className="led-cutout">
             <div className={`led-rect ${isPlaying ? "led-green-on" : "led-green"}`} />
           </div>
@@ -93,7 +93,7 @@ export default function Transport({ onExportVideo }: { onExportVideo?: () => voi
       {/* RDM */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>RANDOM</span>
+          <span className="label" style={{ margin: 0, fontSize: "13px" }}>RANDOM</span>
           <div className="led-cutout">
             <div className="led-rect led-green" />
           </div>
@@ -106,7 +106,7 @@ export default function Transport({ onExportVideo }: { onExportVideo?: () => voi
       {/* Download WAV */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>{isExporting ? "WAIT" : "WAV"}</span>
+          <span className="label" style={{ margin: 0, fontSize: "13px" }}>{isExporting ? "WAIT" : "WAV"}</span>
           <div className="led-cutout">
             <div className={`led-rect ${isExporting ? "led-green-on" : "led-green"}`} />
           </div>
@@ -119,7 +119,7 @@ export default function Transport({ onExportVideo }: { onExportVideo?: () => voi
       {/* Export MP4 */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-2 mb-2">
-          <span className="label" style={{ margin: 0, fontSize: "10px" }}>MP4</span>
+          <span className="label" style={{ margin: 0, fontSize: "13px" }}>MP4</span>
           <div className="led-cutout">
             <div className="led-rect led-green" />
           </div>
@@ -139,20 +139,20 @@ export default function Transport({ onExportVideo }: { onExportVideo?: () => voi
         onKeyDown={(e) => { if (e.key === "Enter") handleYouTube(); }}
         placeholder="PASTE YOUTUBE URL"
         disabled={isLoading}
-        className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[11px] uppercase tracking-wider"
+        className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[14px] uppercase tracking-wider"
         style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
       />
       <button
         onClick={handleYouTube}
         disabled={isLoading || !ytUrl.trim()}
-        className="border border-[#333] px-3 py-1 text-[10px] uppercase tracking-wider disabled:opacity-30"
+        className="border border-[#333] px-3 py-1 text-[13px] uppercase tracking-wider disabled:opacity-30"
         style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
       >
         {isLoading ? "LOADING..." : "LOAD"}
       </button>
     </div>
     {error && (
-      <div className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
+      <div className="text-[13px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
         {error}
       </div>
     )}

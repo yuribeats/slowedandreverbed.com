@@ -132,7 +132,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
           {!exporting && (
             <button
               onClick={onClose}
-              className="text-[10px] uppercase tracking-wider border border-[#333] px-2 py-1"
+              className="text-[13px] uppercase tracking-wider border border-[#333] px-2 py-1"
               style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
             >
               CLOSE
@@ -141,7 +141,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
+          <span className="text-[13px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
             ARTIST
           </span>
           <input
@@ -150,13 +150,13 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
             onChange={(e) => setArtist(e.target.value)}
             disabled={exporting}
             placeholder="ARTIST NAME"
-            className="bg-transparent border border-[#333] px-3 py-2 text-[13px] uppercase tracking-wider"
+            className="bg-transparent border border-[#333] px-3 py-2 text-[16px] uppercase tracking-wider"
             style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
+          <span className="text-[13px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
             TITLE
           </span>
           <input
@@ -165,20 +165,20 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
             onChange={(e) => setTitle(e.target.value)}
             disabled={exporting}
             placeholder="TRACK TITLE"
-            className="bg-transparent border border-[#333] px-3 py-2 text-[13px] uppercase tracking-wider"
+            className="bg-transparent border border-[#333] px-3 py-2 text-[16px] uppercase tracking-wider"
             style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
+          <span className="text-[13px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
             COVER IMAGE (OPTIONAL)
           </span>
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
           <button
             onClick={() => imageInputRef.current?.click()}
             disabled={exporting}
-            className="bg-transparent border border-[#333] px-3 py-2 text-[11px] uppercase tracking-wider text-left"
+            className="bg-transparent border border-[#333] px-3 py-2 text-[14px] uppercase tracking-wider text-left"
             style={{ fontFamily: "var(--font-tech)", color: customImage ? "var(--accent-gold)" : "var(--text-dark)", outline: "none" }}
           >
             {customImage ? customImageName.toUpperCase() : "RANDOM (CLICK TO UPLOAD)"}
@@ -186,7 +186,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
           {customImage && (
             <button
               onClick={() => { setCustomImage(null); setCustomImageName(""); }}
-              className="text-[9px] uppercase tracking-wider self-start"
+              className="text-[12px] uppercase tracking-wider self-start"
               style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", opacity: 0.5, background: "transparent", border: "none", padding: 0 }}
             >
               CLEAR
@@ -211,7 +211,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
               />
             </div>
             <span
-              className="text-[10px] uppercase tracking-wider text-center"
+              className="text-[13px] uppercase tracking-wider text-center"
               style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)" }}
             >
               {status}
@@ -223,7 +223,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
           <button
             onClick={handleExport}
             disabled={!artist.trim() || !title.trim()}
-            className="border-2 border-[var(--accent-gold)] px-4 py-3 text-[12px] uppercase tracking-wider disabled:opacity-30"
+            className="border-2 border-[var(--accent-gold)] px-4 py-3 text-[15px] uppercase tracking-wider disabled:opacity-30"
             style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
           >
             EXPORT MP4
@@ -231,12 +231,12 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, onCl
         )}
 
         {error && (
-          <div className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#c82828" }}>
+          <div className="text-[13px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#c82828" }}>
             ERROR: {error}
           </div>
         )}
 
-        <div className="text-[9px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
+        <div className="text-[12px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
           GENERATES A VIDEO WITH YOUR MIX + COVER ART
         </div>
       </div>

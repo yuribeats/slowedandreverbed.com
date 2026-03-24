@@ -128,7 +128,7 @@ export default function Knob({
         </div>
       </div>
       <div className="label">{label}</div>
-      <span className="text-[11px] font-mono tracking-wider" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
+      <span className="text-[14px] font-mono tracking-wider" style={{ color: "var(--crt-bright)", textShadow: "0 0 6px var(--crt-dim)" }}>
         {valueDisplay}
       </span>
     </div>

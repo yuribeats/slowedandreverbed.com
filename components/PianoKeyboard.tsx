@@ -75,12 +75,12 @@ export default function PianoKeyboard({ style }: Props) {
     return () => { stopNote(); };
   }, [stopNote]);
 
-  const btnClass = "text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 border";
+  const btnClass = "text-[11px] uppercase tracking-[0.15em] px-2 py-0.5 border";
   const btnStyle: React.CSSProperties = { fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" };
 
   return (
     <div className="flex flex-col items-center gap-2" style={style}>
-      <div className="label" style={{ margin: 0, fontSize: "9px" }}>KEY FINDER</div>
+      <div className="label" style={{ margin: 0, fontSize: "12px" }}>KEY FINDER</div>
 
       {/* Keyboard */}
       <div className="flex relative" style={{ height: "48px", userSelect: "none" }}>
@@ -111,7 +111,7 @@ export default function PianoKeyboard({ style }: Props) {
               }}
             >
               <span style={{
-                fontSize: "6px",
+                fontSize: "9px",
                 color: isBlack ? "#888" : "#444",
                 fontFamily: "var(--font-tech)",
                 paddingBottom: "2px",
@@ -132,7 +132,7 @@ export default function PianoKeyboard({ style }: Props) {
         >
           OCT-
         </button>
-        <span className="text-[9px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+        <span className="text-[12px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
           {octave}
         </span>
         <button

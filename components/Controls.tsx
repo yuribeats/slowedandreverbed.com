@@ -41,7 +41,7 @@ export default function Controls() {
         />
         <button
           onClick={() => setStepMode(!stepMode)}
-          className={`mt-1 text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 border ${
+          className={`mt-1 text-[11px] uppercase tracking-[0.15em] px-2 py-0.5 border ${
             stepMode
               ? "border-[#333] bg-[rgba(224,140,38,0.15)]"
               : "border-[#777]"

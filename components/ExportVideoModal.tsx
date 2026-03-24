@@ -151,7 +151,7 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
           {!exporting && (
             <button
               onClick={onClose}
-              className="text-[10px] uppercase tracking-wider border border-[#333] px-2 py-1"
+              className="text-[13px] uppercase tracking-wider border border-[#333] px-2 py-1"
               style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
             >
               CLOSE
@@ -160,7 +160,7 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
+          <span className="text-[13px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
             ARTIST
           </span>
           <input
@@ -169,13 +169,13 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
             onChange={(e) => setArtist(e.target.value)}
             disabled={exporting}
             placeholder="ARTIST NAME"
-            className="bg-transparent border border-[#333] px-3 py-2 text-[13px] uppercase tracking-wider"
+            className="bg-transparent border border-[#333] px-3 py-2 text-[16px] uppercase tracking-wider"
             style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
+          <span className="text-[13px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
             TITLE
           </span>
           <input
@@ -184,7 +184,7 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
             onChange={(e) => setTitle(e.target.value)}
             disabled={exporting}
             placeholder="TRACK TITLE"
-            className="bg-transparent border border-[#333] px-3 py-2 text-[13px] uppercase tracking-wider"
+            className="bg-transparent border border-[#333] px-3 py-2 text-[16px] uppercase tracking-wider"
             style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
           />
         </div>
@@ -192,13 +192,13 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
         <button
           onClick={handleExport}
           disabled={exporting || !artist.trim() || !title.trim() || !sourceBuffer}
-          className="border-2 border-[var(--accent-gold)] px-4 py-3 text-[12px] uppercase tracking-wider disabled:opacity-30"
+          className="border-2 border-[var(--accent-gold)] px-4 py-3 text-[15px] uppercase tracking-wider disabled:opacity-30"
           style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
         >
           {exporting ? status : "EXPORT MP4"}
         </button>
 
-        <div className="text-[9px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
+        <div className="text-[12px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>
           GENERATES A VIDEO WITH YOUR PROCESSED AUDIO + RANDOM COVER ART
         </div>
       </div>

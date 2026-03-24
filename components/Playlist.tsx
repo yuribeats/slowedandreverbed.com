@@ -29,7 +29,7 @@ export default function Playlist() {
     a.click();
   };
 
-  const btnStyle = "tactical-button text-[9px] !px-2 !py-1";
+  const btnStyle = "tactical-button text-[12px] !px-2 !py-1";
 
   return (
     <div className="zone-inset mt-4">
@@ -39,11 +39,11 @@ export default function Playlist() {
       <div className="max-h-48 overflow-y-auto">
         {playlist.map((item) => (
           <div key={item.id} className="px-4 py-2 flex items-center justify-between border-b border-[#6b6758] last:border-0">
-            <span className="text-[11px] uppercase tracking-wider truncate flex-1" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}>
+            <span className="text-[14px] uppercase tracking-wider truncate flex-1" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}>
               {item.name}
             </span>
             <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-              <span className="text-[9px] font-mono mr-2" style={{ color: "var(--crt-dim)" }}>
+              <span className="text-[12px] font-mono mr-2" style={{ color: "var(--crt-dim)" }}>
                 {new Date(item.createdAt).toLocaleDateString()}
               </span>
               {item.url && (
