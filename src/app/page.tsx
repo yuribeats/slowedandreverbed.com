@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { expandParams } from "@yuribeats/audio-utils";
 import { useRemixStore } from "../../lib/remix-store";
 import { getAudioContext } from "../../lib/audio-context";
@@ -79,10 +79,22 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const toneLabel = deck.params.tone === 0 ? "FLAT" : deck.params.tone < 0 ? "DARK" : "BRIGHT";
   const expanded = expandParams(deck.params);
   const [ytUrl, setYtUrl] = useState("");
-  const [baseKey, setBaseKey] = useState<number | null>(null); // index into NOTE_NAMES, null = not set
+  const [baseKey, setBaseKey] = useState<number | null>(null);
   const [editingKey, setEditingKey] = useState(false);
+  const [userBPM, setUserBPM] = useState<string>("");
+  const [editingBPM, setEditingBPM] = useState(false);
   const [editingSpeed, setEditingSpeed] = useState(false);
   const [speedInput, setSpeedInput] = useState("");
+  const setBPM = useRemixStore((s) => s.setBPM);
+
+  // Clear key and BPM when source changes
+  const sourceId = deck.sourceBuffer ? deck.sourceFilename : null;
+  useEffect(() => {
+    setBaseKey(null);
+    setUserBPM("");
+    setEditingKey(false);
+    setEditingBPM(false);
+  }, [sourceId]);
 
   const handleSpeed = (v: number) => {
     if (linked) {
@@ -178,7 +190,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           </div>
         </div>
         {deck.sourceBuffer && (
-          <div className="flex gap-3 text-[10px] items-center" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "12px" }}>
+          <div className="flex gap-4 text-[10px] items-center" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "12px" }}>
             {editingKey ? (
               <span style={{ color: "var(--crt-bright)" }}>
                 KEY:{" "}
@@ -201,15 +213,54 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               </span>
             ) : (
               <span
-                style={{ color: "var(--crt-bright)" }}
+                style={{ color: baseKey !== null ? "var(--crt-bright)" : "var(--crt-dim)" }}
                 onClick={() => setEditingKey(true)}
               >
                 {baseKey !== null
                   ? `KEY: ${semitoneToKey(baseKey, displaySemitones)}`
-                  : `PITCH: ${displaySemitones >= 0 ? "+" : ""}${displaySemitones.toFixed(1)}ST`
+                  : "SET KEY"
                 }
               </span>
             )}
+            {editingBPM ? (
+              <span style={{ color: "var(--crt-bright)" }}>
+                BPM:{" "}
+                <input
+                  type="text"
+                  autoFocus
+                  value={userBPM}
+                  onChange={(e) => setUserBPM(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = parseFloat(userBPM);
+                      if (!isNaN(val) && val > 0) setBPM(id, val);
+                      setEditingBPM(false);
+                    }
+                    if (e.key === "Escape") setEditingBPM(false);
+                  }}
+                  onBlur={() => {
+                    const val = parseFloat(userBPM);
+                    if (!isNaN(val) && val > 0) setBPM(id, val);
+                    setEditingBPM(false);
+                  }}
+                  className="bg-transparent border-b border-[var(--crt-bright)] outline-none text-[12px] w-[50px]"
+                  style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}
+                />
+              </span>
+            ) : (
+              <span
+                style={{ color: userBPM ? "var(--crt-bright)" : "var(--crt-dim)" }}
+                onClick={() => setEditingBPM(true)}
+              >
+                {deck.calculatedBPM
+                  ? `BPM: ${(deck.calculatedBPM * rate).toFixed(1)}`
+                  : "SET BPM"
+                }
+              </span>
+            )}
+            <span style={{ color: "var(--crt-dim)" }}>
+              PITCH: {displaySemitones >= 0 ? "+" : ""}{displaySemitones.toFixed(1)}ST
+            </span>
           </div>
         )}
       </div>
