@@ -397,8 +397,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           if (gridLines.length === 0 || gridLines[0] > inVal + 0.001) gridLines.unshift(inVal);
           if (gridLines[gridLines.length - 1] < outVal - 0.001) gridLines.push(outVal);
 
-          // Extract audio between consecutive grid lines (max 16 for MPC pads)
-          for (let i = 0; i < gridLines.length - 1 && loops.length < 16; i++) {
+          // Extract audio between consecutive grid lines (max 15 for MPC pads, last pad = full track)
+          for (let i = 0; i < gridLines.length - 1 && loops.length < 15; i++) {
             const start = Math.max(0, gridLines[i]);
             const end = Math.min(dur, gridLines[i + 1]);
             if (end <= start) continue;
@@ -414,6 +414,17 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               length: sliceLen,
               data,
             });
+          }
+
+          // Last pad (16): entire track from IN to OUT
+          const fullStart = Math.max(0, inVal);
+          const fullEnd = Math.min(dur, outVal);
+          if (fullEnd > fullStart) {
+            const fs = Math.floor(fullStart * sr);
+            const fe = Math.min(Math.ceil(fullEnd * sr), ch0.length);
+            const fullData = new Float32Array(fe - fs);
+            fullData.set(ch0.subarray(fs, fe));
+            loops.push({ name: "FULL LOOP", sampleRate: sr, length: fe - fs, data: fullData });
           }
 
           if (loops.length === 0) return;
