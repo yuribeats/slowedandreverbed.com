@@ -4,7 +4,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { getAudioContext } from "../lib/audio-context";
 
 interface Props {
-  audioBuffer: AudioBuffer | null;
+  audioBuffer?: AudioBuffer | null;
   isPlaying: boolean;
   pauseOffset: number;
   startedAt: number;
@@ -13,7 +13,13 @@ interface Props {
   regionEnd: number;
   onRegionChange: (start: number, end: number) => void;
   onSeek: (position: number) => void;
-  onScrub?: (position: number) => void; // lightweight visual-only update during drag
+  onScrub?: (position: number) => void;
+  height?: number; // px, default 120
+  leftControls?: React.ReactNode;
+  // For cross-tab rendering without AudioBuffer
+  precomputedPeaks?: Float32Array | null;
+  precomputedDuration?: number;
+  perfStartedAt?: number; // performance.now()-based start time
 }
 
 function computePeaks(buffer: AudioBuffer, numBars: number): Float32Array {
@@ -65,6 +71,11 @@ export default function WaveformDisplay({
   onRegionChange,
   onSeek,
   onScrub,
+  height: waveformHeight = 120,
+  leftControls,
+  precomputedPeaks,
+  precomputedDuration,
+  perfStartedAt,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const peaksRef = useRef<Float32Array | null>(null);
@@ -75,7 +86,7 @@ export default function WaveformDisplay({
   const [zoom, setZoom] = useState(1);
   const [viewCenter, setViewCenter] = useState(0);
 
-  const duration = audioBuffer?.duration ?? 0;
+  const duration = precomputedDuration ?? audioBuffer?.duration ?? 0;
   const effectiveStart = regionStart;
   const effectiveEnd = regionEnd > 0 ? regionEnd : duration;
 
@@ -86,7 +97,11 @@ export default function WaveformDisplay({
   const viewEnd = Math.min(duration, clampedCenter + halfView);
 
   useEffect(() => {
-    if (audioBuffer) {
+    if (precomputedPeaks) {
+      peaksRef.current = precomputedPeaks;
+      setZoom(1);
+      setViewCenter((precomputedDuration ?? 0) / 2);
+    } else if (audioBuffer) {
       peaksRef.current = computePeaks(audioBuffer, 2000);
       setZoom(1);
       setViewCenter(audioBuffer.duration / 2);
@@ -95,16 +110,26 @@ export default function WaveformDisplay({
       setZoom(1);
       setViewCenter(0);
     }
-  }, [audioBuffer]);
+  }, [audioBuffer, precomputedPeaks, precomputedDuration]);
 
   // Compute live cursor time
   const getCursorTime = useCallback(() => {
     if (!isPlaying) return pauseOffset;
+    // Cross-tab mode: use performance.now()-based timing
+    if (perfStartedAt != null) {
+      const elapsed = (performance.now() - perfStartedAt) / 1000;
+      const pos = regionStart + elapsed;
+      const rEnd = regionEnd > 0 ? regionEnd : duration;
+      const rLen = rEnd - regionStart;
+      if (rLen > 0 && pos > rEnd) {
+        return regionStart + ((pos - regionStart) % rLen);
+      }
+      return pos;
+    }
     try {
       const ctx = getAudioContext();
       const elapsed = (ctx.currentTime - startedAt) * playbackRate;
       const pos = regionStart + elapsed;
-      // Wrap within region for looping
       const rEnd = regionEnd > 0 ? regionEnd : duration;
       const rLen = rEnd - regionStart;
       if (rLen > 0 && pos > rEnd) {
@@ -114,7 +139,7 @@ export default function WaveformDisplay({
     } catch {
       return pauseOffset;
     }
-  }, [isPlaying, pauseOffset, startedAt, playbackRate, regionStart, regionEnd, duration]);
+  }, [isPlaying, pauseOffset, startedAt, playbackRate, regionStart, regionEnd, duration, perfStartedAt]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -513,7 +538,7 @@ export default function WaveformDisplay({
       {/* Waveform canvas */}
       <div
         ref={containerRef}
-        style={{ height: "120px", touchAction: "none", background: "#0a0a0a", borderRadius: "2px", overflow: "hidden" }}
+        style={{ height: `${waveformHeight}px`, touchAction: "none", background: "#0a0a0a", borderRadius: "2px", overflow: "hidden" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -523,9 +548,10 @@ export default function WaveformDisplay({
       </div>
 
       {/* Controls row */}
-      {audioBuffer && (
-        <div className="flex items-center gap-2 justify-between">
+      {(audioBuffer || precomputedPeaks || leftControls) && (
+        <div className="flex items-center gap-2 justify-between" style={{ position: "relative", zIndex: 50 }}>
           <div className="flex items-center gap-1">
+            {leftControls}
             <span className="text-[11px]" style={{ color: "#555", fontFamily: "var(--font-tech)" }}>
               {zoom > 1 ? "SHIFT+DRAG TO PAN" : ""}
             </span>
