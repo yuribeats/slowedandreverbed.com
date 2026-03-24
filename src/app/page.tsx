@@ -8,7 +8,7 @@ import WaveformDisplay from "../../components/WaveformDisplay";
 import PianoKeyboard from "../../components/PianoKeyboard";
 import Toast from "../../components/Toast";
 import ExportVideoModalRemix from "../../components/ExportVideoModalRemix";
-import Link from "next/link";
+
 
 type DeckId = "A" | "B";
 
@@ -88,6 +88,9 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [editingSpeed, setEditingSpeed] = useState(false);
   const [speedInput, setSpeedInput] = useState("");
   const setBPM = useRemixStore((s) => s.setBPM);
+  const toggleGridlock = useRemixStore((s) => s.toggleGridlock);
+  const setGridOffset = useRemixStore((s) => s.setGridOffset);
+  const recordArmed = useRemixStore((s) => s.recordArmed);
 
   // Clear key and BPM when source changes
   const sourceId = deck.sourceBuffer ? deck.sourceFilename : null;
@@ -281,6 +284,9 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onRegionChange={(s, e) => setRegion(id, s, e)}
             onSeek={(pos) => seek(id, pos)}
             onScrub={(pos) => scrub(id, pos)}
+            gridEnabled={deck.gridlockEnabled && !!deck.calculatedBPM}
+            gridBPM={deck.calculatedBPM ? deck.calculatedBPM * rate : undefined}
+            gridAnchor={deck.gridlockEnabled ? deck.gridFirstTransient + deck.gridOffsetMs / 1000 : undefined}
             leftControls={
               <div className="relative shrink-0">
                 <button
@@ -309,10 +315,17 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                     </button>
                     <button
                       onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left"
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
                       style={{ fontFamily: "var(--font-tech)", color: showKeyFinder ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
                     >
                       KEY FINDER
+                    </button>
+                    <button
+                      onClick={() => { toggleGridlock(id); setDeckMenuOpen(false); }}
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left"
+                      style={{ fontFamily: "var(--font-tech)", color: deck.gridlockEnabled ? "#c82828" : "var(--text-dark)", background: "transparent" }}
+                    >
+                      GRIDLOCK
                     </button>
                   </div>
                 )}
@@ -322,6 +335,79 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       </div>
 
+
+      {/* GRIDLOCK section */}
+      {deck.gridlockEnabled && deck.calculatedBPM && deck.sourceBuffer && (() => {
+        const displayBPM = deck.calculatedBPM * rate;
+        const sectionDur = 960 / displayBPM;
+        const gridAnchor = deck.gridFirstTransient + deck.gridOffsetMs / 1000;
+        const dur = deck.sourceBuffer!.duration;
+        const inVal = deck.regionStart;
+        const outVal = deck.regionEnd > 0 ? deck.regionEnd : dur;
+        const sectionCount = Math.round((outVal - inVal) / sectionDur);
+        const sectionDurMs = (sectionDur * 1000).toFixed(0);
+
+        const snapGridIn = (dir: number) => {
+          const n = dir < 0
+            ? Math.floor((inVal - gridAnchor) / sectionDur - 0.001)
+            : Math.ceil((inVal - gridAnchor) / sectionDur + 0.001);
+          const snapped = gridAnchor + n * sectionDur;
+          setRegion(id, snapped, deck.regionEnd);
+        };
+        const snapGridOut = (dir: number) => {
+          const n = dir < 0
+            ? Math.floor((outVal - gridAnchor) / sectionDur - 0.001)
+            : Math.ceil((outVal - gridAnchor) / sectionDur + 0.001);
+          const snapped = gridAnchor + n * sectionDur;
+          setRegion(id, deck.regionStart, snapped);
+        };
+        const gridBtnStyle: React.CSSProperties = {
+          fontFamily: "var(--font-tech)", color: "#c82828", background: "transparent",
+          fontSize: "12px", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center",
+          border: "1px solid #c82828",
+        };
+        return (
+          <div className="zone-engraved" style={{ borderColor: "rgba(200,40,40,0.4)" }}>
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <div className="label" style={{ fontSize: "12px", margin: 0, color: "#c82828" }}>IN</div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => snapGridIn(-1)} style={gridBtnStyle}>&lt;</button>
+                  <button onClick={() => snapGridIn(1)} style={gridBtnStyle}>&gt;</button>
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col items-center gap-0.5">
+                <div className="label" style={{ fontSize: "12px", margin: 0, color: "#c82828" }}>ALIGN</div>
+                <input
+                  type="range" min={-5000} max={5000} step={10}
+                  value={deck.gridOffsetMs}
+                  onChange={(e) => setGridOffset(id, parseFloat(e.target.value))}
+                  className="w-full gridlock-slider"
+                  style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "16px", accentColor: "#c82828" }}
+                />
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px]" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
+                    {deck.gridOffsetMs >= 0 ? "+" : ""}{deck.gridOffsetMs}MS
+                  </span>
+                  <span className="text-[12px]" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
+                    {sectionCount} SECTION{sectionCount !== 1 ? "S" : ""}
+                  </span>
+                  <span className="text-[12px]" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
+                    {sectionDurMs}MS APART
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <div className="label" style={{ fontSize: "12px", margin: 0, color: "#c82828" }}>OUT</div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => snapGridOut(-1)} style={gridBtnStyle}>&lt;</button>
+                  <button onClick={() => snapGridOut(1)} style={gridBtnStyle}>&gt;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Loop IN/OUT nudge controls */}
       {deck.sourceBuffer && (deck.regionStart > 0 || deck.regionEnd > 0) && (() => {
@@ -420,7 +506,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>STOP</span>
           <button onClick={() => stop(id)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
-            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+            <div className="w-1.5 h-1.5 rounded-full" style={{
+              background: (id === "A" && recordArmed) ? "var(--led-red-on, #c82828)" : undefined,
+              border: (id === "A" && recordArmed) ? "none" : "2px solid #555",
+            }} />
           </button>
         </div>
         <div className="flex flex-col items-center">
@@ -1031,14 +1120,16 @@ export default function Home() {
                   >
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
                   </button>
-                  <Link
-                    href="/gallery"
+                  <a
+                    href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
                     className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
                     style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
                   >
-                    GALLERY
-                  </Link>
+                    YOUTUBE
+                  </a>
                   <a
                     href="https://everysong.site"
                     target="_blank"

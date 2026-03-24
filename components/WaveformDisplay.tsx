@@ -20,6 +20,9 @@ interface Props {
   precomputedPeaks?: Float32Array | null;
   precomputedDuration?: number;
   perfStartedAt?: number; // performance.now()-based start time
+  gridEnabled?: boolean;
+  gridBPM?: number;
+  gridAnchor?: number;
 }
 
 function computePeaks(buffer: AudioBuffer, numBars: number): Float32Array {
@@ -75,6 +78,9 @@ export default function WaveformDisplay({
   precomputedPeaks,
   precomputedDuration,
   perfStartedAt,
+  gridEnabled,
+  gridBPM,
+  gridAnchor,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const peaksRef = useRef<Float32Array | null>(null);
@@ -218,6 +224,28 @@ export default function WaveformDisplay({
     ctx.lineTo(w, midY);
     ctx.stroke();
 
+    // Grid lines (GRIDLOCK)
+    if (gridEnabled && gridBPM && gridBPM > 0 && gridAnchor != null) {
+      const sectionDur = 960 / gridBPM;
+      if (sectionDur > 0.01) {
+        ctx.strokeStyle = "#c82828";
+        ctx.lineWidth = 1;
+        const anchor = gridAnchor;
+        const firstN = Math.floor((viewStart - anchor) / sectionDur);
+        const lastN = Math.ceil((viewEnd - anchor) / sectionDur);
+        for (let n = firstN; n <= lastN; n++) {
+          const gt = anchor + n * sectionDur;
+          const gx = timeToX(gt);
+          if (gx >= -1 && gx <= w + 1) {
+            ctx.beginPath();
+            ctx.moveTo(gx, 0);
+            ctx.lineTo(gx, waveH);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
     // Region handles
     const handleSize = 12;
     const rsX = timeToX(effectiveStart);
@@ -357,7 +385,7 @@ export default function WaveformDisplay({
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime]);
+  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridBPM, gridAnchor]);
 
   // Animation loop — only useEffect controls scheduling, draw never self-schedules
   useEffect(() => {

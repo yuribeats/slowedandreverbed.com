@@ -125,6 +125,9 @@ interface DeckState {
   loopBank: BankedLoop[];
   automationEnabled: boolean;
   automationPoints: AutomationPoint[];
+  gridlockEnabled: boolean;
+  gridOffsetMs: number;
+  gridFirstTransient: number;
 }
 
 type DeckId = "A" | "B";
@@ -151,6 +154,9 @@ const defaultDeck = (): DeckState => ({
   loopBank: [],
   automationEnabled: false,
   automationPoints: [],
+  gridlockEnabled: false,
+  gridOffsetMs: 0,
+  gridFirstTransient: 0,
 });
 
 interface MasterBusParams {
@@ -264,6 +270,8 @@ interface RemixStore {
   addAutomationPoint: (deck: DeckId, time: number, value: number) => void;
   removeAutomationPoint: (deck: DeckId, index: number) => void;
   moveAutomationPoint: (deck: DeckId, index: number, time: number, value: number) => void;
+  toggleGridlock: (deck: DeckId) => void;
+  setGridOffset: (deck: DeckId, ms: number) => void;
 }
 
 /* ─── Shared output bus: merger → EQ → compressor → makeup → limiter → destination ─── */
@@ -1503,5 +1511,38 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     points[index] = { time, value };
     points.sort((a, b) => a.time - b.time);
     set({ [deckKey(id)]: { ...deck, automationPoints: points } });
+  },
+
+  toggleGridlock: (id) => {
+    const dk = deckKey(id);
+    const deck = getDeck(get(), id);
+    if (deck.gridlockEnabled) {
+      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: false, gridOffsetMs: 0, gridFirstTransient: 0 } }));
+    } else {
+      // Detect first transient: scan first 10s of channel 0
+      let firstTransient = 0;
+      if (deck.sourceBuffer) {
+        const ch0 = deck.sourceBuffer.getChannelData(0);
+        const scanLen = Math.min(ch0.length, Math.ceil(deck.sourceBuffer.sampleRate * 10));
+        let globalMax = 0;
+        for (let i = 0; i < scanLen; i++) {
+          const abs = Math.abs(ch0[i]);
+          if (abs > globalMax) globalMax = abs;
+        }
+        const threshold = globalMax * 0.3;
+        for (let i = 0; i < scanLen; i++) {
+          if (Math.abs(ch0[i]) >= threshold) {
+            firstTransient = i / deck.sourceBuffer.sampleRate;
+            break;
+          }
+        }
+      }
+      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: true, gridOffsetMs: 0, gridFirstTransient: firstTransient } }));
+    }
+  },
+
+  setGridOffset: (id, ms) => {
+    const dk = deckKey(id);
+    set((s) => ({ [dk]: { ...s[dk], gridOffsetMs: ms } }));
   },
 }));
