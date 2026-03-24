@@ -71,7 +71,6 @@ export default function WaveformDisplay({
   onRegionChange,
   onSeek,
   onScrub,
-  height: waveformHeight = 120,
   leftControls,
   precomputedPeaks,
   precomputedDuration,
@@ -538,7 +537,7 @@ export default function WaveformDisplay({
       {/* Waveform canvas */}
       <div
         ref={containerRef}
-        style={{ height: `${waveformHeight}px`, touchAction: "none", background: "#0a0a0a", borderRadius: "2px", overflow: "hidden" }}
+        style={{ height: "240px", touchAction: "none", background: "#0a0a0a", borderRadius: "2px", overflow: "hidden" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

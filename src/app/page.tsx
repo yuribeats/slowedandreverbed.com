@@ -65,7 +65,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [reverbDetail, setReverbDetail] = useState(false);
   const [toneDetail, setToneDetail] = useState(false);
   const [satDetail, setSatDetail] = useState(false);
-  const [nudgeStep, setNudgeStep] = useState(0.001);
+  const [nudgeStep, setNudgeStep] = useState(0.01);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [deckMenuOpen, setDeckMenuOpen] = useState(false);
   const [showYouTube, setShowYouTube] = useState(false);
@@ -300,13 +300,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                       YOUTUBE URL
                     </button>
                     <button
-                      onClick={() => { setDeckMenuOpen(false); window.open(`/?deck=${id}&view=waveform`, '_blank'); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
-                      style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
-                    >
-                      OPEN IN NEW TAB
-                    </button>
-                    <button
                       onClick={() => { setStem(id, "vocals"); setDeckMenuOpen(false); }}
                       disabled={deck.isStemLoading}
                       className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
@@ -364,14 +357,14 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               <div className="flex-1 flex flex-col items-center gap-0.5">
                 <div className="label" style={{ fontSize: "12px", margin: 0 }}>STEP</div>
                 <input
-                  type="range" min={-3} max={0} step={0.1}
-                  value={Math.log10(nudgeStep)}
-                  onChange={(e) => setNudgeStep(Math.pow(10, parseFloat(e.target.value)))}
+                  type="range" min={0.01} max={1} step={0.01}
+                  value={nudgeStep}
+                  onChange={(e) => setNudgeStep(parseFloat(e.target.value))}
                   className="w-full"
                   style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "16px" }}
                 />
                 <span className="text-[12px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                  {nudgeStep >= 0.1 ? nudgeStep.toFixed(1) + "S" : (nudgeStep * 1000).toFixed(1) + "MS"}
+                  {(nudgeStep * 1000).toFixed(0)}MS
                 </span>
               </div>
               <div className="flex flex-col items-center gap-1 shrink-0">
