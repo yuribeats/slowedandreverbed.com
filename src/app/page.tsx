@@ -1137,6 +1137,10 @@ function Manual({ onClose }: { onClose: () => void }) {
             <div>SAT DETAIL: DRIVE, MIX, TONE (POST-SATURATION FILTER).</div>
           </div>
           <div>
+            <div className="text-[12px] mb-1" style={{ color: "var(--accent-gold)" }}>GRIDLOCK</div>
+            <div>TOGGLE FROM TOOLS MENU. OVERLAYS RED GRID LINES EVERY 4 BARS BASED ON BPM. ALIGN SLIDER SHIFTS ALL LINES UNIFORMLY. GRID IN/OUT ARROWS SNAP REGION TO GRID LINES. SHOWS SECTION COUNT AND SPACING IN MS. OUTPUT TO MPC SENDS GRID SECTIONS TO THE STUDIO MPC. THE LAST MPC PAD IS ALWAYS THE FULL LOOP FROM IN TO OUT.</div>
+          </div>
+          <div>
             <div className="text-[12px] mb-1" style={{ color: "var(--accent-gold)" }}>KEYBOARD SHORTCUTS</div>
             <div>+ / - : ZOOM WAVEFORM IN/OUT</div>
             <div>F : ZOOM TO FIT SELECTED REGION</div>
@@ -1209,6 +1213,16 @@ export default function Home() {
                   >
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
                   </button>
+                  <a
+                    href="https://studio-2026-03-19.vercel.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+                  >
+                    STUDIO
+                  </a>
                   <a
                     href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE"
                     target="_blank"
