@@ -61,25 +61,23 @@ export function expandParams(s: SimpleParams): ProcessingParams {
   // When unlinked: rate = speedRate (speed only), pitchFactor applied separately via worklet
   const rate = linked ? speedRate : speedRate;
 
-  // Tone: ±20dB swing with exponential curve for dramatic effect
+  // Tone: ±8dB gentle shelf EQ, no resonant bump
   const toneMag = Math.abs(s.tone);
   const toneSign = s.tone < 0 ? -1 : 1;
-  const toneAmount = Math.pow(toneMag, 0.6) * 20 * toneSign;
+  const toneAmount = Math.pow(toneMag, 0.6) * 8 * toneSign;
 
   // Reverb: sqrt curve for audible presence at low settings
   const reverbCurve = Math.sqrt(s.reverb);
 
-  // Resonant bump: sweeps frequency with tone direction, gain scales with magnitude
-  const bumpFreq = s.tone > 0
-    ? 2000 + s.tone * 6000     // bright: 2kHz → 8kHz
-    : 800 - toneMag * 600;     // dark: 800Hz → 200Hz
-  const bumpGain = Math.pow(toneMag, 0.6) * 12; // up to 12dB resonant peak
+  // No resonant bump — just shelf EQ
+  const bumpFreq = 1000;
+  const bumpGain = 0;
 
-  // Saturation: drive increases with saturation, tone darkens with more saturation
+  // Saturation: gentle tape-style warmth
   const sat = s.saturation ?? 0;
-  const satDrive = 1 + sat * 30;
-  const satMix = sat;
-  const satTone = 20000 - sat * 15000; // 20kHz → 5kHz
+  const satDrive = 1 + sat * 5;       // max 6x (subtle)
+  const satMix = sat * 0.5;           // max 50% wet (always blended with dry)
+  const satTone = 20000 - sat * 8000; // 20kHz → 12kHz (keeps highs)
 
   return {
     rate,

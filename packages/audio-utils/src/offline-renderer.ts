@@ -171,7 +171,7 @@ export async function renderOffline(input: RenderInput): Promise<{
   convolver.buffer = irBuffer;
 
   const dryGain = offlineCtx.createGain();
-  dryGain.gain.value = 1 - params.reverbWet;
+  dryGain.gain.value = 1.0; // always full dry — reverb is additive
 
   const wetGain = offlineCtx.createGain();
   wetGain.gain.value = params.reverbWet;

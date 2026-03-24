@@ -410,7 +410,7 @@ function buildDeckGraph(
   convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
 
   const dryGain = ctx.createGain();
-  dryGain.gain.value = 1 - expanded.reverbWet;
+  dryGain.gain.value = 1.0; // always full dry — reverb is additive
 
   const wetGain = ctx.createGain();
   wetGain.gain.value = expanded.reverbWet;
@@ -960,7 +960,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     const reverbKeys: (keyof SimpleParams)[] = ["reverb", "reverbWetOverride", "reverbDurationOverride", "reverbDecayOverride"];
     if (reverbKeys.includes(paramKey)) {
-      deck.nodes.dryGain.gain.value = 1 - expanded.reverbWet;
+      deck.nodes.dryGain.gain.value = 1.0; // always full dry — reverb is additive
       deck.nodes.wetGain.gain.value = expanded.reverbWet;
       const ctx = getAudioContext();
       deck.nodes.convolver.buffer = generateIR(ctx, expanded.reverbDuration, expanded.reverbDecay);
