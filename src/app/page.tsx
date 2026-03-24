@@ -487,16 +487,16 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       })()}
 
       {/* Loop IN/OUT nudge controls */}
-      {deck.sourceBuffer && (deck.regionStart > 0 || deck.regionEnd > 0) && (() => {
+      {deck.sourceBuffer && (deck.regionStart !== 0 || deck.regionEnd > 0) && (() => {
         const dur = deck.sourceBuffer!.duration;
         const inVal = deck.regionStart;
         const outVal = deck.regionEnd > 0 ? deck.regionEnd : dur;
         const nudgeIn = (dir: number) => {
-          const v = Math.max(0, Math.min(outVal - 0.001, inVal + dir * nudgeStep));
+          const v = Math.min(outVal - 0.001, inVal + dir * nudgeStep);
           setRegion(id, v, deck.regionEnd);
         };
         const nudgeOut = (dir: number) => {
-          const v = Math.max(inVal + 0.001, Math.min(dur, outVal + dir * nudgeStep));
+          const v = Math.max(inVal + 0.001, outVal + dir * nudgeStep);
           setRegion(id, deck.regionStart, v);
         };
         const btnStyle: React.CSSProperties = {
