@@ -107,7 +107,7 @@ interface DeckState {
   sourceBuffer: AudioBuffer | null;
   sourceFilename: string | null;
   sourceFile: File | null;
-  sourceBlob: Blob | null;
+  sourceUrl: string | null;
   params: SimpleParams;
   isLoading: boolean;
   isPlaying: boolean;
@@ -138,7 +138,7 @@ const defaultDeck = (): DeckState => ({
   sourceBuffer: null,
   sourceFilename: null,
   sourceFile: null,
-  sourceBlob: null,
+  sourceUrl: null,
   params: { ...SIMPLE_DEFAULTS, speed: 0, reverb: 0, tone: 0, saturation: 0, pitch: 0, pitchSpeedLinked: true },
   isLoading: false,
   isPlaying: false,
@@ -796,7 +796,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFile: async (id, file) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, stemBuffers: null, stemError: null, sourceFile: file, sourceBlob: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, stemBuffers: null, stemError: null, sourceFile: file, sourceUrl: null } }));
     try {
       const audioBuffer = await decodeFile(file);
       set((s) => ({
@@ -821,7 +821,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     try {
       const { fetchYouTubeAudio } = await import("./cobalt");
       const { buffer, title } = await fetchYouTubeAudio(url);
-      const mp3Copy = buffer.slice(0);
       const audioBuffer = await decodeArrayBuffer(buffer);
       set((s) => ({
         [dk]: {
@@ -829,7 +828,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           sourceBuffer: audioBuffer,
           sourceFilename: title,
           sourceFile: null,
-          sourceBlob: new Blob([mp3Copy], { type: "audio/mpeg" }),
+          sourceUrl: url,
           isLoading: false,
           regionStart: 0,
           regionEnd: 0,
@@ -1185,27 +1184,27 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     set((s) => ({ [dk]: { ...s[dk], isStemLoading: true, stemError: null } }));
 
     try {
-      const formData = new FormData();
-      const fname = deck.sourceFilename || "audio";
-      if (deck.sourceFile) {
-        console.log("[stems] Using sourceFile:", deck.sourceFile.name, "size:", deck.sourceFile.size, "type:", deck.sourceFile.type);
-        formData.append("audio", deck.sourceFile, fname + ".mp3");
-      } else if (deck.sourceBlob) {
-        console.log("[stems] Using sourceBlob, size:", deck.sourceBlob.size, "type:", deck.sourceBlob.type);
-        formData.append("audio", deck.sourceBlob, fname + ".mp3");
+      let res: Response;
+      if (deck.sourceUrl) {
+        // YouTube — server re-downloads and uploads to Replicate directly
+        res = await fetch("/api/stems", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ youtubeUrl: deck.sourceUrl }),
+        });
+      } else if (deck.sourceFile) {
+        // Local file
+        const formData = new FormData();
+        formData.append("audio", deck.sourceFile, (deck.sourceFilename || "audio") + ".mp3");
+        res = await fetch("/api/stems", { method: "POST", body: formData });
       } else {
-        console.log("[stems] No sourceFile or sourceBlob available. sourceBuffer:", !!deck.sourceBuffer);
-        throw new Error("No audio source available for stem separation");
+        throw new Error("No audio source available");
       }
-      console.log("[stems] Uploading to /api/stems...");
-      const res = await fetch("/api/stems", { method: "POST", body: formData });
-      console.log("[stems] Response status:", res.status, res.statusText);
 
       if (!res.ok) {
         let msg = "Stem separation failed";
         try {
           const text = await res.text();
-          console.log("[stems] Error response body:", text);
           try { const d = JSON.parse(text); msg = d.error || msg; } catch { msg = text.slice(0, 200) || msg; }
         } catch { /* ok */ }
         throw new Error(msg);
