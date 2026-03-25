@@ -1187,17 +1187,26 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const formData = new FormData();
       const fname = deck.sourceFilename || "audio";
       if (deck.sourceFile) {
+        console.log("[stems] Using sourceFile:", deck.sourceFile.name, "size:", deck.sourceFile.size, "type:", deck.sourceFile.type);
         formData.append("audio", deck.sourceFile, fname + ".mp3");
       } else if (deck.sourceBlob) {
+        console.log("[stems] Using sourceBlob, size:", deck.sourceBlob.size, "type:", deck.sourceBlob.type);
         formData.append("audio", deck.sourceBlob, fname + ".mp3");
       } else {
+        console.log("[stems] No sourceFile or sourceBlob available. sourceBuffer:", !!deck.sourceBuffer);
         throw new Error("No audio source available for stem separation");
       }
+      console.log("[stems] Uploading to /api/stems...");
       const res = await fetch("/api/stems", { method: "POST", body: formData });
+      console.log("[stems] Response status:", res.status, res.statusText);
 
       if (!res.ok) {
         let msg = "Stem separation failed";
-        try { const d = await res.json(); msg = d.error || msg; } catch { /* ok */ }
+        try {
+          const text = await res.text();
+          console.log("[stems] Error response body:", text);
+          try { const d = JSON.parse(text); msg = d.error || msg; } catch { msg = text.slice(0, 200) || msg; }
+        } catch { /* ok */ }
         throw new Error(msg);
       }
 
@@ -1230,6 +1239,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
+      console.error("[stems] Error:", msg);
       set((s) => ({ [dk]: { ...s[dk], isStemLoading: false, stemError: msg, activeStem: null } }));
     }
   },

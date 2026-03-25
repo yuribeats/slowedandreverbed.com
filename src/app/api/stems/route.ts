@@ -11,13 +11,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    console.log("[stems] Parsing formData...");
     const formData = await req.formData();
     const file = formData.get("audio") as File | null;
     if (!file) {
+      console.log("[stems] No audio file in formData");
       return NextResponse.json({ error: "No audio file" }, { status: 400 });
     }
+    console.log("[stems] File received:", file.name, "size:", file.size, "type:", file.type);
 
     // Upload to Replicate
+    console.log("[stems] Uploading to Replicate...");
     const uploadRes = await fetch("https://api.replicate.com/v1/files", {
       method: "POST",
       headers: { Authorization: `Bearer ${REPLICATE_TOKEN}` },
@@ -30,8 +34,10 @@ export async function POST(req: NextRequest) {
 
     if (!uploadRes.ok) {
       const text = await uploadRes.text();
-      return NextResponse.json({ error: `File upload failed: ${text}` }, { status: 502 });
+      console.log("[stems] Replicate upload failed:", uploadRes.status, text);
+      return NextResponse.json({ error: `File upload failed (${uploadRes.status}): ${text}` }, { status: 502 });
     }
+    console.log("[stems] Replicate upload OK");
 
     const uploadData = await uploadRes.json();
     const fileUrl = uploadData.urls?.get;
