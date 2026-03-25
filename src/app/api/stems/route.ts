@@ -5,44 +5,60 @@ export const maxDuration = 300;
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
 const DEMUCS_VERSION = "5a7041cc9b82e5a558fea6b3d7b12dea89625e89da33f0447bd727c2d0ab9e77";
 
+// GET: return upload token so client can upload large files directly to Replicate
+export async function GET() {
+  if (!REPLICATE_TOKEN) {
+    return NextResponse.json({ error: "Not configured" }, { status: 500 });
+  }
+  return NextResponse.json({ token: REPLICATE_TOKEN });
+}
+
+// POST: accepts either { fileUrl } JSON (client already uploaded) or formData (small files)
 export async function POST(req: NextRequest) {
   if (!REPLICATE_TOKEN) {
     return NextResponse.json({ error: "REPLICATE_API_TOKEN not configured" }, { status: 500 });
   }
 
   try {
-    const formData = await req.formData();
-    const file = formData.get("audio") as File | null;
-    if (!file) {
-      return NextResponse.json({ error: "No audio file" }, { status: 400 });
+    let fileUrl: string;
+    const contentType = req.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      fileUrl = body.fileUrl;
+      if (!fileUrl) {
+        return NextResponse.json({ error: "No fileUrl provided" }, { status: 400 });
+      }
+    } else {
+      const formData = await req.formData();
+      const file = formData.get("audio") as File | null;
+      if (!file) {
+        return NextResponse.json({ error: "No audio file" }, { status: 400 });
+      }
+
+      const uploadRes = await fetch("https://api.replicate.com/v1/files", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${REPLICATE_TOKEN}` },
+        body: (() => {
+          const fd = new FormData();
+          fd.append("content", file, file.name || "audio.mp3");
+          return fd;
+        })(),
+      });
+
+      if (!uploadRes.ok) {
+        const text = await uploadRes.text();
+        return NextResponse.json({ error: `File upload failed: ${text}` }, { status: 502 });
+      }
+
+      const uploadData = await uploadRes.json();
+      fileUrl = uploadData.urls?.get;
+
+      if (!fileUrl) {
+        return NextResponse.json({ error: "File upload returned no URL" }, { status: 502 });
+      }
     }
 
-    // Upload file to Replicate
-    const uploadRes = await fetch("https://api.replicate.com/v1/files", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${REPLICATE_TOKEN}`,
-      },
-      body: (() => {
-        const fd = new FormData();
-        fd.append("content", file, file.name || "audio.mp3");
-        return fd;
-      })(),
-    });
-
-    if (!uploadRes.ok) {
-      const text = await uploadRes.text();
-      return NextResponse.json({ error: `File upload failed: ${text}` }, { status: 502 });
-    }
-
-    const uploadData = await uploadRes.json();
-    const fileUrl = uploadData.urls?.get;
-
-    if (!fileUrl) {
-      return NextResponse.json({ error: "File upload returned no URL" }, { status: 502 });
-    }
-
-    // Create prediction using ryan5453/demucs (htdemucs_ft for best quality)
     const predRes = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -51,10 +67,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         version: DEMUCS_VERSION,
-        input: {
-          audio: fileUrl,
-          model: "htdemucs_ft",
-        },
+        input: { audio: fileUrl, model: "htdemucs_ft" },
       }),
     });
 
@@ -65,7 +78,6 @@ export async function POST(req: NextRequest) {
 
     let prediction = await predRes.json();
 
-    // Poll for completion
     const pollUrl = prediction.urls?.get;
     if (!pollUrl) {
       return NextResponse.json({ error: "No poll URL returned" }, { status: 502 });
@@ -92,9 +104,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Output: object with stem URLs { vocals, drums, bass, other }
     const output = prediction.output;
-
     if (!output) {
       return NextResponse.json({ error: "No output from model" }, { status: 502 });
     }

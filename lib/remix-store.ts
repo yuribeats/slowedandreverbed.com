@@ -1185,38 +1185,63 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       if (deck.sourceFile) {
         audioBlob = deck.sourceFile;
       } else {
-        // Convert AudioBuffer to WAV for YouTube/URL-loaded tracks
+        // Convert AudioBuffer to mono WAV for YouTube/URL-loaded tracks
         const buf = deck.sourceBuffer!;
-        const numCh = buf.numberOfChannels;
         const sampleRate = buf.sampleRate;
         const length = buf.length;
-        const wavLength = 44 + length * numCh * 2;
+        // Mix to mono
+        const mono = new Float32Array(length);
+        const numCh = buf.numberOfChannels;
+        for (let ch = 0; ch < numCh; ch++) {
+          const chData = buf.getChannelData(ch);
+          for (let i = 0; i < length; i++) mono[i] += chData[i] / numCh;
+        }
+        const wavLength = 44 + length * 2;
         const wavBuf = new ArrayBuffer(wavLength);
         const view = new DataView(wavBuf);
         const writeStr = (offset: number, s: string) => { for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)); };
         writeStr(0, 'RIFF'); view.setUint32(4, wavLength - 8, true); writeStr(8, 'WAVE');
         writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-        view.setUint16(22, numCh, true); view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * numCh * 2, true); view.setUint16(32, numCh * 2, true);
-        view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, length * numCh * 2, true);
+        view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, length * 2, true);
         let offset = 44;
         for (let i = 0; i < length; i++) {
-          for (let ch = 0; ch < numCh; ch++) {
-            const sample = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
-            view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-            offset += 2;
-          }
+          const sample = Math.max(-1, Math.min(1, mono[i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
         }
         audioBlob = new Blob([wavBuf], { type: 'audio/wav' });
       }
 
-      const formData = new FormData();
-      formData.append("audio", audioBlob, (deck.sourceFilename || "audio") + ".wav");
-
-      const res = await fetch("/api/stems", {
-        method: "POST",
-        body: formData,
-      });
+      let res: Response;
+      if (deck.sourceFile) {
+        // Small local file — upload via our API (stays under Vercel body limit)
+        const formData = new FormData();
+        formData.append("audio", audioBlob, (deck.sourceFilename || "audio") + ".wav");
+        res = await fetch("/api/stems", { method: "POST", body: formData });
+      } else {
+        // YouTube/URL track — WAV too large for Vercel. Upload directly to Replicate.
+        const tokenRes = await fetch("/api/stems");
+        const { token } = await tokenRes.json();
+        if (!token) throw new Error("Could not get upload token");
+        const upFd = new FormData();
+        upFd.append("content", audioBlob, (deck.sourceFilename || "audio") + ".wav");
+        const upRes = await fetch("https://api.replicate.com/v1/files", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: upFd,
+        });
+        if (!upRes.ok) throw new Error("File upload to Replicate failed");
+        const upData = await upRes.json();
+        const fileUrl = upData.urls?.get;
+        if (!fileUrl) throw new Error("No URL from Replicate upload");
+        res = await fetch("/api/stems", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileUrl }),
+        });
+      }
 
       if (!res.ok) {
         let msg = "Stem separation failed";
