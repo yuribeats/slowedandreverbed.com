@@ -1214,16 +1214,6 @@ export default function Home() {
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
                   </button>
                   <a
-                    href="https://studio-2026-03-19.vercel.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
-                  >
-                    STUDIO
-                  </a>
-                  <a
                     href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -1232,6 +1222,16 @@ export default function Home() {
                     style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
                   >
                     YOUTUBE
+                  </a>
+                  <a
+                    href="https://studio-2026-03-19.vercel.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                  >
+                    STUDIO
                   </a>
                   <a
                     href="https://everysong.site"
@@ -1396,6 +1396,9 @@ export default function Home() {
           onClose={clearPendingExport}
         />
       )}
+      <div className="mt-16 py-5 border-t border-[#333] text-center">
+        <a href="https://thegoodinternet.app" target="_blank" rel="noopener noreferrer" className="uppercase tracking-[1px]" style={{ fontSize: "10px", fontWeight: 300, color: "var(--text-muted, #777)", textDecoration: "none" }}>IN PUBLIC</a>
+      </div>
     </main>
   );
 }
