@@ -1216,26 +1216,22 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
       let res: Response;
       if (deck.sourceFile) {
-        // Small local file — upload via our API (stays under Vercel body limit)
+        // Local file — upload via our API
         const formData = new FormData();
         formData.append("audio", audioBlob, (deck.sourceFilename || "audio") + ".wav");
         res = await fetch("/api/stems", { method: "POST", body: formData });
       } else {
-        // YouTube/URL track — WAV too large for Vercel. Upload directly to Replicate.
-        const tokenRes = await fetch("/api/stems");
-        const { token } = await tokenRes.json();
-        if (!token) throw new Error("Could not get upload token");
-        const upFd = new FormData();
-        upFd.append("content", audioBlob, (deck.sourceFilename || "audio") + ".wav");
-        const upRes = await fetch("https://api.replicate.com/v1/files", {
+        // YouTube/URL track — WAV too large for main API. Upload via proxy endpoint first.
+        const upRes = await fetch("/api/stems/upload", {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: upFd,
+          body: audioBlob,
         });
-        if (!upRes.ok) throw new Error("File upload to Replicate failed");
-        const upData = await upRes.json();
-        const fileUrl = upData.urls?.get;
-        if (!fileUrl) throw new Error("No URL from Replicate upload");
+        if (!upRes.ok) {
+          const upErr = await upRes.json().catch(() => ({ error: "Upload failed" }));
+          throw new Error(upErr.error || "File upload failed");
+        }
+        const { fileUrl } = await upRes.json();
+        if (!fileUrl) throw new Error("No URL from upload");
         res = await fetch("/api/stems", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
