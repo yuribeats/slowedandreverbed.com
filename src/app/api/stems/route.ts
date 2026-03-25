@@ -20,14 +20,24 @@ export async function POST(req: NextRequest) {
     }
     console.log("[stems] File received:", file.name, "size:", file.size, "type:", file.type);
 
-    // Upload to Replicate
+    // Detect actual format from magic bytes
+    const headBytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    const hex = Array.from(headBytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log("[stems] Magic bytes:", hex);
+    const isMP3 = (headBytes[0] === 0xFF && (headBytes[1] & 0xE0) === 0xE0) || (headBytes[0] === 0x49 && headBytes[1] === 0x44 && headBytes[2] === 0x33);
+    const isM4A = headBytes[4] === 0x66 && headBytes[5] === 0x74 && headBytes[6] === 0x79 && headBytes[7] === 0x70;
+    const isOGG = headBytes[0] === 0x4F && headBytes[1] === 0x67 && headBytes[2] === 0x67 && headBytes[3] === 0x53;
+    const detectedExt = isMP3 ? '.mp3' : isM4A ? '.m4a' : isOGG ? '.ogg' : '.audio';
+    console.log("[stems] Detected format:", detectedExt);
+
+    // Upload to Replicate with correct extension
     console.log("[stems] Uploading to Replicate...");
     const uploadRes = await fetch("https://api.replicate.com/v1/files", {
       method: "POST",
       headers: { Authorization: `Bearer ${REPLICATE_TOKEN}` },
       body: (() => {
         const fd = new FormData();
-        fd.append("content", file, file.name || "audio.mp3");
+        fd.append("content", file, (file.name || "audio") .replace(/\.[^.]+$/, '') + detectedExt);
         return fd;
       })(),
     });
