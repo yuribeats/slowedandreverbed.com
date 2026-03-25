@@ -282,7 +282,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       <div ref={waveformWrapRef} style={{ display: "flex", flexDirection: "column" }}>
         <div>
           <WaveformDisplay
-            audioBuffer={deck.sourceBuffer}
+            audioBuffer={deck.activeStem && deck.stemBuffers?.[deck.activeStem] ? deck.stemBuffers[deck.activeStem]! : deck.sourceBuffer}
             isPlaying={deck.isPlaying}
             pauseOffset={deck.pauseOffset}
             startedAt={deck.startedAt}
