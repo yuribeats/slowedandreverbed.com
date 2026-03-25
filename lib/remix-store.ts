@@ -1173,7 +1173,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   separateStems: async (id) => {
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
-    if (!deck.sourceFile || deck.isStemLoading) return;
+    if ((!deck.sourceFile && !deck.sourceBuffer) || deck.isStemLoading) return;
 
     const wasPlaying = deck.isPlaying;
     if (wasPlaying) get().pause(id);
@@ -1181,8 +1181,37 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     set((s) => ({ [dk]: { ...s[dk], isStemLoading: true, stemError: null } }));
 
     try {
+      let audioBlob: Blob;
+      if (deck.sourceFile) {
+        audioBlob = deck.sourceFile;
+      } else {
+        // Convert AudioBuffer to WAV for YouTube/URL-loaded tracks
+        const buf = deck.sourceBuffer!;
+        const numCh = buf.numberOfChannels;
+        const sampleRate = buf.sampleRate;
+        const length = buf.length;
+        const wavLength = 44 + length * numCh * 2;
+        const wavBuf = new ArrayBuffer(wavLength);
+        const view = new DataView(wavBuf);
+        const writeStr = (offset: number, s: string) => { for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, wavLength - 8, true); writeStr(8, 'WAVE');
+        writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+        view.setUint16(22, numCh, true); view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numCh * 2, true); view.setUint16(32, numCh * 2, true);
+        view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, length * numCh * 2, true);
+        let offset = 44;
+        for (let i = 0; i < length; i++) {
+          for (let ch = 0; ch < numCh; ch++) {
+            const sample = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
+            view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            offset += 2;
+          }
+        }
+        audioBlob = new Blob([wavBuf], { type: 'audio/wav' });
+      }
+
       const formData = new FormData();
-      formData.append("audio", deck.sourceFile);
+      formData.append("audio", audioBlob, (deck.sourceFilename || "audio") + ".wav");
 
       const res = await fetch("/api/stems", {
         method: "POST",
