@@ -169,12 +169,17 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
       {/* Deck header */}
       <div className="flex items-center justify-between">
-        <span
-          className="text-sm tracking-[2px] uppercase"
-          style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
-        >
-          DECK {id}
-        </span>
+        <div className="flex items-center gap-3">
+          <span
+            className="text-sm tracking-[2px] uppercase"
+            style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
+          >
+            DECK {id}
+          </span>
+          <button onClick={handleLoad} disabled={deck.isLoading} className="rocker-switch" style={{ width: "28px", height: "28px" }}>
+            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           {onHide && (
             <button
@@ -585,12 +590,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
       {/* Transport buttons */}
       <div className="flex items-center gap-2 justify-center">
-        <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>LOAD</span>
-          <button onClick={handleLoad} disabled={deck.isLoading} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
-            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-          </button>
-        </div>
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>START</span>
           <button onClick={handleStart} disabled={!deck.sourceBuffer || deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
