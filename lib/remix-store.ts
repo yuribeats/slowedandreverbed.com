@@ -821,6 +821,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     try {
       const { fetchYouTubeAudio } = await import("./cobalt");
       const { buffer, title } = await fetchYouTubeAudio(url);
+      const mp3Copy = buffer.slice(0);
       const audioBuffer = await decodeArrayBuffer(buffer);
       set((s) => ({
         [dk]: {
@@ -828,7 +829,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           sourceBuffer: audioBuffer,
           sourceFilename: title,
           sourceFile: null,
-          sourceBlob: new Blob([buffer], { type: "audio/mpeg" }),
+          sourceBlob: new Blob([mp3Copy], { type: "audio/mpeg" }),
           isLoading: false,
           regionStart: 0,
           regionEnd: 0,
