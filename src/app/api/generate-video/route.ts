@@ -77,12 +77,16 @@ export async function POST(request: NextRequest) {
     // Prepend watermark before the track (watermark plays over silence, then track starts)
     let finalAudioPath = audioPath;
     if (watermark) {
-      console.log("Prepending watermark...");
+      console.log("Prepending watermark with fade-in...");
+      // Watermark plays at full volume; main audio fades in from silence over the
+      // watermark duration (~2.65s), then continues at full volume underneath.
       await runFfmpeg([
         "-y",
         "-i", watermarkPath,
         "-i", audioPath,
-        "-filter_complex", "[0:a]volume=6dB[w];[w][1:a]concat=n=2:v=0:a=1",
+        "-filter_complex",
+        "[0:a]volume=6dB[wm];[1:a]afade=t=in:st=0:d=2.65[faded];[wm][faded]amix=inputs=2:duration=longest:normalize=0[out]",
+        "-map", "[out]",
         "-c:a", "pcm_s16le",
         mixedPath,
       ]);
