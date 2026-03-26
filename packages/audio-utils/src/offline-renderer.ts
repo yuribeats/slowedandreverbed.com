@@ -1,5 +1,6 @@
 import { ProcessingParams } from "./types";
 import { generateImpulseResponse } from "./impulse-response";
+import { SoundTouch, SimpleFilter } from "soundtouchjs";
 
 export interface RenderInput {
   channelData: Float32Array[];
@@ -10,8 +11,8 @@ export interface RenderInput {
 }
 
 /**
- * Granular pitch shift applied directly to sample data.
- * Four overlapping Hann-windowed grains for smooth results.
+ * WSOLA pitch shift using SoundTouch.
+ * Tempo stays at 1.0 (no duration change) — only pitch is shifted.
  */
 function pitchShiftBuffer(
   channelData: Float32Array[],
@@ -21,62 +22,46 @@ function pitchShiftBuffer(
 
   const numCh = channelData.length;
   const len = channelData[0].length;
-  const numGrains = 4;
-  const grainSize = 8192;
-  const grainSpacing = grainSize / numGrains;
+  const left = channelData[0];
+  const right = numCh > 1 ? channelData[1] : channelData[0];
 
-  // Pre-compute Hann window
-  const win = new Float32Array(grainSize);
-  for (let i = 0; i < grainSize; i++) {
-    win[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / grainSize));
-  }
+  const st = new SoundTouch();
+  st.pitch = pitchFactor;
 
-  const output: Float32Array[] = [];
-  for (let c = 0; c < numCh; c++) output.push(new Float32Array(len));
-
-  // State for read heads
-  const rPos = new Float64Array(numGrains);
-  const rPhase = new Float64Array(numGrains);
-  for (let g = 0; g < numGrains; g++) {
-    rPos[g] = 0;
-    rPhase[g] = g * grainSpacing;
-  }
-
-  const norm = 2.0 / numGrains;
-
-  for (let i = 0; i < len; i++) {
-    for (let g = 0; g < numGrains; g++) {
-      const rp = rPos[g];
-      const idx = Math.floor(rp);
-      const frac = rp - idx;
-      const phase = Math.floor(rPhase[g]) % grainSize;
-      const w = win[phase];
-
-      for (let c = 0; c < numCh; c++) {
-        const data = channelData[c];
-        const i0 = Math.max(0, Math.min(idx, len - 1));
-        const i1 = Math.max(0, Math.min(idx + 1, len - 1));
-        const s = data[i0] * (1 - frac) + data[i1] * frac;
-        output[c][i] += s * w;
+  let readPos = 0;
+  const source = {
+    extract(target: Float32Array, numFrames: number): number {
+      const available = len - readPos;
+      const toRead = Math.min(numFrames, available);
+      for (let i = 0; i < toRead; i++) {
+        target[i * 2] = left[readPos + i];
+        target[i * 2 + 1] = right[readPos + i];
       }
+      readPos += toRead;
+      return toRead;
+    },
+  };
 
-      rPos[g] += pitchFactor;
-      rPhase[g]++;
+  const filter = new SimpleFilter(source, st);
+  const outLeft = new Float32Array(len);
+  const outRight = new Float32Array(len);
 
-      if (rPhase[g] >= grainSize) {
-        rPhase[g] = 0;
-        rPos[g] = i - grainSize + 1;
-        if (rPos[g] < 0) rPos[g] = 0;
-      }
+  const CHUNK = 4096;
+  const samples = new Float32Array(CHUNK * 2);
+  let outPos = 0;
+
+  while (outPos < len) {
+    const extracted = filter.extract(samples, Math.min(CHUNK, len - outPos));
+    if (extracted === 0) break;
+    for (let i = 0; i < extracted; i++) {
+      outLeft[outPos + i] = samples[i * 2];
+      outRight[outPos + i] = samples[i * 2 + 1];
     }
-
-    // Normalize
-    for (let c = 0; c < numCh; c++) {
-      output[c][i] *= norm;
-    }
+    outPos += extracted;
   }
 
-  return output;
+  if (numCh > 1) return [outLeft, outRight];
+  return [outLeft];
 }
 
 export async function renderOffline(input: RenderInput): Promise<{

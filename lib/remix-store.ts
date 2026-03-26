@@ -505,16 +505,17 @@ function buildDeckGraph(
   autoGain.connect(deckGain);
   deckGain.connect(getSharedMerger());
 
+  const safeOffset = Math.max(0, offset);
   source.onended = onEnded;
   if (loopRegion) {
     source.loop = true;
     source.loopStart = loopRegion.loopStart;
     source.loopEnd = loopRegion.loopEnd;
-    source.start(0, offset);
+    source.start(0, safeOffset);
   } else if (duration && duration > 0) {
-    source.start(0, offset, duration);
+    source.start(0, safeOffset, duration);
   } else {
-    source.start(0, offset);
+    source.start(0, safeOffset);
   }
 
   return {
@@ -901,7 +902,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         ...s[key],
         isPlaying: true,
         nodes,
-        startedAt: ctx.currentTime - (playOffset - rStart),
+        startedAt: ctx.currentTime - (playOffset - rStart) / expandParams(freshDeck.params).rate,
       },
     }));
   },
