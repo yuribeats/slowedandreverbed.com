@@ -1079,29 +1079,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     console.log(`[loadDeck:${id}] running downbeat detection`);
     await get().detectDownbeat(id);
 
-    // Set IN point to ML-detected downbeat + enable gridlock anchored there
-    const dk = deckKey(id);
-    const updated = getDeck(get(), id);
-    if (updated.firstDownbeatMs !== null) {
-      const inPoint = updated.firstDownbeatMs / 1000;
-      console.log(`[loadDeck:${id}] downbeat at ${inPoint.toFixed(3)}s — setting IN point + enabling gridlock`);
-      get().setRegion(id, inPoint, 0);
-      const currentRate = 1.0 + updated.params.speed;
-      const lockedDur = updated.calculatedBPM ? 960 / (updated.calculatedBPM * currentRate) : 0;
-      console.log(`[loadDeck:${id}] gridlock: firstTransient=${inPoint.toFixed(3)}s, lockedDur=${lockedDur.toFixed(3)}s, BPM=${updated.calculatedBPM}`);
-      set((s) => ({
-        [dk]: {
-          ...s[dk],
-          gridlockEnabled: true,
-          gridFirstTransient: inPoint,
-          gridLockedSectionDur: lockedDur,
-          gridOffsetMs: 0,
-        },
-      }));
-    } else {
-      console.warn(`[loadDeck:${id}] no downbeat detected — IN point not moved, gridlock not enabled`);
-    }
-
     if (id === "B") {
       console.log(`[loadDeck:B] starting stem isolation`);
       try {
@@ -1186,17 +1163,23 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       if (data.first_downbeat_ms !== null && data.first_downbeat_ms !== undefined) {
         const firstDownbeatMs = data.first_downbeat_ms as number;
         console.log(`[detectDownbeat:${id}] first downbeat = ${firstDownbeatMs}ms (${(firstDownbeatMs/1000).toFixed(3)}s), BPM=${data.bpm}, beats=${data.beats_ms?.length}`);
+        const inPoint = firstDownbeatMs / 1000;
+        const currentRate = 1.0 + deck.params.speed;
+        const updatedDeck = getDeck(get(), id);
+        const lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
         set((s) => ({
           [dk]: {
             ...s[dk],
             firstDownbeatMs,
             downbeatDetecting: false,
-            // Feed into gridFirstTransient so gridlock syncs from the actual musical downbeat
-            gridFirstTransient: firstDownbeatMs / 1000,
+            gridFirstTransient: inPoint,
+            gridlockEnabled: true,
+            gridLockedSectionDur: lockedDur,
+            gridOffsetMs: 0,
           },
         }));
         // Move the in point to the detected downbeat
-        get().setRegion(id, firstDownbeatMs / 1000, 0);
+        get().setRegion(id, inPoint, 0);
         // Apply ML-detected BPM and key if Everysong hasn't already populated them
         const updated = getDeck(get(), id);
         if (data.bpm && !updated.calculatedBPM) {
