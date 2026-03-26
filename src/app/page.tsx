@@ -163,6 +163,18 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     play(id);
   }, [play, id]);
 
+  const handleSkip = useCallback(async (delta: number) => {
+    if (!deck.sourceBuffer) return;
+    const ctx = getAudioContext();
+    const rStart = deck.regionStart;
+    const rEnd = deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration;
+    const currentPos = deck.isPlaying
+      ? rStart + (ctx.currentTime - deck.startedAt) * (1.0 + deck.params.speed)
+      : deck.pauseOffset;
+    const newPos = Math.max(rStart, Math.min(rEnd, currentPos + delta));
+    await seek(id, newPos);
+  }, [deck, seek, id]);
+
   return (
     <div className="flex flex-col gap-3">
       <input ref={inputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileSelect} />
@@ -591,6 +603,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {/* Transport buttons */}
       <div className="flex items-center gap-2 justify-center">
         <div className="flex flex-col items-center">
+          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>REW</span>
+          <button onClick={() => handleSkip(-5)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+          </button>
+        </div>
+        <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>START</span>
           <button onClick={handleStart} disabled={!deck.sourceBuffer || deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
@@ -608,6 +626,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>PAUSE</span>
           <button onClick={() => pause(id)} disabled={!deck.sourceBuffer || !deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+          </button>
+        </div>
+        <div className="flex flex-col items-center">
+          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>FF</span>
+          <button onClick={() => handleSkip(5)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
@@ -672,7 +696,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               <form onSubmit={(e) => {
                 e.preventDefault();
                 const v = parseFloat(speedInput);
-                if (!isNaN(v) && v > 0) handleSpeed(v - 1.0);
+                if (!isNaN(v) && v > 0) {
+                  if (deck.calculatedBPM) {
+                    handleSpeed(v / deck.calculatedBPM - 1.0);
+                  } else {
+                    handleSpeed(v - 1.0);
+                  }
+                }
                 setEditingSpeed(false);
               }} className="flex">
                 <input
@@ -680,10 +710,18 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   value={speedInput}
                   onChange={(e) => setSpeedInput(e.target.value)}
                   onBlur={() => setEditingSpeed(false)}
-                  className="bg-transparent border border-[#333] text-center w-[60px] text-[12px]"
+                  className="bg-transparent border border-[#333] text-center w-[70px] text-[12px]"
                   style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
                 />
               </form>
+            ) : deck.calculatedBPM ? (
+              <span
+                className="text-[12px]"
+                style={{ color: "var(--text-dark)" }}
+                onClick={() => { setSpeedInput((deck.calculatedBPM! * rate).toFixed(3)); setEditingSpeed(true); }}
+              >
+                {(deck.calculatedBPM * rate).toFixed(3)}
+              </span>
             ) : (
               <span
                 className="text-[12px]"
@@ -1159,6 +1197,7 @@ export default function Home() {
   const crossfader = useRemixStore((s) => s.crossfader);
   const setCrossfader = useRemixStore((s) => s.setCrossfader);
   const syncPlay = useRemixStore((s) => s.syncPlay);
+  const setRegion = useRemixStore((s) => s.setRegion);
   const deckA = useRemixStore((s) => s.deckA);
   const deckB = useRemixStore((s) => s.deckB);
   const recordArmed = useRemixStore((s) => s.recordArmed);
@@ -1308,6 +1347,23 @@ export default function Home() {
                 <button
                   onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
                   disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
+                  className="rocker-switch"
+                  style={{ width: "60px", height: "44px" }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+                </button>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>MATCH LEN</span>
+                <button
+                  onClick={() => {
+                    const aLen = (deckA.regionEnd > 0 ? deckA.regionEnd : (deckA.sourceBuffer?.duration ?? 0)) - deckA.regionStart;
+                    if (aLen <= 0 || !deckB.sourceBuffer) return;
+                    const bDur = deckB.sourceBuffer.duration;
+                    const newEnd = Math.min(deckB.regionStart + aLen, bDur);
+                    setRegion("B", deckB.regionStart, newEnd);
+                  }}
+                  disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
                   className="rocker-switch"
                   style={{ width: "60px", height: "44px" }}
                 >
