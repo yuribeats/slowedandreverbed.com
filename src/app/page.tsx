@@ -81,20 +81,19 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const toneLabel = deck.params.tone === 0 ? "FLAT" : deck.params.tone < 0 ? "DARK" : "BRIGHT";
   const expanded = expandParams(deck.params);
   const [ytUrl, setYtUrl] = useState("");
-  const [baseKey, setBaseKey] = useState<number | null>(null);
+  const baseKey = deck.baseKey;
   const [editingKey, setEditingKey] = useState(false);
   const [userBPM, setUserBPM] = useState<string>("");
   const [editingBPM, setEditingBPM] = useState(false);
   const [editingSpeed, setEditingSpeed] = useState(false);
   const [speedInput, setSpeedInput] = useState("");
   const setBPM = useRemixStore((s) => s.setBPM);
+  const setDeckMeta = useRemixStore((s) => s.setDeckMeta);
   const toggleGridlock = useRemixStore((s) => s.toggleGridlock);
   const setGridOffset = useRemixStore((s) => s.setGridOffset);
   const lockGridSectionDur = useRemixStore((s) => s.lockGridSectionDur);
   const recordArmed = useRemixStore((s) => s.recordArmed);
 
-  const [artist, setArtist] = useState("");
-  const [title, setTitle] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupKey, setLookupKey] = useState<string | null>(null);
   const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -102,7 +101,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   // Debounced everysong lookup when artist + title are both non-empty
   useEffect(() => {
     if (lookupTimer.current) clearTimeout(lookupTimer.current);
-    const q = [artist, title].filter(Boolean).join(" ").trim();
+    const q = [deck.artist, deck.title].filter(Boolean).join(" ").trim();
     if (!q) { setLookupKey(null); return; }
     lookupTimer.current = setTimeout(async () => {
       setLookupLoading(true);
@@ -114,7 +113,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             setBPM(id, data.bpm);
             setUserBPM(String(data.bpm));
           }
-          if (data.noteIndex !== null) setBaseKey(data.noteIndex);
+          if (data.noteIndex !== null) setDeckMeta(id, { baseKey: data.noteIndex });
           setLookupKey(data.key ?? null);
         } else {
           setLookupKey(null);
@@ -123,17 +122,17 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       setLookupLoading(false);
     }, 700);
     return () => { if (lookupTimer.current) clearTimeout(lookupTimer.current); };
-  }, [artist, title, id, setBPM]);
+  }, [deck.artist, deck.title, id, setBPM, setDeckMeta]);
 
   // Clear key and BPM when source changes
   const sourceId = deck.sourceBuffer ? deck.sourceFilename : null;
   useEffect(() => {
-    setBaseKey(null);
+    setDeckMeta(id, { baseKey: null, artist: "", title: "" });
     setUserBPM("");
     setEditingKey(false);
     setEditingBPM(false);
     setLookupKey(null);
-  }, [sourceId]);
+  }, [sourceId, id, setDeckMeta]);
 
   // Lock grid section duration when BPM is set while GRIDLOCK is enabled
   useEffect(() => {
@@ -248,16 +247,16 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       <div className="flex gap-2">
         <input
           type="text"
-          value={artist}
-          onChange={(e) => setArtist(e.target.value)}
+          value={deck.artist}
+          onChange={(e) => setDeckMeta(id, { artist: e.target.value })}
           placeholder="ARTIST"
           className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[10px] tracking-[1px] outline-none focus:border-[#666]"
           style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
         />
         <input
           type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={deck.title}
+          onChange={(e) => setDeckMeta(id, { title: e.target.value })}
           placeholder="TITLE"
           className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[10px] tracking-[1px] outline-none focus:border-[#666]"
           style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
@@ -290,7 +289,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   {NOTE_NAMES.map((note, i) => (
                     <button
                       key={note}
-                      onClick={() => { setBaseKey(i); setEditingKey(false); }}
+                      onClick={() => { setDeckMeta(id, { baseKey: i }); setEditingKey(false); }}
                       className="px-1"
                       style={{
                         fontFamily: "var(--font-crt)", fontSize: "12px",
@@ -1295,6 +1294,60 @@ export default function Home() {
   const [showDeckB, setShowDeckB] = useState(false);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
+  const restoreSession = useRemixStore((s) => s.restoreSession);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareStatus, setShareStatus] = useState("");
+
+  // Restore shared session on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("s");
+    if (sessionId) {
+      setShowDeckB(true);
+      restoreSession(sessionId);
+    }
+  }, [restoreSession]);
+
+  const handleShare = async () => {
+    if (!deckA.sourceBuffer && !deckB.sourceBuffer) return;
+    setShareLoading(true);
+    setMenuOpen(false);
+    try {
+      const buildDeckData = (deck: typeof deckA) => deck.sourceBuffer ? {
+        audioUrl: deck.sourceUrl || null,
+        filename: deck.sourceFilename || "track",
+        params: deck.params,
+        regionStart: deck.regionStart,
+        regionEnd: deck.regionEnd,
+        volume: deck.volume,
+        calculatedBPM: deck.calculatedBPM,
+        artist: deck.artist,
+        title: deck.title,
+        baseKey: deck.baseKey,
+      } : null;
+
+      const form = new FormData();
+      form.append("session", JSON.stringify({
+        deckA: buildDeckData(deckA),
+        deckB: buildDeckData(deckB),
+        crossfader,
+      }));
+      if (deckA.sourceFile) form.append("audioA", deckA.sourceFile);
+      if (deckB.sourceFile) form.append("audioB", deckB.sourceFile);
+
+      const res = await fetch("/api/session", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const url = `${window.location.origin}/?s=${data.id}`;
+      await navigator.clipboard.writeText(url);
+      setShareStatus("LINK COPIED");
+    } catch {
+      setShareStatus("SHARE FAILED");
+    }
+    setShareLoading(false);
+    setTimeout(() => setShareStatus(""), 3000);
+  };
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
@@ -1335,6 +1388,14 @@ export default function Home() {
                     style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
                   >
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || shareLoading}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    style={{ fontFamily: "var(--font-tech)", color: shareStatus ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
+                  >
+                    {shareLoading ? "UPLOADING..." : shareStatus || "SHARE SESSION"}
                   </button>
                   <a
                     href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE"

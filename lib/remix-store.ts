@@ -117,6 +117,9 @@ interface DeckState {
   sourceFilename: string | null;
   sourceFile: File | null;
   sourceUrl: string | null;
+  artist: string;
+  title: string;
+  baseKey: number | null;
   params: SimpleParams;
   isLoading: boolean;
   isPlaying: boolean;
@@ -148,6 +151,9 @@ const defaultDeck = (): DeckState => ({
   sourceFilename: null,
   sourceFile: null,
   sourceUrl: null,
+  artist: "",
+  title: "",
+  baseKey: null,
   params: { ...SIMPLE_DEFAULTS, speed: 0, reverb: 0, tone: 0, saturation: 0, pitch: 0, pitchSpeedLinked: true },
   isLoading: false,
   isPlaying: false,
@@ -249,6 +255,9 @@ interface RemixStore {
 
   loadFile: (deck: DeckId, file: File) => Promise<void>;
   loadFromYouTube: (deck: DeckId, url: string) => Promise<void>;
+  loadFromAudioUrl: (deck: DeckId, url: string, filename: string) => Promise<void>;
+  setDeckMeta: (deck: DeckId, meta: { artist?: string; title?: string; baseKey?: number | null }) => void;
+  restoreSession: (sessionId: string) => Promise<void>;
   play: (deck: DeckId, forceLoop?: boolean) => Promise<void>;
   stop: (deck: DeckId) => void;
   pause: (deck: DeckId) => void;
@@ -834,6 +843,63 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       }));
     } catch (err) {
       set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Failed to fetch YouTube audio" } }));
+    }
+  },
+
+  setDeckMeta: (id, meta) => {
+    const dk = deckKey(id);
+    set((s) => ({ [dk]: { ...s[dk], ...meta } }));
+  },
+
+  loadFromAudioUrl: async (id, url, filename) => {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      return get().loadFromYouTube(id, url);
+    }
+    const dk = deckKey(id);
+    get().stop(id);
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, sourceFilename: filename, sourceUrl: url, sourceFile: null } }));
+    try {
+      const res = await fetch(url);
+      const ab = await res.arrayBuffer();
+      const buffer = await decodeArrayBuffer(ab);
+      set((s) => ({ [dk]: { ...s[dk], sourceBuffer: buffer, isLoading: false, regionStart: 0, regionEnd: 0 } }));
+    } catch (err) {
+      set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Load failed" } }));
+    }
+  },
+
+  restoreSession: async (sessionId) => {
+    try {
+      const res = await fetch(`/api/session?id=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return;
+      const session = await res.json();
+      if (session.error) return;
+
+      const applyDeck = async (id: DeckId, d: Record<string, unknown> | null) => {
+        if (!d?.audioUrl) return;
+        await get().loadFromAudioUrl(id, d.audioUrl as string, (d.filename as string) || "shared-track");
+        const params = (d.params as Record<string, unknown>) || {};
+        for (const [k, v] of Object.entries(params)) {
+          get().setParam(id, k as keyof SimpleParams, v as number | boolean);
+        }
+        get().setVolume(id, (d.volume as number) ?? 0.6);
+        get().setRegion(id, (d.regionStart as number) ?? 0, (d.regionEnd as number) ?? 0);
+        get().setDeckMeta(id, {
+          artist: (d.artist as string) || "",
+          title: (d.title as string) || "",
+          baseKey: (d.baseKey as number | null) ?? null,
+        });
+        if (d.calculatedBPM) {
+          const dk = deckKey(id);
+          set((s) => ({ [dk]: { ...s[dk], calculatedBPM: d.calculatedBPM as number } }));
+        }
+      };
+
+      await applyDeck("A", (session.deckA as Record<string, unknown>) ?? null);
+      await applyDeck("B", (session.deckB as Record<string, unknown>) ?? null);
+      if (typeof session.crossfader === "number") get().setCrossfader(session.crossfader);
+    } catch (err) {
+      console.error("restoreSession error:", err);
     }
   },
 
