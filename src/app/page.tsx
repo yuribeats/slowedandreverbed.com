@@ -1453,6 +1453,9 @@ export default function Home() {
         </div>
 
         <Toast />
+        <div className="mt-16 py-5 border-t border-[#333] text-center">
+          <a href="https://thegoodinternet.app" target="_blank" rel="noopener noreferrer" className="uppercase tracking-[1px]" style={{ fontSize: "10px", fontWeight: 300, color: "var(--text-muted, #777)", textDecoration: "none" }}>IN PUBLIC</a>
+        </div>
       </div>
       {manualOpen && <Manual onClose={() => setManualOpen(false)} />}
       {pendingVideoExport && (
@@ -1462,9 +1465,6 @@ export default function Home() {
           onClose={clearPendingExport}
         />
       )}
-      <div className="mt-16 py-5 border-t border-[#333] text-center">
-        <a href="https://thegoodinternet.app" target="_blank" rel="noopener noreferrer" className="uppercase tracking-[1px]" style={{ fontSize: "10px", fontWeight: 300, color: "var(--text-muted, #777)", textDecoration: "none" }}>IN PUBLIC</a>
-      </div>
     </main>
   );
 }
