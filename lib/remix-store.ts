@@ -1924,26 +1924,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (deck.gridlockEnabled) {
       set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: false, gridOffsetMs: 0, gridFirstTransient: 0, gridLockedSectionDur: 0 } }));
     } else {
-      // Use ML-detected downbeat if available, otherwise scan first 10s for first transient
-      let firstTransient = 0;
-      if (deck.firstDownbeatMs !== null) {
-        firstTransient = deck.firstDownbeatMs / 1000;
-      } else if (deck.sourceBuffer) {
-        const ch0 = deck.sourceBuffer.getChannelData(0);
-        const scanLen = Math.min(ch0.length, Math.ceil(deck.sourceBuffer.sampleRate * 10));
-        let globalMax = 0;
-        for (let i = 0; i < scanLen; i++) {
-          const abs = Math.abs(ch0[i]);
-          if (abs > globalMax) globalMax = abs;
-        }
-        const threshold = globalMax * 0.3;
-        for (let i = 0; i < scanLen; i++) {
-          if (Math.abs(ch0[i]) >= threshold) {
-            firstTransient = i / deck.sourceBuffer.sampleRate;
-            break;
-          }
-        }
-      }
+      const firstTransient = deck.firstDownbeatMs !== null ? deck.firstDownbeatMs / 1000 : 0;
       // Lock section duration: 4 bars at current BPM, or 0 if no BPM yet
       const currentRate = 1.0 + deck.params.speed;
       const lockedDur = deck.calculatedBPM ? 960 / (deck.calculatedBPM * currentRate) : 0;
