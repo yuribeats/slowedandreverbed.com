@@ -1363,7 +1363,10 @@ export default function Home() {
                     if (aLen <= 0 || bLen <= 0) return;
                     // Target duration = geometric mean — both decks meet in the middle.
                     // Each deck adjusts its own speed (BPM) to play its selection in T seconds.
+                    // Speed is always pitch-independent: unlink first so pitch is preserved.
                     const T = Math.sqrt(aLen * bLen);
+                    if (deckA.params.pitchSpeedLinked ?? true) setParam("A", "pitchSpeedLinked", 0);
+                    if (deckB.params.pitchSpeedLinked ?? true) setParam("B", "pitchSpeedLinked", 0);
                     setParam("A", "speed", aLen / T - 1);
                     setParam("B", "speed", bLen / T - 1);
                   }}
