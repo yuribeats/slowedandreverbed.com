@@ -317,6 +317,7 @@ let masterComp: DynamicsCompressorNode | null = null;
 let masterMakeup: GainNode | null = null;
 let masterLimiter: DynamicsCompressorNode | null = null;
 let masterStreamDest: MediaStreamAudioDestinationNode | null = null;
+let masterAnalyser: AnalyserNode | null = null;
 
 /* ─── Live recording state ─── */
 let liveRecorder: MediaRecorder | null = null;
@@ -370,8 +371,17 @@ function getSharedMerger(): GainNode {
 
     masterStreamDest = ctx.createMediaStreamDestination();
     masterLimiter.connect(masterStreamDest);
+
+    masterAnalyser = ctx.createAnalyser();
+    masterAnalyser.fftSize = 256;
+    masterAnalyser.smoothingTimeConstant = 0.85;
+    masterLimiter.connect(masterAnalyser);
   }
   return sharedMerger;
+}
+
+export function getMasterAnalyser(): AnalyserNode | null {
+  return masterAnalyser;
 }
 
 /* ─── Extract a region from an AudioBuffer as raw channel data ─── */

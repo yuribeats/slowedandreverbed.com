@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useState, useEffect } from "react";
 import { expandParams } from "@yuribeats/audio-utils";
-import { useRemixStore } from "../../lib/remix-store";
+import { useRemixStore, getMasterAnalyser } from "../../lib/remix-store";
 import { getAudioContext } from "../../lib/audio-context";
 import WaveformDisplay from "../../components/WaveformDisplay";
 import PianoKeyboard from "../../components/PianoKeyboard";
@@ -409,44 +409,49 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   <div className="absolute left-0 top-full mt-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
                     <button
                       onClick={() => { setShowYouTube(!showYouTube); setDeckMenuOpen(false); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                       style={{ fontFamily: "var(--font-tech)", color: showYouTube ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
                     >
                       YOUTUBE URL
+                      <span data-tooltip-right="LOAD A TRACK FROM YOUTUBE" className="ml-3 opacity-40 text-[10px]">?</span>
                     </button>
                     <button
                       onClick={() => { setStem(id, "vocals"); setDeckMenuOpen(false); }}
                       disabled={deck.isStemLoading}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                       style={{ fontFamily: "var(--font-tech)", color: deck.activeStem === "vocals" ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
                     >
                       {deck.isStemLoading ? "SEPARATING..." : "ISOLATE VOCALS"}
+                      <span data-tooltip-right="STRIP INSTRUMENTS, KEEP VOCALS (ML-POWERED, ~30S)" className="ml-3 opacity-40 text-[10px]">?</span>
                     </button>
                     <button
                       onClick={() => { detectDownbeat(id); setDeckMenuOpen(false); }}
                       disabled={!deck.sourceBuffer || deck.downbeatDetecting}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                       style={{ fontFamily: "var(--font-tech)", color: deck.firstDownbeatMs !== null ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.5 : 1 }}
                     >
-                      {deck.downbeatDetecting
+                      <span>{deck.downbeatDetecting
                         ? "DETECTING..."
                         : deck.firstDownbeatMs !== null
                         ? `DOWNBEAT: ${(deck.firstDownbeatMs / 1000).toFixed(3)}S`
-                        : "DETECT DOWNBEAT"}
+                        : "DETECT DOWNBEAT"}</span>
+                      <span data-tooltip-right="FIND THE FIRST BEAT FOR LOOP ALIGNMENT" className="ml-3 opacity-40 text-[10px]">?</span>
                     </button>
                     <button
                       onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                       style={{ fontFamily: "var(--font-tech)", color: showKeyFinder ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
                     >
                       KEY FINDER
+                      <span data-tooltip-right="DETECT THE MUSICAL KEY OF THE TRACK" className="ml-3 opacity-40 text-[10px]">?</span>
                     </button>
                     <button
                       onClick={() => { toggleGridlock(id); setDeckMenuOpen(false); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left"
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
                       style={{ fontFamily: "var(--font-tech)", color: deck.gridlockEnabled ? "#c82828" : "var(--text-dark)", background: "transparent" }}
                     >
                       GRIDLOCK
+                      <span data-tooltip-right="LOCK LOOP LENGTH TO THE BPM GRID" className="ml-3 opacity-40 text-[10px]">?</span>
                     </button>
                   </div>
                 )}
@@ -1068,6 +1073,44 @@ function MasterBus() {
   const setMasterBus = useRemixStore((s) => s.setMasterBus);
   const [showCompDetail, setShowCompDetail] = useState(false);
   const [showLimDetail, setShowLimDetail] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const draw = () => {
+      rafRef.current = requestAnimationFrame(draw);
+      const analyser = getMasterAnalyser();
+      const ctx2d = canvas.getContext("2d");
+      if (!ctx2d) return;
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx2d.fillStyle = "#1e2e1a";
+      ctx2d.fillRect(0, 0, W, H);
+      // grid lines
+      ctx2d.strokeStyle = "rgba(44,66,37,0.6)";
+      ctx2d.lineWidth = 1;
+      for (let y = H / 4; y < H; y += H / 4) {
+        ctx2d.beginPath(); ctx2d.moveTo(0, y); ctx2d.lineTo(W, y); ctx2d.stroke();
+      }
+      if (!analyser) return;
+      const bufLen = analyser.frequencyBinCount;
+      const data = new Uint8Array(bufLen);
+      analyser.getByteFrequencyData(data);
+      const useBins = Math.floor(bufLen * 0.8);
+      const barW = W / useBins;
+      for (let i = 0; i < useBins; i++) {
+        const v = data[i] / 255;
+        const barH = v * H;
+        const alpha = 0.5 + v * 0.5;
+        ctx2d.fillStyle = `rgba(117,204,70,${alpha})`;
+        ctx2d.fillRect(i * barW, H - barH, Math.max(barW - 1, 1), barH);
+      }
+    };
+    draw();
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
 
   const compPct = Math.round(masterBus.compAmount * 100);
   const limPct = Math.round(masterBus.limiterAmount * 100);
@@ -1095,6 +1138,19 @@ function MasterBus() {
           OUTPUT
         </span>
       </div>
+
+      <canvas
+        ref={canvasRef}
+        width={600}
+        height={56}
+        style={{
+          width: "100%",
+          height: "56px",
+          display: "block",
+          background: "var(--crt-bg)",
+          border: "1px solid var(--engrave-dark)",
+        }}
+      />
 
       <div className="zone-engraved">
         <div className="grid grid-cols-5 gap-2" style={{ justifyItems: "center" }}>
@@ -1411,56 +1467,62 @@ export default function Home() {
                 <div className="absolute right-0 top-full mt-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
                   <button
                     onClick={() => { setManualOpen(true); setMenuOpen(false); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
                   >
                     MANUAL
+                    <span data-tooltip-right="VIEW THE FULL USER MANUAL" className="ml-3 opacity-40 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={() => { exportMP4(); setMenuOpen(false); }}
                     disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
                   >
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
+                    <span data-tooltip-right="RENDER YOUR MIX AS A VIDEO FILE" className="ml-3 opacity-40 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={handleShare}
                     disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || shareLoading}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", color: shareStatus ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
                   >
                     {shareLoading ? "UPLOADING..." : shareStatus || "SHARE SESSION"}
+                    <span data-tooltip-right="UPLOAD AND SHARE A LINK TO THIS SESSION" className="ml-3 opacity-40 text-[10px]">?</span>
                   </button>
                   <a
                     href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
                   >
                     YOUTUBE
+                    <span data-tooltip-right="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL" className="ml-3 opacity-40 text-[10px]">?</span>
                   </a>
                   <a
                     href="https://studio-2026-03-19.vercel.app"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
                   >
                     STUDIO
+                    <span data-tooltip-right="OPEN THE DRIFTWAVE STUDIO APP" className="ml-3 opacity-40 text-[10px]">?</span>
                   </a>
                   <a
                     href="https://everysong.site"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left"
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
                   >
                     EVERY SONG
+                    <span data-tooltip-right="BROWSE EVERY SONG ON EVERYSONG.SITE" className="ml-3 opacity-40 text-[10px]">?</span>
                   </a>
                 </div>
               )}
@@ -1480,7 +1542,7 @@ export default function Home() {
           {/* Sync start + Lock BPM + Record — only when deck B visible */}
           {showDeckB && (
             <div className="flex justify-center gap-6 boot-stagger boot-delay-3">
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center" data-tooltip="ARMS THE RECORDER. CAPTURES THE MIX WHEN BOTH DECKS PLAY.">
                 <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>LIVE RECORDING</span>
                 <button
                   onClick={() => armRecord()}
@@ -1506,7 +1568,7 @@ export default function Home() {
                   {isRecording ? "STOP" : recordArmed ? "ARMED" : "OFF"}
                 </span>
               </div>
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
                 <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
                 <button
                   onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
@@ -1517,7 +1579,7 @@ export default function Home() {
                   <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
                 </button>
               </div>
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center" data-tooltip="ADJUSTS BOTH DECK SPEEDS SO THEIR REGIONS PLAY IN EQUAL TIME. PITCH PRESERVED.">
                 <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>MATCH LEN</span>
                 <button
                   onClick={() => {

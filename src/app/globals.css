@@ -81,6 +81,61 @@ body::after {
   50% { opacity: 0.3; }
 }
 
+/* ─── Tooltips ─── */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #bbb;
+  font-family: var(--font-tech);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 400;
+  border: 1px solid #333;
+}
+[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+[data-tooltip-right] {
+  position: relative;
+}
+[data-tooltip-right]::after {
+  content: attr(data-tooltip-right);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #111;
+  color: #bbb;
+  font-family: var(--font-tech);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 400;
+  border: 1px solid #333;
+}
+[data-tooltip-right]:hover::after {
+  opacity: 1;
+}
+
 /* Boot stagger classes */
 .boot-stagger {
   animation: bootUp 0.5s ease-out both;
