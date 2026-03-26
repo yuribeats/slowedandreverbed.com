@@ -1195,6 +1195,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
             gridFirstTransient: firstDownbeatMs / 1000,
           },
         }));
+        // Move the in point to the detected downbeat
+        get().setRegion(id, firstDownbeatMs / 1000, 0);
         // Apply ML-detected BPM and key if Everysong hasn't already populated them
         const updated = getDeck(get(), id);
         if (data.bpm && !updated.calculatedBPM) {
