@@ -97,6 +97,7 @@ interface DeckNodes {
   dryGain: GainNode;
   wetGain: GainNode;
   analyser: AnalyserNode;
+  fadeGain: GainNode;
   deckGain: GainNode;
 }
 
@@ -528,9 +529,14 @@ function buildDeckGraph(
   dryGain.connect(reverbMerger);
   wetGain.connect(reverbMerger);
 
+  // Fade-out gain node (scheduled to ramp to 0 over last 5 seconds of non-looping playback)
+  const fadeGain = ctx.createGain();
+  fadeGain.gain.value = 1.0;
+
   reverbMerger.connect(analyser);
   analyser.connect(autoGain);
-  autoGain.connect(deckGain);
+  autoGain.connect(fadeGain);
+  fadeGain.connect(deckGain);
   deckGain.connect(getSharedMerger());
 
   const safeOffset = Math.max(0, offset);
@@ -542,6 +548,14 @@ function buildDeckGraph(
     source.start(0, safeOffset);
   } else if (duration && duration > 0) {
     source.start(0, safeOffset, duration);
+    // Schedule 5-second fade out (wall-clock time = source duration / playback rate)
+    const FADE_SECS = 5;
+    const wallDuration = duration / expanded.rate;
+    const now = ctx.currentTime;
+    const fadeStart = now + Math.max(0, wallDuration - FADE_SECS);
+    const fadeEnd = now + wallDuration;
+    fadeGain.gain.setValueAtTime(1.0, fadeStart);
+    fadeGain.gain.linearRampToValueAtTime(0, fadeEnd);
   } else {
     source.start(0, safeOffset);
   }
@@ -549,7 +563,7 @@ function buildDeckGraph(
   return {
     source, pitchShifter, lowShelf, peaking, highShelf, bump,
     waveshaper, satFilter,
-    convolver, dryGain, wetGain, analyser, deckGain,
+    convolver, dryGain, wetGain, analyser, fadeGain, deckGain,
   };
 }
 
@@ -733,8 +747,8 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
     }
   }
 
-  // 1-second fade out at the end
-  const fadeSamples = Math.min(rendered.sampleRate, rendered.length);
+  // 5-second fade out at the end
+  const fadeSamples = Math.min(rendered.sampleRate * 5, rendered.length);
   const fadeStart = rendered.length - fadeSamples;
   for (let c = 0; c < rendered.numberOfChannels; c++) {
     const ch = rendered.getChannelData(c);
