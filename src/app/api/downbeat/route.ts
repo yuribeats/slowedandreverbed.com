@@ -82,9 +82,16 @@ export async function POST(req: NextRequest) {
       audioUrl = await uploadToReplicate(await file.arrayBuffer(), file.name || "audio.wav");
     }
 
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const tokenId = process.env.MODAL_TOKEN_ID;
+    const tokenSecret = process.env.MODAL_TOKEN_SECRET;
+    if (tokenId && tokenSecret) {
+      headers["Authorization"] = `Token ${tokenId}:${tokenSecret}`;
+    }
+
     const res = await fetch(modalUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ audio_url: audioUrl, ...priors }),
     });
 
