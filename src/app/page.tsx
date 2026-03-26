@@ -1358,23 +1358,14 @@ export default function Home() {
                 <button
                   onClick={() => {
                     if (!deckA.sourceBuffer || !deckB.sourceBuffer) return;
-                    const bpmA = deckA.calculatedBPM;
-                    const bpmB = deckB.calculatedBPM;
-                    if (bpmA && bpmB) {
-                      // Both BPMs known — meet at geometric mean of current playing BPMs
-                      const playingA = bpmA * (1 + deckA.params.speed);
-                      const playingB = bpmB * (1 + deckB.params.speed);
-                      const target = Math.sqrt(playingA * playingB);
-                      setParam("A", "speed", target / bpmA - 1);
-                      setParam("B", "speed", target / bpmB - 1);
-                    } else {
-                      // Fallback: duration match on selections
-                      const aLen = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
-                      const bLen = (deckB.regionEnd > 0 ? deckB.regionEnd : deckB.sourceBuffer.duration) - deckB.regionStart;
-                      if (aLen <= 0 || bLen <= 0) return;
-                      const speedRatio = bLen / aLen;
-                      setParam("B", "speed", speedRatio - 1.0);
-                    }
+                    const aLen = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
+                    const bLen = (deckB.regionEnd > 0 ? deckB.regionEnd : deckB.sourceBuffer.duration) - deckB.regionStart;
+                    if (aLen <= 0 || bLen <= 0) return;
+                    // Target duration = geometric mean — both decks meet in the middle.
+                    // Each deck adjusts its own speed (BPM) to play its selection in T seconds.
+                    const T = Math.sqrt(aLen * bLen);
+                    setParam("A", "speed", aLen / T - 1);
+                    setParam("B", "speed", bLen / T - 1);
                   }}
                   disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
                   className="rocker-switch"
