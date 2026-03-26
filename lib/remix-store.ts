@@ -471,9 +471,9 @@ function buildDeckGraph(
   // Pitch shifter worklet (unlinked mode only)
   let pitchShifter: AudioWorkletNode | null = null;
   if (!expanded.pitchSpeedLinked && isPitchWorkletReady()) {
-    pitchShifter = new AudioWorkletNode(ctx, "soundtouch-processor");
+    pitchShifter = new AudioWorkletNode(ctx, "rubberband-processor");
     const netShift = expanded.pitchFactor / expanded.rate;
-    pitchShifter.port.postMessage({ pitchFactor: netShift });
+    pitchShifter.port.postMessage(JSON.stringify(["pitch", netShift]));
   }
 
   // Connect: source → [pitchShifter?] → EQ → sat → reverb → analyser → deckGain → shared output
@@ -960,7 +960,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     // Update pitch shifter compensation when speed or pitch changes
     if (deck.nodes.pitchShifter && (paramKey === "speed" || paramKey === "pitch")) {
       const netShift = expanded.pitchFactor / expanded.rate;
-      deck.nodes.pitchShifter.port.postMessage({ pitchFactor: netShift });
+      deck.nodes.pitchShifter.port.postMessage(JSON.stringify(["pitch", netShift]));
     }
 
     const toneKeys: (keyof SimpleParams)[] = ["tone", "eqLowOverride", "eqMidOverride", "eqHighOverride", "eqBumpFreqOverride", "eqBumpGainOverride"];
@@ -1015,7 +1015,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
             deckBFresh.nodes.source.playbackRate.value = 1.0 + newSpeedB;
             if (deckBFresh.nodes.pitchShifter) {
               const expB = expandParams(deckBFresh.params);
-              deckBFresh.nodes.pitchShifter.port.postMessage({ pitchFactor: expB.pitchFactor / expB.rate });
+              deckBFresh.nodes.pitchShifter.port.postMessage(JSON.stringify(["pitch", expB.pitchFactor / expB.rate]));
             }
           }
 

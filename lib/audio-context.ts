@@ -20,7 +20,7 @@ export async function ensurePitchWorklet(): Promise<void> {
   const c = getAudioContext();
   if (workletReady) return;
   try {
-    await c.audioWorklet.addModule("/worklets/soundtouch-processor.js");
+    await c.audioWorklet.addModule("/worklets/rubberband-processor.js");
     workletReady = true;
   } catch {
     // Worklet not available — pitch shifting will be bypassed
