@@ -1,15 +1,20 @@
 """
-Driftwave downbeat detector — Modal serverless endpoint.
+Driftwave downbeat + BPM + key detector — Modal serverless endpoint.
 
-Uses madmom DBNDownBeatTrackingProcessor (RNN + DBN, MIREX 2016 winner BK4).
-F1: 0.908 on Ballroom, 0.97 on HJDB, 0.865 on Beatles.
+Uses allin1 (Kim & Won, ISMIR 2023) — transformer trained on Demucs-separated
+features for joint beat, downbeat, BPM, key, and chord analysis.
+
+Downbeat F1 ~0.76 on GTZAN vs ~0.64 for madmom BK4 (2016).
+Single inference pass replaces both beat detection and key/BPM lookup.
+
+GitHub: https://github.com/mir-aidj/all-in-one
 
 Deploy:
   pip install modal
   modal setup
   modal deploy modal_functions/beatnet.py
 
-Then add the returned URL as MODAL_DOWNBEAT_URL in Vercel env vars.
+Add returned URL to Vercel as MODAL_DOWNBEAT_URL.
 """
 
 import modal
@@ -19,11 +24,11 @@ app = modal.App("driftwave-downbeat")
 image = (
     modal.Image.debian_slim(python_version="3.10")
     .apt_install("ffmpeg", "libsndfile1")
-    .pip_install("madmom==0.16.1", "requests", "numpy")
+    .pip_install("allin1", "requests")
 )
 
 
-@app.function(image=image, timeout=120, memory=2048)
+@app.function(image=image, timeout=180, memory=8192, gpu="any")
 @modal.web_endpoint(method="POST")
 def detect_downbeat(item: dict) -> dict:
     """
@@ -31,14 +36,36 @@ def detect_downbeat(item: dict) -> dict:
     Returns:
       {
         "first_downbeat_ms": int,        # milliseconds from start
-        "downbeats_ms": [int, ...],      # first 50 downbeat positions
-        "beats_ms": [int, ...],          # first 200 beat positions
-        "beats_per_bar": int,            # detected time signature
+        "downbeats_ms":      [int, ...], # all downbeat positions (first 50)
+        "beats_ms":          [int, ...], # all beat positions (first 200)
+        "bpm":               float,      # detected BPM
+        "key":               str,        # e.g. "C major", "D# minor"
+        "note_index":        int | None, # 0–11 (C=0 … B=11)
+        "mode":              str | None, # "major" | "minor"
       }
     """
     import tempfile
     import os
     import requests as req_lib
+    import allin1
+
+    KEY_MAP = {
+        "C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3,
+        "E": 4, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8,
+        "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11,
+    }
+
+    def parse_key(key_str: str):
+        if not key_str:
+            return None, None
+        # allin1 returns e.g. "C major", "D# minor"
+        parts = key_str.strip().split()
+        if len(parts) < 2:
+            return None, None
+        note = parts[0]
+        mode = "major" if parts[1].lower() == "major" else "minor"
+        note_index = KEY_MAP.get(note)
+        return note_index, mode
 
     audio_url = item.get("audio_url")
     if not audio_url:
@@ -50,46 +77,37 @@ def detect_downbeat(item: dict) -> dict:
     except Exception as e:
         return {"error": f"Download failed: {e}"}
 
-    # Determine suffix from URL
     url_lower = audio_url.lower()
-    if ".wav" in url_lower:
-        suffix = ".wav"
-    elif ".flac" in url_lower:
-        suffix = ".flac"
-    else:
-        suffix = ".mp3"
+    suffix = ".wav" if ".wav" in url_lower else ".flac" if ".flac" in url_lower else ".mp3"
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
         f.write(r.content)
         tmp = f.name
 
     try:
-        from madmom.features.downbeats import RNNDownBeatProcessor, DBNDownBeatTrackingProcessor
+        # allin1.analyze returns a AnalysisResult with:
+        #   .beats          list[float]  — beat positions in seconds
+        #   .downbeats      list[float]  — downbeat positions in seconds
+        #   .bpm            float        — estimated BPM
+        #   .key            str          — e.g. "C major"
+        #   .chords         list[str]    — chord labels per segment
+        #   .segments       list[Segment]
+        result = allin1.analyze(tmp)
 
-        # RNNDownBeatProcessor: CRNN that outputs beat + downbeat activation frames at 100 fps
-        # DBNDownBeatTrackingProcessor: DBN (Dynamic Bayesian Network) temporal decoding
-        # beats_per_bar=[3, 4] handles both 3/4 and 4/4 time signatures
-        proc = RNNDownBeatProcessor()
-        dbn = DBNDownBeatTrackingProcessor(beats_per_bar=[3, 4], fps=100)
-
-        acts = proc(tmp)
-        beats = dbn(acts)
-        # beats: numpy array of [time_seconds, beat_number]
-        # beat_number == 1 means downbeat (beat 1 of bar)
-
-        all_beats = [(float(b[0]), int(b[1])) for b in beats]
-        downbeat_times = [b[0] for b in all_beats if b[1] == 1]
-        beat_times = [b[0] for b in all_beats]
-
-        # Infer beats per bar from the most common max beat number per bar
-        beat_numbers = [b[1] for b in all_beats]
-        detected_bpb = max(beat_numbers) if beat_numbers else 4
+        downbeats = [float(t) for t in (result.downbeats or [])]
+        beats = [float(t) for t in (result.beats or [])]
+        bpm = float(result.bpm) if result.bpm else None
+        key_str = result.key or ""
+        note_index, mode = parse_key(key_str)
 
         return {
-            "first_downbeat_ms": round(downbeat_times[0] * 1000) if downbeat_times else None,
-            "downbeats_ms": [round(t * 1000) for t in downbeat_times[:50]],
-            "beats_ms": [round(t * 1000) for t in beat_times[:200]],
-            "beats_per_bar": detected_bpb,
+            "first_downbeat_ms": round(downbeats[0] * 1000) if downbeats else None,
+            "downbeats_ms": [round(t * 1000) for t in downbeats[:50]],
+            "beats_ms": [round(t * 1000) for t in beats[:200]],
+            "bpm": round(bpm, 2) if bpm else None,
+            "key": key_str,
+            "note_index": note_index,
+            "mode": mode,
         }
     except Exception as e:
         return {"error": str(e)}

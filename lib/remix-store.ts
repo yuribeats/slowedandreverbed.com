@@ -989,6 +989,12 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
             gridFirstTransient: firstDownbeatMs / 1000,
           },
         }));
+        // Apply ML-detected BPM and key if Everysong hasn't already populated them
+        const updated = getDeck(get(), id);
+        if (data.bpm && !updated.calculatedBPM) get().setBPM(id, data.bpm);
+        if (data.note_index !== null && data.note_index !== undefined && updated.baseKey === null) {
+          get().setDeckMeta(id, { baseKey: data.note_index });
+        }
       } else {
         set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
       }
