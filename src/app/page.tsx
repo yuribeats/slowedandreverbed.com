@@ -137,8 +137,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
   const toggleLink = () => {
     if (!linked) {
-      // Re-linking: sync pitch to current speed so the transition is seamless
-      setParam(id, "pitch", speedSemitones);
+      // Re-linking: set speed to match current pitch so pitch stays where it is
+      setParam(id, "speed", Math.pow(2, pitchSemitones / 12) - 1);
     }
     setParam(id, "pitchSpeedLinked", linked ? 0 : 1);
   };
