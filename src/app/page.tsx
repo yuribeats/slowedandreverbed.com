@@ -1143,10 +1143,10 @@ function MasterBus() {
       <canvas
         ref={canvasRef}
         width={600}
-        height={56}
+        height={120}
         style={{
           width: "100%",
-          height: "56px",
+          height: "120px",
           display: "block",
           background: "var(--crt-bg)",
           border: "1px solid var(--engrave-dark)",
