@@ -1924,9 +1924,11 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (deck.gridlockEnabled) {
       set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: false, gridOffsetMs: 0, gridFirstTransient: 0, gridLockedSectionDur: 0 } }));
     } else {
-      // Detect first transient: scan first 10s of channel 0
+      // Use ML-detected downbeat if available, otherwise scan first 10s for first transient
       let firstTransient = 0;
-      if (deck.sourceBuffer) {
+      if (deck.firstDownbeatMs !== null) {
+        firstTransient = deck.firstDownbeatMs / 1000;
+      } else if (deck.sourceBuffer) {
         const ch0 = deck.sourceBuffer.getChannelData(0);
         const scanLen = Math.min(ch0.length, Math.ceil(deck.sourceBuffer.sampleRate * 10));
         let globalMax = 0;
