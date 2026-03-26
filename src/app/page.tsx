@@ -94,30 +94,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const lockGridSectionDur = useRemixStore((s) => s.lockGridSectionDur);
   const recordArmed = useRemixStore((s) => s.recordArmed);
 
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupKey, setLookupKey] = useState<string | null>(null);
-
-  const runLookup = useCallback(async () => {
-    const q = [deck.artist, deck.title].filter(Boolean).join(" ").trim();
-    if (!q) return;
-    setLookupLoading(true);
-    try {
-      const res = await fetch(`/api/everysong?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      if (data.found) {
-        if (data.bpm) {
-          setBPM(id, data.bpm);
-          setUserBPM(String(data.bpm));
-        }
-        if (data.noteIndex !== null) setDeckMeta(id, { baseKey: data.noteIndex });
-        setLookupKey(data.key ?? null);
-      } else {
-        setLookupKey(null);
-      }
-    } catch { setLookupKey(null); }
-    setLookupLoading(false);
-  }, [deck.artist, deck.title, id, setBPM, setDeckMeta]);
-
   // Clear key and BPM when source changes
   const sourceId = deck.sourceBuffer ? deck.sourceFilename : null;
   useEffect(() => {
@@ -125,7 +101,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     setUserBPM("");
     setEditingKey(false);
     setEditingBPM(false);
-    setLookupKey(null);
   }, [sourceId, id, setDeckMeta]);
 
   // Lock grid section duration when BPM is set while GRIDLOCK is enabled
@@ -212,7 +187,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             className="text-sm tracking-[2px] uppercase"
             style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
           >
-            DECK {id}
+            {id === "A" ? "INSTRUMENTAL" : "ACAPELLA"}
           </span>
           <div className="flex flex-col items-center gap-0.5">
             <button onClick={handleLoad} disabled={deck.isLoading} className="rocker-switch" style={{ width: "28px", height: "28px" }}>
@@ -237,36 +212,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       </div>
 
-      {/* Artist / Title lookup */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={deck.artist}
-          onChange={(e) => setDeckMeta(id, { artist: e.target.value })}
-          onKeyDown={(e) => e.key === "Enter" && runLookup()}
-          placeholder="ARTIST"
-          className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[10px] tracking-[1px] outline-none focus:border-[#666]"
-          style={{ fontFamily: "var(--font-tech)", color: "#000" }}
-        />
-        <input
-          type="text"
-          value={deck.title}
-          onChange={(e) => setDeckMeta(id, { title: e.target.value })}
-          onKeyDown={(e) => e.key === "Enter" && runLookup()}
-          placeholder="TITLE"
-          className="flex-1 bg-transparent border border-[#333] px-2 py-1 text-[10px] tracking-[1px] outline-none focus:border-[#666]"
-          style={{ fontFamily: "var(--font-tech)", color: "#000" }}
-        />
-        <button
-          onClick={runLookup}
-          disabled={lookupLoading || (!deck.artist && !deck.title)}
-          className={detailBtnClass(false)}
-          style={{ ...detailBtnStyle, opacity: (!deck.artist && !deck.title) ? 0.3 : 1 }}
-        >
-          {lookupLoading ? "..." : lookupKey ? "✓" : "GO"}
-        </button>
-      </div>
-
       {/* CRT status */}
       <div className="display-bezel flex flex-col gap-2 p-3">
         <div className="flex items-center justify-between">
@@ -274,8 +219,14 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             className="text-[12px] truncate crt-text"
             style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "12px" }}
           >
-            {deck.sourceFilename ? deck.sourceFilename.toUpperCase() : "NO TRACK"}
-            {deck.isPlaying && " — PLAYING"}
+            {deck.isStemLoading
+              ? "ISOLATING VOCALS..."
+              : deck.isLoading
+              ? "LOADING..."
+              : deck.sourceFilename
+              ? deck.sourceFilename.toUpperCase()
+              : "NO TRACK"}
+            {!deck.isLoading && !deck.isStemLoading && deck.isPlaying && " — PLAYING"}
           </div>
         </div>
         {deck.sourceBuffer && (
@@ -1289,12 +1240,30 @@ export default function Home() {
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const [manualOpen, setManualOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showDeckB, setShowDeckB] = useState(false);
+  const [showDeckB, setShowDeckB] = useState(true);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
   const restoreSession = useRemixStore((s) => s.restoreSession);
+  const autoLoad = useRemixStore((s) => s.autoLoad);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
+  const [autoArtist, setAutoArtist] = useState("");
+  const [autoTitle, setAutoTitle] = useState("");
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [autoError, setAutoError] = useState("");
+
+  const handleAutoLoad = async () => {
+    if (!autoArtist && !autoTitle) return;
+    setAutoLoading(true);
+    setAutoError("");
+    try {
+      await autoLoad(autoArtist, autoTitle);
+    } catch (e) {
+      setAutoError(e instanceof Error ? e.message : "LOAD FAILED");
+      setTimeout(() => setAutoError(""), 4000);
+    }
+    setAutoLoading(false);
+  };
 
   // Restore shared session on load
   useEffect(() => {
@@ -1430,26 +1399,44 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Auto-load: artist + title → instrumental + acapella */}
+          <div className="flex gap-2 boot-stagger boot-delay-2">
+            <input
+              type="text"
+              value={autoArtist}
+              onChange={(e) => setAutoArtist(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAutoLoad()}
+              placeholder="ARTIST"
+              className="flex-1 bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
+              style={{ fontFamily: "var(--font-tech)", color: "#000" }}
+            />
+            <input
+              type="text"
+              value={autoTitle}
+              onChange={(e) => setAutoTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAutoLoad()}
+              placeholder="TITLE"
+              className="flex-1 bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
+              style={{ fontFamily: "var(--font-tech)", color: "#000" }}
+            />
+            <button
+              onClick={handleAutoLoad}
+              disabled={autoLoading || (!autoArtist && !autoTitle)}
+              className={detailBtnClass(false)}
+              style={{ ...detailBtnStyle, opacity: (!autoArtist && !autoTitle) ? 0.3 : 1, color: autoError ? "var(--led-red-on)" : "var(--accent-gold)" }}
+            >
+              {autoLoading ? "..." : autoError || "LOAD"}
+            </button>
+          </div>
+
           {/* Decks */}
-          <div className={`grid gap-5 boot-stagger boot-delay-2 ${showDeckB ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+          <div className="grid gap-5 boot-stagger boot-delay-3 grid-cols-1 sm:grid-cols-2">
             <div className="zone-inset">
               <Deck id="A" />
             </div>
-            {showDeckB ? (
-              <div className="zone-inset">
-                <Deck id="B" onHide={() => setShowDeckB(false)} />
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setShowDeckB(true)}
-                  className={detailBtnClass(false)}
-                  style={{ ...detailBtnStyle, fontSize: "12px", padding: "6px 16px" }}
-                >
-                  ADD A SECOND DECK
-                </button>
-              </div>
-            )}
+            <div className="zone-inset">
+              <Deck id="B" />
+            </div>
           </div>
 
           {/* Sync start + Lock BPM + Record — only when deck B visible */}

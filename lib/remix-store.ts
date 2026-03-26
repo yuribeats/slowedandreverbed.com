@@ -258,6 +258,7 @@ interface RemixStore {
   loadFromAudioUrl: (deck: DeckId, url: string, filename: string) => Promise<void>;
   setDeckMeta: (deck: DeckId, meta: { artist?: string; title?: string; baseKey?: number | null }) => void;
   restoreSession: (sessionId: string) => Promise<void>;
+  autoLoad: (artist: string, title: string) => Promise<void>;
   play: (deck: DeckId, forceLoop?: boolean) => Promise<void>;
   stop: (deck: DeckId) => void;
   pause: (deck: DeckId) => void;
@@ -901,6 +902,33 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     } catch (err) {
       console.error("restoreSession error:", err);
     }
+  },
+
+  autoLoad: async (artist, title) => {
+    const searchAndLoad = async (id: DeckId, query: string) => {
+      const searchRes = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      const searchData = await searchRes.json();
+      if (searchData.error || !searchData.url) throw new Error(searchData.error || "No results");
+      await get().loadFromYouTube(id, searchData.url);
+
+      // Populate BPM + key via Everysong
+      const esRes = await fetch(`/api/everysong?q=${encodeURIComponent(`${artist} ${title}`)}`);
+      const esData = await esRes.json();
+      if (esData.found) {
+        if (esData.bpm) get().setBPM(id, esData.bpm);
+        if (esData.noteIndex !== null) get().setDeckMeta(id, { baseKey: esData.noteIndex });
+      }
+      get().setDeckMeta(id, { artist, title });
+    };
+
+    await Promise.all([
+      searchAndLoad("A", `${artist} ${title} instrumental`),
+      (async () => {
+        await searchAndLoad("B", `${artist} ${title}`);
+        await get().separateStems("B");
+        get().setStem("B", "vocals");
+      })(),
+    ]);
   },
 
   play: async (id, forceLoop) => {
