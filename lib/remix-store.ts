@@ -142,6 +142,8 @@ interface DeckState {
   gridOffsetMs: number;
   gridFirstTransient: number;
   gridLockedSectionDur: number; // seconds — frozen at toggle-on
+  firstDownbeatMs: number | null;
+  downbeatDetecting: boolean;
 }
 
 type DeckId = "A" | "B";
@@ -176,6 +178,8 @@ const defaultDeck = (): DeckState => ({
   gridOffsetMs: 0,
   gridFirstTransient: 0,
   gridLockedSectionDur: 0,
+  firstDownbeatMs: null,
+  downbeatDetecting: false,
 });
 
 interface MasterBusParams {
@@ -259,6 +263,7 @@ interface RemixStore {
   setDeckMeta: (deck: DeckId, meta: { artist?: string; title?: string; baseKey?: number | null }) => void;
   restoreSession: (sessionId: string) => Promise<void>;
   autoLoad: (artist: string, title: string) => Promise<void>;
+  detectDownbeat: (deck: DeckId) => Promise<void>;
   play: (deck: DeckId, forceLoop?: boolean) => Promise<void>;
   stop: (deck: DeckId) => void;
   pause: (deck: DeckId) => void;
@@ -905,13 +910,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   },
 
   autoLoad: async (artist, title) => {
-    const searchAndLoad = async (id: DeckId, query: string) => {
-      const searchRes = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
-      const searchData = await searchRes.json();
-      if (searchData.error || !searchData.url) throw new Error(searchData.error || "No results");
-      await get().loadFromYouTube(id, searchData.url);
-
-      // Populate BPM + key via Everysong
+    const everysong = async (id: DeckId) => {
       const esRes = await fetch(`/api/everysong?q=${encodeURIComponent(`${artist} ${title}`)}`);
       const esData = await esRes.json();
       if (esData.found) {
@@ -922,13 +921,80 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     };
 
     await Promise.all([
-      searchAndLoad("A", `${artist} ${title} instrumental`),
+      // Deck A: instrumental
       (async () => {
-        await searchAndLoad("B", `${artist} ${title}`);
+        const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(`${artist} ${title} instrumental`)}`);
+        const { url, error } = await res.json();
+        if (error || !url) throw new Error(error || "No results for instrumental");
+        await get().loadFromYouTube("A", url);
+        // Detect downbeat on instrumental + Everysong in parallel
+        await Promise.all([get().detectDownbeat("A"), everysong("A")]);
+      })(),
+
+      // Deck B: full track → detect downbeat on full mix → stem isolation → vocals
+      (async () => {
+        const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(`${artist} ${title}`)}`);
+        const { url, error } = await res.json();
+        if (error || !url) throw new Error(error || "No results");
+        await get().loadFromYouTube("B", url);
+        // Detect downbeat on full mix BEFORE isolation (full mix has drums → most accurate)
+        await Promise.all([get().detectDownbeat("B"), everysong("B")]);
+        // Isolate vocals; downbeat timestamp carries over (timing unchanged by Demucs)
         await get().separateStems("B");
         get().setStem("B", "vocals");
       })(),
     ]);
+  },
+
+  detectDownbeat: async (id) => {
+    const dk = deckKey(id);
+    const deck = getDeck(get(), id);
+    if (!deck.sourceBuffer) return;
+
+    set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: true } }));
+
+    try {
+      let res: Response;
+      if (deck.sourceUrl) {
+        // YouTube URL — API downloads and uploads to Replicate for Modal to fetch
+        res = await fetch("/api/downbeat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ youtubeUrl: deck.sourceUrl }),
+        });
+      } else if (deck.sourceFile) {
+        const fd = new FormData();
+        fd.append("audio", deck.sourceFile);
+        res = await fetch("/api/downbeat", { method: "POST", body: fd });
+      } else {
+        // Pinata or other accessible URL
+        const url = deck.sourceFilename;
+        if (!url) return;
+        res = await fetch("/api/downbeat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audioUrl: url }),
+        });
+      }
+
+      const data = await res.json();
+      if (data.first_downbeat_ms !== null && data.first_downbeat_ms !== undefined) {
+        const firstDownbeatMs = data.first_downbeat_ms as number;
+        set((s) => ({
+          [dk]: {
+            ...s[dk],
+            firstDownbeatMs,
+            downbeatDetecting: false,
+            // Feed into gridFirstTransient so gridlock syncs from the actual musical downbeat
+            gridFirstTransient: firstDownbeatMs / 1000,
+          },
+        }));
+      } else {
+        set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
+      }
+    } catch {
+      set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
+    }
   },
 
   play: async (id, forceLoop) => {

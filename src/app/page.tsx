@@ -92,6 +92,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const toggleGridlock = useRemixStore((s) => s.toggleGridlock);
   const setGridOffset = useRemixStore((s) => s.setGridOffset);
   const lockGridSectionDur = useRemixStore((s) => s.lockGridSectionDur);
+  const detectDownbeat = useRemixStore((s) => s.detectDownbeat);
   const recordArmed = useRemixStore((s) => s.recordArmed);
 
   // Clear key and BPM when source changes
@@ -221,12 +222,14 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           >
             {deck.isStemLoading
               ? "ISOLATING VOCALS..."
+              : deck.downbeatDetecting
+              ? "DETECTING DOWNBEAT..."
               : deck.isLoading
               ? "LOADING..."
               : deck.sourceFilename
               ? deck.sourceFilename.toUpperCase()
               : "NO TRACK"}
-            {!deck.isLoading && !deck.isStemLoading && deck.isPlaying && " — PLAYING"}
+            {!deck.isLoading && !deck.isStemLoading && !deck.downbeatDetecting && deck.isPlaying && " — PLAYING"}
           </div>
         </div>
         {deck.sourceBuffer && (
@@ -301,6 +304,19 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             <span style={{ color: "var(--crt-dim)" }}>
               PITCH: {displaySemitones >= 0 ? "+" : ""}{displaySemitones.toFixed(1)}ST
             </span>
+            {deck.firstDownbeatMs !== null && (
+              <span
+                style={{ color: "var(--crt-bright)" }}
+                title="ML-detected first downbeat (madmom DBN)"
+              >
+                DB: {(deck.firstDownbeatMs / 1000).toFixed(3)}S
+              </span>
+            )}
+            {deck.downbeatDetecting && (
+              <span className="animate-pulse" style={{ color: "var(--accent-gold)" }}>
+                DB...
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -347,6 +363,18 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                       style={{ fontFamily: "var(--font-tech)", color: deck.activeStem === "vocals" ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
                     >
                       {deck.isStemLoading ? "SEPARATING..." : "ISOLATE VOCALS"}
+                    </button>
+                    <button
+                      onClick={() => { detectDownbeat(id); setDeckMenuOpen(false); }}
+                      disabled={!deck.sourceBuffer || deck.downbeatDetecting}
+                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333]"
+                      style={{ fontFamily: "var(--font-tech)", color: deck.firstDownbeatMs !== null ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.5 : 1 }}
+                    >
+                      {deck.downbeatDetecting
+                        ? "DETECTING..."
+                        : deck.firstDownbeatMs !== null
+                        ? `DOWNBEAT: ${(deck.firstDownbeatMs / 1000).toFixed(3)}S`
+                        : "DETECT DOWNBEAT"}
                     </button>
                     <button
                       onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
