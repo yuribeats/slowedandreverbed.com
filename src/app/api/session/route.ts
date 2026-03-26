@@ -24,7 +24,6 @@ export async function POST(req: NextRequest) {
     const session = JSON.parse(sessionStr);
     const pinata = getPinata();
     const id = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
-    const gateway = process.env.PINATA_GATEWAY!;
 
     // Upload local audio files to Pinata — use public IPFS gateway so new devices can fetch without auth
     if (audioA && session.deckA) {
