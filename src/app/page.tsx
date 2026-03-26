@@ -75,7 +75,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const pitchSemitones = deck.params.pitch ?? 0;
   const linked = deck.params.pitchSpeedLinked ?? true;
   const speedSemitones = 12 * Math.log2(rate);
-  const displaySemitones = linked ? speedSemitones : pitchSemitones;
+  const displaySemitones = pitchSemitones;
   const reverbPct = Math.round(deck.params.reverb * 100);
   const satPct = Math.round((deck.params.saturation ?? 0) * 100);
   const toneLabel = deck.params.tone === 0 ? "FLAT" : deck.params.tone < 0 ? "DARK" : "BRIGHT";
