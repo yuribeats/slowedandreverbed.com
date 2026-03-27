@@ -193,13 +193,14 @@ export async function renderOffline(input: RenderInput): Promise<{
     outputChannels.push(new Float32Array(rendered.getChannelData(c)));
   }
 
-  // Apply pitch shift to match live playback.
-  // Live always runs: netShift = pitchFactor / rate.
-  // This compensates the pitch change introduced by playbackRate so that
-  // only the desired pitchFactor offset is heard (identical in linked and unlinked).
-  const netShift = params.pitchFactor / params.rate;
-  if (Math.abs(netShift - 1.0) > 0.0005) {
-    outputChannels = pitchShiftBuffer(outputChannels, netShift);
+  // Apply pitch shift only when unlinked (explicit pitch offset independent of speed).
+  // In linked mode, playbackRate naturally produces the correct varispeed pitch —
+  // no compensation needed, and SoundTouch artifacts on vocals are unacceptable.
+  if (!params.pitchSpeedLinked) {
+    const netShift = params.pitchFactor / params.rate;
+    if (Math.abs(netShift - 1.0) > 0.0005) {
+      outputChannels = pitchShiftBuffer(outputChannels, netShift);
+    }
   }
 
   return {
