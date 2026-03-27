@@ -40,15 +40,17 @@ function matchScore(
 export async function GET(request: NextRequest) {
   const artist = request.nextUrl.searchParams.get("artist") ?? "";
   const title = request.nextUrl.searchParams.get("title") ?? "";
-  const q = request.nextUrl.searchParams.get("q") ?? [artist, title].filter(Boolean).join(" ");
+  const q = request.nextUrl.searchParams.get("q") ?? "";
 
-  if (!q) {
-    return NextResponse.json({ error: "Missing q, artist, or title" }, { status: 400 });
+  if (!artist && !title && !q) {
+    return NextResponse.json({ error: "Missing artist, title, or q" }, { status: 400 });
   }
 
-  const params = new URLSearchParams({ q, limit: "20", sort: "popularity", dir: "desc" });
+  const params = new URLSearchParams({ limit: "20", sort: "popularity", dir: "desc" });
   if (artist) params.set("artist", artist);
   if (title) params.set("title", title);
+  // Only fall back to combined q if neither field is provided
+  if (!artist && !title && q) params.set("q", q);
 
   const apiKey = process.env.EVERYSONG_API_KEY;
   if (apiKey) params.set("api_key", apiKey);
