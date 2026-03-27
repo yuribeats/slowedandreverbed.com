@@ -90,20 +90,24 @@ function TrackSearch({
   pick: EverysongResult | null;
   onPick: (r: EverysongResult) => void;
 }) {
+  const PAGE_SIZE = 10;
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<EverysongResult[]>([]);
+  const [allResults, setAllResults] = useState<EverysongResult[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [loadingAll, setLoadingAll] = useState(false);
   const [searchErr, setSearchErr] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  const [page, setPage] = useState(0);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
     setSearching(true);
     setSearchErr("");
     setResults([]);
-    setShowAll(false);
+    setAllResults(null);
+    setPage(0);
     try {
-      const res = await fetch(`/api/everysong/search?q=${encodeURIComponent(query)}&limit=20`);
+      const res = await fetch(`/api/everysong/search?q=${encodeURIComponent(query)}&limit=5`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResults(data.results ?? []);
@@ -114,7 +118,23 @@ function TrackSearch({
     setSearching(false);
   }, [query]);
 
-  const visibleResults = showAll ? results : results.slice(0, 5);
+  const handleShowAll = useCallback(async () => {
+    if (loadingAll) return;
+    setLoadingAll(true);
+    setPage(0);
+    try {
+      const res = await fetch(`/api/everysong/search?q=${encodeURIComponent(query)}&limit=100`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setAllResults(data.results ?? []);
+    } catch (e) {
+      setSearchErr(e instanceof Error ? e.message : "SEARCH FAILED");
+    }
+    setLoadingAll(false);
+  }, [query, loadingAll]);
+
+  const totalPages = allResults ? Math.ceil(allResults.length / PAGE_SIZE) : 1;
+  const visibleResults = allResults ? allResults.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : results;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -176,13 +196,41 @@ function TrackSearch({
               </span>
             </div>
           ))}
-          {results.length > 5 && (
+          {!allResults && results.length >= 5 && (
             <button
               style={{ ...btnStyle(false), alignSelf: "flex-start", marginTop: "2px" }}
-              onClick={() => setShowAll((v) => !v)}
+              onClick={handleShowAll}
+              disabled={loadingAll}
             >
-              {showAll ? "SHOW LESS" : `SHOW ALL (${results.length})`}
+              {loadingAll ? "LOADING..." : "SHOW ALL"}
             </button>
+          )}
+          {allResults && totalPages > 1 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+              <button
+                style={btnStyle(false)}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                PREV
+              </button>
+              <span style={{ ...labelStyle, color: "#555" }}>
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                style={btnStyle(false)}
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page === totalPages - 1}
+              >
+                NEXT
+              </button>
+              <button
+                style={{ ...btnStyle(false), marginLeft: "4px" }}
+                onClick={() => { setAllResults(null); setPage(0); }}
+              >
+                SHOW LESS
+              </button>
+            </div>
           )}
         </div>
       )}
