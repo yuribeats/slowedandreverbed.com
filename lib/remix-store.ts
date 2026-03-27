@@ -1872,8 +1872,14 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       get().stop("A");
       get().stop("B");
 
+      // Prefer lossless PCM capture; fall back to high-bitrate Opus
+      const pcmMime = "audio/webm;codecs=pcm";
+      const recorderOptions: MediaRecorderOptions = MediaRecorder.isTypeSupported(pcmMime)
+        ? { mimeType: pcmMime }
+        : { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 320000 };
+
       const chunks: Blob[] = [];
-      const recorder = new MediaRecorder(masterStreamDest.stream);
+      const recorder = new MediaRecorder(masterStreamDest.stream, recorderOptions);
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
       await new Promise<void>((resolve) => {
