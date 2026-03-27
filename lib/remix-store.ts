@@ -1848,10 +1848,50 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   },
 
   exportMP4: async () => {
+    const { deckA, deckB } = get();
+    if (!deckA.sourceBuffer && !deckB.sourceBuffer) return;
+
+    // Ensure the shared output bus (and masterStreamDest) is initialised
+    getSharedMerger();
+    if (!masterStreamDest) return;
+
     set({ isExporting: true });
+
     try {
-      const blob = await renderMixToWAV(get, true);
-      if (!blob) return;
+      // Calculate wall-clock seconds per deck: buffer region / playback rate + reverb tail
+      const wallSec = (deck: DeckState): number => {
+        if (!deck.sourceBuffer) return 0;
+        const buf = (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
+        const rEnd = deck.regionEnd > 0 ? deck.regionEnd : buf.duration;
+        const exp = expandParams(deck.params);
+        return (rEnd - deck.regionStart) / exp.rate + exp.reverbDuration;
+      };
+      const totalMs = Math.max(wallSec(deckA), wallSec(deckB)) * 1000;
+
+      // Stop both decks — resets pauseOffset to regionStart
+      get().stop("A");
+      get().stop("B");
+
+      const chunks: Blob[] = [];
+      const recorder = new MediaRecorder(masterStreamDest.stream);
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+      await new Promise<void>((resolve) => {
+        recorder.onstop = () => resolve();
+        recorder.start(100);
+
+        // Small delay so recorder is running before playback begins
+        setTimeout(() => get().syncPlay(), 80);
+
+        // Stop after full wall-clock duration
+        setTimeout(() => {
+          get().stop("A");
+          get().stop("B");
+          recorder.stop();
+        }, totalMs + 80);
+      });
+
+      const blob = new Blob(chunks, { type: chunks[0]?.type || "audio/webm" });
       set({ pendingVideoExport: blob });
     } finally {
       set({ isExporting: false });

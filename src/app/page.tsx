@@ -125,6 +125,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     setEditingBPM(false);
   }, [sourceId, id, setDeckMeta]);
 
+  // Sync artist/title inputs from store (populated by autoLoad / lookupEverysong)
+  useEffect(() => {
+    if (deck.artist) setDeckArtist(deck.artist);
+    if (deck.title) setDeckTitle(deck.title);
+  }, [deck.artist, deck.title]);
+
   // Lock grid section duration when BPM is set while GRIDLOCK is enabled
   useEffect(() => {
     if (deck.gridlockEnabled && deck.calculatedBPM && deck.gridLockedSectionDur <= 0) {
