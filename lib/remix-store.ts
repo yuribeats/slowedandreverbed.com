@@ -1240,7 +1240,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     const rStart = freshDeck.regionStart;
     const rEnd = freshDeck.regionEnd > 0 ? freshDeck.regionEnd : playBuffer.duration;
-    const hasRegion = rStart > 0 || (freshDeck.regionEnd > 0 && freshDeck.regionEnd < playBuffer.duration);
     const shouldLoop = !get().isExporting && !!forceLoop;
     const playOffset = freshDeck.pauseOffset >= rStart ? freshDeck.pauseOffset : rStart;
     const remaining = rEnd - playOffset;
