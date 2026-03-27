@@ -1181,11 +1181,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           },
         }));
         get().setRegion(id, inPoint, 0);
-        const updated = getDeck(get(), id);
-        if (data.bpm && !updated.calculatedBPM) get().setBPM(id, data.bpm);
-        if (data.note_index !== null && data.note_index !== undefined && updated.baseKey === null) {
-          get().setDeckMeta(id, { baseKey: data.note_index });
-        }
       } else {
         fail("No downbeat returned from Modal");
       }
@@ -1481,16 +1476,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (hasB) get().play("B", loop);
   },
 
-  calculateBPMFromLoop: (id) => {
-    const dk = deckKey(id);
-    const deck = getDeck(get(), id);
-    if (!deck.sourceBuffer) return;
-    const rEnd = deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration;
-    const loopLength = rEnd - deck.regionStart;
-    if (loopLength <= 0) return;
-    // 4 bars: BPM = 240 / loopLength (no rounding — precision matters for lock)
-    const bpm = 240 / loopLength;
-    set((s) => ({ [dk]: { ...s[dk], calculatedBPM: bpm } }));
+  calculateBPMFromLoop: () => {
+    // BPM comes from Everysong only — not derived from loop length
   },
 
   setBPM: (id, bpm) => {
