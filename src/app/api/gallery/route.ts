@@ -25,18 +25,37 @@ export async function DELETE(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const all = searchParams.get("all") === "1";
+
   try {
     const pinata = getPinata();
-    const result = await pinata.files.public.list()
-      .keyvalues({ type: "driftwave-video" })
-      .order("DESC")
-      .limit(50);
+    const query = pinata.files.public.list().order("DESC").limit(100);
+    const result = await (all ? query : query.keyvalues({ type: "driftwave-video" }));
+
+    const gateway = process.env.PINATA_GATEWAY;
+
+    if (all) {
+      const files = result.files.map((f) => ({
+        id: f.id,
+        cid: f.cid,
+        name: f.name || f.id,
+        size: f.size,
+        mimeType: f.mime_type,
+        url: `https://${gateway}/files/${f.cid}`,
+        type: f.keyvalues?.type || null,
+        artist: f.keyvalues?.artist || null,
+        title: f.keyvalues?.title || null,
+        createdAt: f.keyvalues?.createdAt || f.created_at,
+      }));
+      return NextResponse.json({ files });
+    }
 
     const items = result.files.map((f) => ({
       id: f.id,
       cid: f.cid,
-      url: `https://${process.env.PINATA_GATEWAY}/files/${f.cid}`,
+      url: `https://${gateway}/files/${f.cid}`,
       artist: f.keyvalues?.artist || "UNKNOWN",
       title: f.keyvalues?.title || "UNTITLED",
       createdAt: f.keyvalues?.createdAt || f.created_at,

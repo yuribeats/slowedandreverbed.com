@@ -13,6 +13,19 @@ interface GalleryItem {
   createdAt: string;
 }
 
+interface PinataFile {
+  id: string;
+  cid: string;
+  name: string;
+  size: number;
+  mimeType: string | null;
+  url: string;
+  type: string | null;
+  artist: string | null;
+  title: string | null;
+  createdAt: string;
+}
+
 interface PlaylistTrack {
   videoId: string;
   title: string;
@@ -49,6 +62,10 @@ function GalleryContent() {
   const [playlistProgress, setPlaylistProgress] = useState({ current: 0, total: 0 });
   const [playlistError, setPlaylistError] = useState("");
 
+  const [allFiles, setAllFiles] = useState<PinataFile[]>([]);
+  const [allFilesLoading, setAllFilesLoading] = useState(false);
+  const [showAllFiles, setShowAllFiles] = useState(false);
+
   useEffect(() => {
     fetch("/api/gallery")
       .then((r) => r.json())
@@ -58,6 +75,16 @@ function GalleryContent() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  async function loadAllFiles() {
+    setAllFilesLoading(true);
+    try {
+      const res = await fetch("/api/gallery?all=1");
+      const data = await res.json();
+      setAllFiles(data.files || []);
+    } catch {}
+    setAllFilesLoading(false);
+  }
 
   async function handleYouTubeUpload(item: GalleryItem) {
     setUploading(item.id);
@@ -216,6 +243,69 @@ function GalleryContent() {
               </Link>
             </div>
           </div>
+
+          {/* All Pinata Files (admin only) */}
+          {isAdmin && (
+            <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>
+                  PINATA FILES
+                </span>
+                <button
+                  onClick={() => { setShowAllFiles(!showAllFiles); if (!showAllFiles && allFiles.length === 0) loadAllFiles(); }}
+                  className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black ml-auto"
+                  style={{ ...textStyle, fontSize: "10px", background: showAllFiles ? "#000" : "transparent", color: showAllFiles ? "#fff" : "#000" }}
+                >
+                  {showAllFiles ? "HIDE" : "SHOW"}
+                </button>
+                {showAllFiles && (
+                  <button
+                    onClick={loadAllFiles}
+                    disabled={allFilesLoading}
+                    className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
+                    style={{ ...textStyle, fontSize: "10px", background: "transparent", opacity: allFilesLoading ? 0.4 : 1 }}
+                  >
+                    {allFilesLoading ? "..." : "REFRESH"}
+                  </button>
+                )}
+              </div>
+              {showAllFiles && (
+                <div className="flex flex-col border-2 border-black divide-y divide-black max-h-[400px] overflow-y-auto">
+                  {allFilesLoading && (
+                    <div className="px-3 py-2 text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>
+                      LOADING...
+                    </div>
+                  )}
+                  {!allFilesLoading && allFiles.length === 0 && (
+                    <div className="px-3 py-2 text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>
+                      NO FILES
+                    </div>
+                  )}
+                  {allFiles.map((f) => (
+                    <div key={f.id} className="flex items-center gap-2 px-3 py-2">
+                      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                        <span className="text-[10px] uppercase tracking-wider truncate" style={textStyle}>
+                          {f.name}
+                        </span>
+                        <span className="text-[9px] uppercase tracking-wider opacity-40" style={textStyle}>
+                          {f.type || f.mimeType || "—"} · {f.size ? `${(f.size / 1024 / 1024).toFixed(1)}MB` : "—"} · {new Date(f.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
+                        </span>
+                      </div>
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[9px] uppercase tracking-wider border border-black px-2 py-1 shrink-0"
+                        style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
+                      >
+                        OPEN
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Playlist Downloader (admin only) */}
           {isAdmin && (
