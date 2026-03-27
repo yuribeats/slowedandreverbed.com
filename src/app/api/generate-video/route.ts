@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         "-i", watermarkPath,
         "-i", audioPath,
         "-filter_complex",
-        "[0:a]volume=6dB[wm];[1:a]afade=t=in:st=0:d=2.65[faded];[wm][faded]amix=inputs=2:duration=longest:normalize=0[out]",
+        "[0:a]volume=6dB[wm];[1:a]volume='if(lt(t,2.65),0.4,if(lt(t,3.15),0.4+0.6*(t-2.65)/0.5,1))':eval=frame[track];[wm][track]amix=inputs=2:duration=longest:normalize=0[out]",
         "-map", "[out]",
         "-c:a", "pcm_s16le",
         mixedPath,
