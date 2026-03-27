@@ -49,8 +49,10 @@ export async function GET(request: NextRequest) {
   }
 
   const params = new URLSearchParams({ limit: "20", sort: "popularity", dir: "desc" });
-  const combined = [artist, title, q].filter(Boolean).join(" ");
-  params.set("q", combined);
+  // Search Everysong with title only — including artist in q= causes zero results
+  // because Everysong rarely has the original recording; artist is used only for matchScore re-ranking
+  const searchTerm = title || q || artist;
+  params.set("q", searchTerm);
 
   const apiKey = process.env.EVERYSONG_API_KEY;
   if (apiKey) params.set("api_key", apiKey);
