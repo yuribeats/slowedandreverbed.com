@@ -438,6 +438,11 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                         : "DETECT DOWNBEAT"}</span>
                       <span data-tooltip-right="FIND THE FIRST BEAT FOR LOOP ALIGNMENT" className="ml-3 opacity-40 text-[10px]">?</span>
                     </button>
+                    {deck.downbeatError && (
+                      <div className="text-[10px] uppercase tracking-[0.1em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#e05050" }}>
+                        ERR: {deck.downbeatError}
+                      </div>
+                    )}
                     <button
                       onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
                       className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"

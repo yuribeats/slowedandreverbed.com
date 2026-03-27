@@ -14,7 +14,7 @@ export async function POST() {
     const url = await pinata.upload.public.createSignedURL({
       expires: 300,
     });
-    return NextResponse.json({ url });
+    return NextResponse.json({ url, gateway: process.env.PINATA_GATEWAY });
   } catch (e) {
     console.error("pinata-upload-url error:", e);
     return NextResponse.json(

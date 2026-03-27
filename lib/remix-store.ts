@@ -147,6 +147,7 @@ interface DeckState {
   gridLockedSectionDur: number; // seconds — frozen at toggle-on
   firstDownbeatMs: number | null;
   downbeatDetecting: boolean;
+  downbeatError: string | null;
 }
 
 type DeckId = "A" | "B";
@@ -184,6 +185,7 @@ const defaultDeck = (): DeckState => ({
   gridLockedSectionDur: 0,
   firstDownbeatMs: null,
   downbeatDetecting: false,
+  downbeatError: null,
 });
 
 export interface MasterBusParams {
@@ -1099,65 +1101,84 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       return;
     }
 
-    set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: true } }));
+    set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: true, downbeatError: null } }));
+
+    const fail = (msg: string) => {
+      console.error(`[detectDownbeat:${id}] ${msg}`);
+      set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false, downbeatError: msg } }));
+    };
 
     try {
-      // Pass confirmed BPM and key from Everysong as priors to constrain the DBN
       const rate = 1.0 + deck.params.speed;
       const confirmedBpm = deck.calculatedBPM ? deck.calculatedBPM * rate : null;
       const priors: Record<string, unknown> = {};
       if (confirmedBpm) priors.bpm = confirmedBpm;
       if (deck.baseKey !== null) priors.note_index = deck.baseKey;
 
-      console.log(`[detectDownbeat:${id}] priors:`, { confirmedBpm, note_index: deck.baseKey, sourceUrl: deck.sourceUrl });
+      console.log(`[detectDownbeat:${id}] priors:`, { confirmedBpm, note_index: deck.baseKey });
 
-      let res: Response;
+      // ── Resolve audio bytes ──────────────────────────────────────────────
+      let audioBytes: ArrayBuffer | null = null;
+      let directUrl: string | null = null;
+
       if (deck.sourceAudioBytes) {
-        console.log(`[detectDownbeat:${id}] uploading cached audio bytes (${deck.sourceAudioBytes.byteLength} bytes) to /api/downbeat`);
-        const fd = new FormData();
-        fd.append("audio", new Blob([deck.sourceAudioBytes], { type: "audio/mpeg" }), "audio.mp3");
-        if (confirmedBpm) fd.append("bpm", String(confirmedBpm));
-        if (deck.baseKey !== null) fd.append("note_index", String(deck.baseKey));
-        res = await fetch("/api/downbeat", { method: "POST", body: fd });
+        audioBytes = deck.sourceAudioBytes;
+        console.log(`[detectDownbeat:${id}] using cached audio bytes (${audioBytes.byteLength} bytes)`);
       } else if (deck.sourceFile) {
-        console.log(`[detectDownbeat:${id}] uploading local file to /api/downbeat`);
-        const fd = new FormData();
-        fd.append("audio", deck.sourceFile);
-        if (confirmedBpm) fd.append("bpm", String(confirmedBpm));
-        if (deck.baseKey !== null) fd.append("note_index", String(deck.baseKey));
-        res = await fetch("/api/downbeat", { method: "POST", body: fd });
+        audioBytes = await deck.sourceFile.arrayBuffer();
+        console.log(`[detectDownbeat:${id}] read local file (${audioBytes.byteLength} bytes)`);
       } else if (deck.sourceUrl && !deck.sourceUrl.includes("youtube")) {
-        console.log(`[detectDownbeat:${id}] sending audio URL to /api/downbeat: ${deck.sourceUrl}`);
-        res = await fetch("/api/downbeat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ audioUrl: deck.sourceUrl, ...priors }),
-        });
+        directUrl = deck.sourceUrl;
+        console.log(`[detectDownbeat:${id}] using direct audio URL`);
       } else {
-        console.warn(`[detectDownbeat:${id}] no audio bytes, file, or URL — cannot detect`);
-        set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
-        return;
+        return fail("No audio available — reload the track and try again");
       }
+
+      // ── Upload to Pinata (client-side, no Vercel body limit) ─────────────
+      let audioUrl: string;
+      if (audioBytes) {
+        console.log(`[detectDownbeat:${id}] getting Pinata signed URL...`);
+        const signedRes = await fetch("/api/pinata-upload-url", { method: "POST" });
+        if (!signedRes.ok) return fail(`Pinata signed URL failed (${signedRes.status})`);
+        const { url: signedUrl, gateway, error: signedErr } = await signedRes.json();
+        if (signedErr || !signedUrl) return fail(`Pinata signed URL error: ${signedErr}`);
+
+        console.log(`[detectDownbeat:${id}] uploading to Pinata...`);
+        const fd = new FormData();
+        fd.append("file", new Blob([audioBytes], { type: "audio/mpeg" }), "audio.mp3");
+        const uploadRes = await fetch(signedUrl, { method: "POST", body: fd });
+        if (!uploadRes.ok) return fail(`Pinata upload failed (${uploadRes.status})`);
+        const uploadData = await uploadRes.json();
+        const cid = uploadData?.data?.cid;
+        if (!cid) return fail(`Pinata upload returned no CID: ${JSON.stringify(uploadData)}`);
+
+        audioUrl = `https://${gateway}/files/${cid}`;
+        console.log(`[detectDownbeat:${id}] audio at Pinata: ${audioUrl}`);
+      } else {
+        audioUrl = directUrl!;
+      }
+
+      // ── Call Modal via serverless /api/downbeat ──────────────────────────
+      console.log(`[detectDownbeat:${id}] calling /api/downbeat...`);
+      const res = await fetch("/api/downbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audioUrl, ...priors }),
+      });
 
       if (!res.ok) {
         const errText = await res.text();
-        console.error(`[detectDownbeat:${id}] /api/downbeat HTTP ${res.status}: ${errText}`);
-        set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
-        return;
+        return fail(`/api/downbeat HTTP ${res.status}: ${errText}`);
       }
 
       const data = await res.json();
       console.log(`[detectDownbeat:${id}] response:`, data);
 
-      if (data.error) {
-        console.error(`[detectDownbeat:${id}] Modal error: ${data.error}`);
-        set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
-        return;
-      }
+      if (data.error) return fail(`Modal error: ${data.error}`);
 
       if (data.first_downbeat_ms !== null && data.first_downbeat_ms !== undefined) {
         const firstDownbeatMs = data.first_downbeat_ms as number;
-        console.log(`[detectDownbeat:${id}] first downbeat = ${firstDownbeatMs}ms (${(firstDownbeatMs/1000).toFixed(3)}s), BPM=${data.bpm}, beats=${data.beats_ms?.length}`);
+        console.log(`[detectDownbeat:${id}] first downbeat = ${firstDownbeatMs}ms, BPM=${data.bpm}, beats=${data.beats_ms?.length}`);
         const inPoint = firstDownbeatMs / 1000;
         const currentRate = 1.0 + deck.params.speed;
         const updatedDeck = getDeck(get(), id);
@@ -1167,31 +1188,24 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
             ...s[dk],
             firstDownbeatMs,
             downbeatDetecting: false,
+            downbeatError: null,
             gridFirstTransient: inPoint,
             gridlockEnabled: true,
             gridLockedSectionDur: lockedDur,
             gridOffsetMs: 0,
           },
         }));
-        // Move the in point to the detected downbeat
         get().setRegion(id, inPoint, 0);
-        // Apply ML-detected BPM and key if Everysong hasn't already populated them
         const updated = getDeck(get(), id);
-        if (data.bpm && !updated.calculatedBPM) {
-          console.log(`[detectDownbeat:${id}] applying ML BPM = ${data.bpm} (Everysong not available)`);
-          get().setBPM(id, data.bpm);
-        }
+        if (data.bpm && !updated.calculatedBPM) get().setBPM(id, data.bpm);
         if (data.note_index !== null && data.note_index !== undefined && updated.baseKey === null) {
-          console.log(`[detectDownbeat:${id}] applying ML key = noteIndex ${data.note_index}`);
           get().setDeckMeta(id, { baseKey: data.note_index });
         }
       } else {
-        console.warn(`[detectDownbeat:${id}] no downbeat returned from Modal`);
-        set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
+        fail("No downbeat returned from Modal");
       }
     } catch (e) {
-      console.error(`[detectDownbeat:${id}] unexpected error:`, e);
-      set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false } }));
+      fail(e instanceof Error ? e.message : "Unexpected error");
     }
   },
 
