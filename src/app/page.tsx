@@ -1847,8 +1847,8 @@ export default function Home() {
         <ExportVideoModalRemix
           audioBlob={pendingVideoExport}
           defaultFilename={`${deckA.sourceFilename || "deck-a"}${deckB.sourceBuffer ? `-x-${deckB.sourceFilename || "deck-b"}` : ""}-driftwave`}
-          initialArtist={deckA.artist || deckB.artist || ""}
-          initialTitle={deckA.title || deckB.title || ""}
+          initialArtist={[deckA.artist, deckB.artist].filter(Boolean).join(" x ")}
+          initialTitle={[deckA.title, deckB.title].filter(Boolean).join(" x ")}
           onClose={clearPendingExport}
         />
       )}
