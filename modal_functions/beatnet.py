@@ -81,11 +81,6 @@ def detect_downbeat(item: dict) -> dict:
         # ── Load audio (mono, native SR) ────────────────────────────────────
         y, sr = librosa.load(tmp, sr=None, mono=True)
 
-        # Detect where audio content actually starts (skip leading silence).
-        # top_db=30: a frame must be within 30dB of peak to count as "active".
-        _, (trim_start_sample, _) = librosa.effects.trim(y, top_db=30)
-        audio_start_time = float(trim_start_sample) / sr
-
         # ── Beat tracking ───────────────────────────────────────────────────
         if confirmed_bpm and confirmed_bpm > 0:
             # Constrain tempo to confirmed BPM ±4% to eliminate octave errors
@@ -126,18 +121,7 @@ def detect_downbeat(item: dict) -> dict:
             # Fallback: assume 4/4, first beat is downbeat, every 4th beat after
             downbeat_times = [beat_times[i] for i in range(0, len(beat_times), 4)]
 
-        raw_first_downbeat = downbeat_times[0] if downbeat_times else beat_times[0]
-
-        # If beat 1 falls in leading silence, advance by one bar at a time until
-        # we reach audible audio. This gives the first *heard* downbeat, not a
-        # phantom beat-grid projection before the music starts.
-        bar_dur = (4 * 60.0 / detected_bpm) if detected_bpm > 0 else 0
-        first_downbeat_s = raw_first_downbeat
-        if bar_dur > 0:
-            while first_downbeat_s < audio_start_time - 0.05:
-                first_downbeat_s += bar_dur
-
-        first_downbeat_ms = round(first_downbeat_s * 1000)
+        first_downbeat_ms = round(downbeat_times[0] * 1000) if downbeat_times else round(beat_times[0] * 1000)
 
         # ── Key: use Everysong if provided ──────────────────────────────────
         if confirmed_ni is not None and confirmed_mode:
