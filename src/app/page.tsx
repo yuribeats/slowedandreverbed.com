@@ -181,10 +181,14 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       const ctx = getAudioContext();
       await ctx.resume();
       const file = e.target.files?.[0];
-      if (file) loadFile(id, file);
+      if (file) {
+        await loadFile(id, file);
+        const stemTarget = id === "A" ? "instrumental" : "vocals";
+        setStem(id, stemTarget);
+      }
       if (inputRef.current) inputRef.current.value = "";
     },
-    [loadFile, id]
+    [loadFile, setStem, id]
   );
 
   const handleStart = useCallback(async () => {
@@ -211,21 +215,27 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
       {/* Deck header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-0">
           <span
             className="text-sm tracking-[2px] uppercase"
             style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
           >
             {id === "A" ? "INSTRUMENTAL" : "ACAPELLA"}
           </span>
+          <span
+            className="text-[8px] tracking-[1px] uppercase"
+            style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.55 }}
+          >
+            {id === "A" ? "AUTOMATICALLY REMOVES VOCALS" : "AUTOMATICALLY ISOLATES VOCALS"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
           <div className="flex flex-col items-center gap-0.5">
             <button onClick={handleLoad} disabled={deck.isLoading} className="rocker-switch" style={{ width: "28px", height: "28px" }}>
               <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
             </button>
             <span className="text-[8px] tracking-[1px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>LOCAL</span>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
           {onHide && (
             <button
               onClick={onHide}
@@ -287,7 +297,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "12px" }}
           >
             {deck.isStemLoading
-              ? "ISOLATING VOCALS..."
+              ? deck.activeStem === "instrumental" ? "REMOVING VOCALS..." : "ISOLATING VOCALS..."
               : deck.downbeatDetecting
               ? "DETECTING DOWNBEAT..."
               : deck.isLoading
