@@ -551,7 +551,7 @@ export default function WaveformDisplay({
           <span className="text-[12px]" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "15px", textShadow: "0 0 4px var(--crt-dim)" }}>
             {formatTime(cursorDisplay)}
           </span>
-          <span className="text-[12px]" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "14px" }}>
+          <span className="text-[12px]" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "14px", textShadow: "0 0 4px var(--crt-dim)" }}>
             LOOP: {formatTime(regionDuration)}
           </span>
           <span className="text-[12px]" style={{ color: "#555", fontFamily: "var(--font-crt)", fontSize: "14px" }}>
