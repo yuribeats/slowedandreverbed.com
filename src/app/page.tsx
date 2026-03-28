@@ -1151,6 +1151,18 @@ function MasterBus() {
   const [showLimDetail, setShowLimDetail] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
+  const [outputDevices, setOutputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedSink, setSelectedSink] = useState<string>("default");
+  const [sinkIdSupported, setSinkIdSupported] = useState(false);
+
+  useEffect(() => {
+    import("../../lib/audio-context").then(({ getAudioOutputDevices }) => {
+      const ctx = new AudioContext();
+      setSinkIdSupported(typeof (ctx as AudioContext & { setSinkId?: unknown }).setSinkId === "function");
+      ctx.close();
+      getAudioOutputDevices().then(setOutputDevices);
+    });
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1213,6 +1225,43 @@ function MasterBus() {
         >
           OUTPUT
         </span>
+        <div className="flex items-center gap-2">
+          {sinkIdSupported && outputDevices.length > 1 && (
+            <div className="flex items-center gap-1">
+              {outputDevices.map((d) => (
+                <button
+                  key={d.deviceId}
+                  onClick={async () => {
+                    const { setAudioOutputDevice } = await import("../../lib/audio-context");
+                    await setAudioOutputDevice(d.deviceId);
+                    setSelectedSink(d.deviceId);
+                  }}
+                  className="text-[10px] tracking-[1px] uppercase px-2 py-1"
+                  style={{
+                    fontFamily: "var(--font-tech)",
+                    background: selectedSink === d.deviceId ? "var(--accent-gold)" : "transparent",
+                    color: selectedSink === d.deviceId ? "#000" : "var(--text-dark)",
+                    border: "1px solid var(--engrave-dark)",
+                  }}
+                >
+                  {(d.label || `OUTPUT ${outputDevices.indexOf(d) + 1}`).replace(/\(.*\)/, "").trim().toUpperCase().slice(0, 20)}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={async () => {
+              const { restartAudioContext } = await import("../../lib/audio-context");
+              await restartAudioContext();
+              const devices = await (await import("../../lib/audio-context")).getAudioOutputDevices();
+              setOutputDevices(devices);
+            }}
+            className="text-[10px] tracking-[1px] uppercase px-2 py-1"
+            style={{ fontFamily: "var(--font-tech)", background: "transparent", color: "var(--text-dark)", border: "1px solid var(--engrave-dark)" }}
+          >
+            RESTART AUDIO
+          </button>
+        </div>
       </div>
 
       <canvas

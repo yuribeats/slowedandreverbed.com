@@ -16,6 +16,31 @@ export function getAudioContext(): AudioContext {
   return ctx;
 }
 
+export async function restartAudioContext(): Promise<AudioContext> {
+  if (ctx) {
+    try { await ctx.close(); } catch { /* ok */ }
+  }
+  ctx = null;
+  workletReady = false;
+  return getAudioContext();
+}
+
+export async function setAudioOutputDevice(deviceId: string): Promise<void> {
+  const c = getAudioContext();
+  if (typeof (c as AudioContext & { setSinkId?: (id: string) => Promise<void> }).setSinkId === "function") {
+    await (c as AudioContext & { setSinkId: (id: string) => Promise<void> }).setSinkId(deviceId);
+  }
+}
+
+export async function getAudioOutputDevices(): Promise<MediaDeviceInfo[]> {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter((d) => d.kind === "audiooutput");
+  } catch {
+    return [];
+  }
+}
+
 export async function ensurePitchWorklet(): Promise<void> {
   const c = getAudioContext();
   if (workletReady) return;
