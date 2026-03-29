@@ -119,6 +119,7 @@ interface DeckState {
   sourceFilename: string | null;
   sourceFile: File | null;
   sourceUrl: string | null;
+  sourceCdnUrl: string | null;
   sourceAudioBytes: ArrayBuffer | null;
   artist: string;
   title: string;
@@ -159,6 +160,7 @@ const defaultDeck = (): DeckState => ({
   sourceFilename: null,
   sourceFile: null,
   sourceUrl: null,
+  sourceCdnUrl: null,
   sourceAudioBytes: null,
   artist: "",
   title: "",
@@ -867,10 +869,10 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFromYouTube: async (id, url) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, activeStem: null, stemBuffers: null, stemError: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, activeStem: null, stemBuffers: null, stemError: null, sourceCdnUrl: null } }));
     try {
       const { fetchYouTubeAudio } = await import("./cobalt");
-      const { buffer, title } = await fetchYouTubeAudio(url);
+      const { buffer, title, cdnUrl } = await fetchYouTubeAudio(url);
       const audioBuffer = await decodeArrayBuffer(buffer);
       set((s) => ({
         [dk]: {
@@ -879,6 +881,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           sourceFilename: title,
           sourceFile: null,
           sourceUrl: url,
+          sourceCdnUrl: cdnUrl,
           sourceAudioBytes: buffer,
           isLoading: false,
           regionStart: 0,
@@ -1090,7 +1093,11 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // ── Build request to /api/downbeat ──────────────────────────────────
       let requestBody: Record<string, unknown>;
 
-      if (deck.sourceUrl?.includes("youtube")) {
+      if (deck.sourceCdnUrl) {
+        // CDN URL cached — skip RapidAPI re-fetch
+        console.log(`[detectDownbeat:${id}] using cached CDN URL`);
+        requestBody = { cdnUrl: deck.sourceCdnUrl, ...priors };
+      } else if (deck.sourceUrl?.includes("youtube")) {
         // YouTube track — server fetches fresh CDN URL + auth header, passes to Modal
         console.log(`[detectDownbeat:${id}] YouTube track, passing URL to server`);
         requestBody = { youtubeUrl: deck.sourceUrl, ...priors };
@@ -1511,8 +1518,15 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     try {
       let res: Response;
-      if (deck.sourceUrl) {
-        // YouTube — server re-downloads and uploads to Replicate directly
+      if (deck.sourceCdnUrl) {
+        // CDN URL cached from initial download — skip RapidAPI re-fetch
+        res = await fetch("/api/stems", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cdnUrl: deck.sourceCdnUrl }),
+        });
+      } else if (deck.sourceUrl) {
+        // YouTube — server fetches CDN URL from RapidAPI, passes to Modal
         res = await fetch("/api/stems", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

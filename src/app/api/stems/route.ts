@@ -24,27 +24,34 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
-      // YouTube — get CDN URL from RapidAPI, pass to Modal
       const body = await req.json();
-      if (!body.youtubeUrl) return NextResponse.json({ error: "No youtubeUrl provided" }, { status: 400 });
 
-      const videoId = extractVideoId(body.youtubeUrl);
-      if (!videoId) return NextResponse.json({ error: "Invalid YouTube URL" }, { status: 400 });
+      if (body.cdnUrl) {
+        // Cached CDN URL — skip RapidAPI entirely
+        audioUrl = body.cdnUrl;
+        xRun = createHash("md5").update(process.env.RAPIDAPI_USERNAME!).digest("hex");
+      } else {
+        // YouTube — get CDN URL from RapidAPI
+        if (!body.youtubeUrl) return NextResponse.json({ error: "No youtubeUrl or cdnUrl provided" }, { status: 400 });
 
-      const apiRes = await fetch(`https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`, {
-        headers: {
-          "X-RapidAPI-Key":  process.env.RAPIDAPI_KEY!,
-          "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com",
-        },
-      });
-      if (!apiRes.ok) return NextResponse.json({ error: `RapidAPI HTTP ${apiRes.status}` }, { status: 502 });
+        const videoId = extractVideoId(body.youtubeUrl);
+        if (!videoId) return NextResponse.json({ error: "Invalid YouTube URL" }, { status: 400 });
 
-      const data = await apiRes.json();
-      if (data.status !== "ok" || !data.link) {
-        return NextResponse.json({ error: data.msg || "No download link" }, { status: 502 });
+        const apiRes = await fetch(`https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`, {
+          headers: {
+            "X-RapidAPI-Key":  process.env.RAPIDAPI_KEY!,
+            "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com",
+          },
+        });
+        if (!apiRes.ok) return NextResponse.json({ error: `RapidAPI HTTP ${apiRes.status}` }, { status: 502 });
+
+        const data = await apiRes.json();
+        if (data.status !== "ok" || !data.link) {
+          return NextResponse.json({ error: data.msg || "No download link" }, { status: 502 });
+        }
+        audioUrl = data.link;
+        xRun = createHash("md5").update(process.env.RAPIDAPI_USERNAME!).digest("hex");
       }
-      audioUrl = data.link;
-      xRun = createHash("md5").update(process.env.RAPIDAPI_USERNAME!).digest("hex");
     } else {
       // Local file — upload to Pinata first so Modal can fetch it
       const formData = await req.formData();

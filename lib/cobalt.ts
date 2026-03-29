@@ -1,6 +1,6 @@
 export async function fetchYouTubeAudio(
   url: string
-): Promise<{ buffer: ArrayBuffer; title: string }> {
+): Promise<{ buffer: ArrayBuffer; title: string; cdnUrl: string | null }> {
   const res = await fetch("/api/cobalt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -13,11 +13,12 @@ export async function fetchYouTubeAudio(
   }
 
   const title = res.headers.get("X-Audio-Title") ?? "youtube-audio";
+  const cdnUrl = res.headers.get("X-Cdn-Url");
   const buffer = await res.arrayBuffer();
 
   if (buffer.byteLength < 10000) {
     throw new Error("Downloaded file too small — extraction likely failed");
   }
 
-  return { buffer, title };
+  return { buffer, title, cdnUrl };
 }

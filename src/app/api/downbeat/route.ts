@@ -16,12 +16,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { youtubeUrl, audioUrl, ...priors } = body;
+    const { youtubeUrl, audioUrl, cdnUrl, ...priors } = body;
 
     let finalAudioUrl: string;
     let xRun: string | null = null;
 
-    if (youtubeUrl) {
+    if (cdnUrl) {
+      // Cached CDN URL — skip RapidAPI entirely
+      finalAudioUrl = cdnUrl;
+      xRun = createHash("md5").update(process.env.RAPIDAPI_USERNAME!).digest("hex");
+    } else if (youtubeUrl) {
       const videoId = extractVideoId(youtubeUrl);
       if (!videoId) return NextResponse.json({ error: "Invalid YouTube URL" }, { status: 400 });
 
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
     } else if (audioUrl) {
       finalAudioUrl = audioUrl;
     } else {
-      return NextResponse.json({ error: "Missing youtubeUrl or audioUrl" }, { status: 400 });
+      return NextResponse.json({ error: "Missing youtubeUrl, cdnUrl, or audioUrl" }, { status: 400 });
     }
 
     const modalBody: Record<string, unknown> = { audio_url: finalAudioUrl, ...priors };

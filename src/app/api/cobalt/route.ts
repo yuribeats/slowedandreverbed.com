@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       "Content-Type": "audio/mpeg",
       "Content-Disposition": `attachment; filename="audio.mp3"`,
       "X-Audio-Title": title,
+      "X-Cdn-Url": data.link,
     },
   });
 }
