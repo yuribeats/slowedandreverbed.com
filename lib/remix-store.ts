@@ -1217,8 +1217,24 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         }
         console.log(`[detectDownbeat:${id}] cursor=${currentPosMs.toFixed(0)}ms → snapped to ${targetDownbeatMs.toFixed(0)}ms`);
         if (detectedBpm > 0) get().setBPM(id, detectedBpm);
+
+        // Quantize to grid: match speed to the other deck's playback BPM
+        if (detectedBpm > 0) {
+          const otherId: DeckId = id === "A" ? "B" : "A";
+          const otherDeck = getDeck(get(), otherId);
+          if (otherDeck.calculatedBPM) {
+            const otherPlaybackBpm = otherDeck.calculatedBPM * (1.0 + otherDeck.params.speed);
+            const newSpeed = Math.max(-0.5, Math.min(0.5, otherPlaybackBpm / detectedBpm - 1.0));
+            get().setParam(id, "speed", newSpeed);
+            if (deck.params.pitchSpeedLinked ?? true) {
+              get().setParam(id, "pitch", 12 * Math.log2(1.0 + newSpeed));
+            }
+            console.log(`[detectDownbeat:${id}] quantized to grid: speed=${newSpeed.toFixed(4)} (${detectedBpm.toFixed(2)} → ${otherPlaybackBpm.toFixed(2)} BPM)`);
+          }
+        }
+
         const inPoint = targetDownbeatMs / 1000;
-        const currentRate = 1.0 + deck.params.speed;
+        const currentRate = 1.0 + getDeck(get(), id).params.speed;
         const updatedDeck = getDeck(get(), id);
         const lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
         set((s) => ({
