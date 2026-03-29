@@ -1216,6 +1216,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           }
         }
         console.log(`[detectDownbeat:${id}] cursor=${currentPosMs.toFixed(0)}ms → snapped to ${targetDownbeatMs.toFixed(0)}ms`);
+        if (detectedBpm > 0) get().setBPM(id, detectedBpm);
         const inPoint = targetDownbeatMs / 1000;
         const currentRate = 1.0 + deck.params.speed;
         const updatedDeck = getDeck(get(), id);
