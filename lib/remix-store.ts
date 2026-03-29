@@ -1232,9 +1232,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
             const otherPlaybackBpm = otherDeck.calculatedBPM * (1.0 + otherDeck.params.speed);
             const newSpeed = Math.max(-0.5, Math.min(0.5, otherPlaybackBpm / detectedBpm - 1.0));
             get().setParam(id, "speed", newSpeed);
-            if (deck.params.pitchSpeedLinked ?? true) {
-              get().setParam(id, "pitch", 12 * Math.log2(1.0 + newSpeed));
-            }
+            // Never touch pitch — Everysong key remains authoritative
             console.log(`[detectDownbeat:${id}] quantized to grid: speed=${newSpeed.toFixed(4)} (${detectedBpm.toFixed(2)} → ${otherPlaybackBpm.toFixed(2)} BPM)`);
           }
         }
