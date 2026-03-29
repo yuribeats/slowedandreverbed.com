@@ -139,6 +139,7 @@ interface DeckState {
   regionEnd: number;    // seconds into source buffer (0 = full track)
   activeStem: StemType | null;
   stemBuffers: Partial<Record<StemType, AudioBuffer>> | null;
+  stemUrls: Partial<Record<string, string>> | null;
   isStemLoading: boolean;
   loopBank: BankedLoop[];
   automationEnabled: boolean;
@@ -180,6 +181,7 @@ const defaultDeck = (): DeckState => ({
   regionEnd: 0,
   activeStem: null,
   stemBuffers: null,
+  stemUrls: null,
   isStemLoading: false,
   loopBank: [],
   automationEnabled: false,
@@ -871,7 +873,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     get().stop(id);
     set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, activeStem: null, stemBuffers: null, stemError: null, sourceCdnUrl: null } }));
     try {
-      const { fetchYouTubeAudio } = await import("./cobalt");
+      const { fetchYouTubeAudio } = await import("./rapid");
       const { buffer, title, cdnUrl } = await fetchYouTubeAudio(url);
       const audioBuffer = await decodeArrayBuffer(buffer);
       set((s) => ({
@@ -1038,16 +1040,16 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     }
 
     try {
-      console.log(`[loadDeck:${id}] loading audio from YouTube`);
-      await get().loadFromYouTube(id, url);
-      console.log(`[loadDeck:${id}] audio loaded`);
+      console.log(`[loadDeck:${id}] loading audio + Everysong in parallel`);
+      await Promise.all([
+        get().loadFromYouTube(id, url),
+        get().lookupEverysong(id, artist, title),
+      ]);
+      console.log(`[loadDeck:${id}] audio + metadata loaded`);
     } catch (e) {
-      console.error(`[loadDeck:${id}] loadFromYouTube failed:`, e);
+      console.error(`[loadDeck:${id}] load failed:`, e);
       throw e;
     }
-
-    console.log(`[loadDeck:${id}] running Everysong lookup`);
-    await get().lookupEverysong(id, artist, title);
 
     if (opts?.autoStem !== false) {
       const stemTarget: StemType = id === "A" ? "instrumental" : "vocals";
@@ -1518,15 +1520,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     try {
       let res: Response;
-      if (deck.sourceCdnUrl) {
-        // CDN URL cached from initial download — skip RapidAPI re-fetch
-        res = await fetch("/api/stems", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cdnUrl: deck.sourceCdnUrl }),
-        });
-      } else if (deck.sourceUrl) {
-        // YouTube — server fetches CDN URL from RapidAPI, passes to Modal
+      if (deck.sourceUrl) {
+        // YouTube — server fetches fresh CDN URL from RapidAPI, passes to Modal
         res = await fetch("/api/stems", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

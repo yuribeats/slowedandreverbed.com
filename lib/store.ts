@@ -7,7 +7,7 @@ import {
   renderOffline,
 } from "@yuribeats/audio-utils";
 import { decodeFile, decodeArrayBuffer } from "./file-decoder";
-import { fetchYouTubeAudio } from "./cobalt";
+import { fetchYouTubeAudio } from "./rapid";
 import { getAudioContext, isPitchWorkletReady } from "./audio-context";
 
 interface AudioNodes {
@@ -530,7 +530,7 @@ export const useStore = create<AppStore>((set, get) => ({
       if (sourceFile) {
         formData.append("audio", sourceFile);
       } else if (youtubeUrl) {
-        const res = await fetch("/api/cobalt", {
+        const res = await fetch("/api/rapid", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: youtubeUrl }),
