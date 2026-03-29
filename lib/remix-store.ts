@@ -1304,24 +1304,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     const rStart = freshDeck.regionStart;
     const rEnd = freshDeck.regionEnd > 0 ? freshDeck.regionEnd : playBuffer.duration;
-
-    // Beat-grid mode: use detected downbeat positions for drift-corrected section looping
-    const useGridBeat = !get().isExporting && freshDeck.gridlockEnabled && (freshDeck.downbeatGrid?.length ?? 0) > 0;
-    let sectionEnd = rEnd;
-    if (useGridBeat) {
-      const grid = freshDeck.downbeatGrid!;
-      const targetEnd = rStart + freshDeck.gridLockedSectionDur;
-      // Snap section end to nearest detected downbeat
-      const snapped = grid.reduce((best, t) =>
-        Math.abs(t - targetEnd) < Math.abs(best - targetEnd) ? t : best
-      , grid[0]);
-      sectionEnd = snapped > rStart ? snapped : targetEnd;
-    }
-
-    const shouldLoop = !get().isExporting && !!forceLoop && !useGridBeat;
+    const shouldLoop = !get().isExporting && !!forceLoop;
     const playOffset = freshDeck.pauseOffset >= rStart ? freshDeck.pauseOffset : rStart;
-    const effectiveEnd = useGridBeat ? sectionEnd : rEnd;
-    const remaining = effectiveEnd - playOffset;
+    const remaining = rEnd - playOffset;
     const playDuration = remaining > 0 ? remaining : undefined;
 
     const nodes = buildDeckGraph(
@@ -1333,19 +1318,12 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       freshDeck.volume,
       cfGain,
       () => {
+        // Only fires for non-looping playback (native loop never triggers onEnded)
         if (deckGeneration[id] !== gen) return;
         if (!getDeck(get(), id).isPlaying) return;
-        const d = getDeck(get(), id);
-        if (useGridBeat && d.gridlockEnabled && d.downbeatGrid?.length) {
-          // Advance to next beat-corrected section
-          const nextStart = sectionEnd < playBuffer.duration - 0.05
-            ? sectionEnd
-            : d.downbeatGrid[0]; // loop back to first downbeat at end of track
-          set((s) => ({ [key]: { ...s[key], regionStart: nextStart, pauseOffset: nextStart } }));
-          get().play(id, forceLoop);
-        } else {
-          set((s) => ({ [key]: { ...s[key], isPlaying: false, nodes: null, pauseOffset: rStart } }));
-        }
+        set((s) => ({
+          [key]: { ...s[key], isPlaying: false, nodes: null, pauseOffset: rStart },
+        }));
       },
       shouldLoop ? { loopStart: rStart, loopEnd: rEnd } : undefined,
       freshDeck.automationEnabled ? freshDeck.automationPoints : undefined,
