@@ -150,6 +150,7 @@ interface DeckState {
   gridFirstTransient: number;
   gridLockedSectionDur: number; // seconds — frozen at toggle-on
   firstDownbeatMs: number | null;
+  downbeatGrid: number[] | null;  // detected downbeat positions in seconds
   downbeatDetecting: boolean;
   downbeatError: string | null;
 }
@@ -192,6 +193,7 @@ const defaultDeck = (): DeckState => ({
   gridFirstTransient: 0,
   gridLockedSectionDur: 0,
   firstDownbeatMs: null,
+  downbeatGrid: null,
   downbeatDetecting: false,
   downbeatError: null,
 });
@@ -1218,6 +1220,10 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         console.log(`[detectDownbeat:${id}] cursor=${currentPosMs.toFixed(0)}ms → snapped to ${targetDownbeatMs.toFixed(0)}ms`);
         if (detectedBpm > 0) get().setBPM(id, detectedBpm);
 
+        // Store beat grid for drift-corrected looping
+        const rawDownbeats: number[] = (data.downbeats_ms as number[] | null) ?? [];
+        const downbeatGrid = rawDownbeats.map((ms) => ms / 1000);
+
         // Quantize to grid: match speed to the other deck's playback BPM
         if (detectedBpm > 0) {
           const otherId: DeckId = id === "A" ? "B" : "A";
@@ -1236,11 +1242,22 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         const inPoint = targetDownbeatMs / 1000;
         const currentRate = 1.0 + getDeck(get(), id).params.speed;
         const updatedDeck = getDeck(get(), id);
-        const lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
+
+        // Compute section duration from actual inter-downbeat intervals (4 bars)
+        // Falls back to BPM-derived duration if grid has < 2 entries
+        let lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
+        if (downbeatGrid.length >= 2) {
+          const intervals = downbeatGrid.slice(1).map((t, i) => t - downbeatGrid[i]);
+          intervals.sort((a, b) => a - b);
+          const medianBarDur = intervals[Math.floor(intervals.length / 2)];
+          if (medianBarDur > 0) lockedDur = 4 * medianBarDur / currentRate;
+        }
+
         set((s) => ({
           [dk]: {
             ...s[dk],
             firstDownbeatMs,
+            downbeatGrid: downbeatGrid.length > 0 ? downbeatGrid : null,
             downbeatDetecting: false,
             downbeatError: null,
             gridFirstTransient: inPoint,
@@ -1289,9 +1306,24 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     const rStart = freshDeck.regionStart;
     const rEnd = freshDeck.regionEnd > 0 ? freshDeck.regionEnd : playBuffer.duration;
-    const shouldLoop = !get().isExporting && !!forceLoop;
+
+    // Beat-grid mode: use detected downbeat positions for drift-corrected section looping
+    const useGridBeat = !get().isExporting && freshDeck.gridlockEnabled && (freshDeck.downbeatGrid?.length ?? 0) > 0;
+    let sectionEnd = rEnd;
+    if (useGridBeat) {
+      const grid = freshDeck.downbeatGrid!;
+      const targetEnd = rStart + freshDeck.gridLockedSectionDur;
+      // Snap section end to nearest detected downbeat
+      const snapped = grid.reduce((best, t) =>
+        Math.abs(t - targetEnd) < Math.abs(best - targetEnd) ? t : best
+      , grid[0]);
+      sectionEnd = snapped > rStart ? snapped : targetEnd;
+    }
+
+    const shouldLoop = !get().isExporting && !!forceLoop && !useGridBeat;
     const playOffset = freshDeck.pauseOffset >= rStart ? freshDeck.pauseOffset : rStart;
-    const remaining = rEnd - playOffset;
+    const effectiveEnd = useGridBeat ? sectionEnd : rEnd;
+    const remaining = effectiveEnd - playOffset;
     const playDuration = remaining > 0 ? remaining : undefined;
 
     const nodes = buildDeckGraph(
@@ -1303,12 +1335,19 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       freshDeck.volume,
       cfGain,
       () => {
-        // Only fires for non-looping playback (native loop never triggers onEnded)
         if (deckGeneration[id] !== gen) return;
         if (!getDeck(get(), id).isPlaying) return;
-        set((s) => ({
-          [key]: { ...s[key], isPlaying: false, nodes: null, pauseOffset: rStart },
-        }));
+        const d = getDeck(get(), id);
+        if (useGridBeat && d.gridlockEnabled && d.downbeatGrid?.length) {
+          // Advance to next beat-corrected section
+          const nextStart = sectionEnd < playBuffer.duration - 0.05
+            ? sectionEnd
+            : d.downbeatGrid[0]; // loop back to first downbeat at end of track
+          set((s) => ({ [key]: { ...s[key], regionStart: nextStart, pauseOffset: nextStart } }));
+          get().play(id, forceLoop);
+        } else {
+          set((s) => ({ [key]: { ...s[key], isPlaying: false, nodes: null, pauseOffset: rStart } }));
+        }
       },
       shouldLoop ? { loopStart: rStart, loopEnd: rEnd } : undefined,
       freshDeck.automationEnabled ? freshDeck.automationPoints : undefined,
