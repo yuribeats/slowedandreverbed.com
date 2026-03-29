@@ -79,11 +79,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ found: false });
     }
 
-    const best = tracks.reduce((best, t) => {
+    // Prefer tracks that have key data — pick best word-overlap within that pool
+    const withKey = tracks.filter((t) => t.key !== null);
+    const pool = withKey.length > 0 ? withKey : tracks;
+    const best = pool.reduce((best, t) => {
       const score = matchScore(t, artist, title);
       const bestScore = matchScore(best, artist, title);
       return score > bestScore ? t : best;
-    }, tracks[0]);
+    }, pool[0]);
 
     const keyParsed = parseKey(best.key ?? "");
 
