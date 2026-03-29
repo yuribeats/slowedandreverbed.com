@@ -1530,8 +1530,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   setBPM: (id, bpm) => {
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
-    if (!deck.sourceBuffer || bpm <= 0) return;
-    // Store the base BPM at current speed — so calculatedBPM is the "original" BPM
+    if (bpm <= 0) return;
     const rate = 1.0 + deck.params.speed;
     set((s) => ({ [dk]: { ...s[dk], calculatedBPM: bpm / rate } }));
   },
