@@ -120,14 +120,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     setDeckLoading(false);
   }, [loadDeck, id, deckArtist, deckTitle, autoStem]);
 
-  // Clear key and BPM when source changes
+  // Reset local input state when source changes (store already resets BPM/key at load start)
   const sourceId = deck.sourceBuffer ? deck.sourceFilename : null;
   useEffect(() => {
-    setDeckMeta(id, { baseKey: null, artist: "", title: "" });
     setUserBPM("");
     setEditingKey(false);
     setEditingBPM(false);
-  }, [sourceId, id, setDeckMeta]);
+  }, [sourceId, id]);
 
   // Sync artist/title inputs from store (populated by lookupEverysong)
   useEffect(() => {

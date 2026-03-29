@@ -871,7 +871,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFromYouTube: async (id, url) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, activeStem: null, stemBuffers: null, stemError: null, sourceCdnUrl: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, baseKey: null, baseMode: null, artist: "", title: "", activeStem: null, stemBuffers: null, stemError: null, sourceCdnUrl: null } }));
     try {
       const { fetchYouTubeAudio } = await import("./rapid");
       const { buffer, title, cdnUrl } = await fetchYouTubeAudio(url);
@@ -906,7 +906,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     }
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, sourceFilename: filename, sourceUrl: url, sourceFile: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, sourceFilename: filename, sourceUrl: url, sourceFile: null, calculatedBPM: null, baseKey: null, baseMode: null, artist: "", title: "" } }));
     try {
       const res = await fetch(url);
       const ab = await res.arrayBuffer();
@@ -1529,10 +1529,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
   setBPM: (id, bpm) => {
     const dk = deckKey(id);
-    const deck = getDeck(get(), id);
     if (bpm <= 0) return;
-    const rate = 1.0 + deck.params.speed;
-    set((s) => ({ [dk]: { ...s[dk], calculatedBPM: bpm / rate } }));
+    set((s) => ({ [dk]: { ...s[dk], calculatedBPM: bpm } }));
   },
 
   setStem: (id, stem) => {
