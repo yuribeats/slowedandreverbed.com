@@ -61,7 +61,20 @@ export async function GET(request: NextRequest) {
     if (!res.ok) throw new Error(`Everysong error: ${res.status}`);
     const data = await res.json();
 
-    const tracks = (data.tracks ?? []) as Array<{ artist: string; title: string; bpm: number | null; key: string | null }>;
+    let tracks = (data.tracks ?? []) as Array<{ artist: string; title: string; bpm: number | null; key: string | null }>;
+
+    // Artist+title exact match returned nothing (e.g. apostrophe in title stripped by user input).
+    // Fall back to artist-only search and apply word overlap to find the right track.
+    if (tracks.length === 0 && artist) {
+      const fallbackParams = new URLSearchParams({ artist, limit: "20", sort: "popularity", dir: "desc" });
+      if (apiKey) fallbackParams.set("api_key", apiKey);
+      const fallbackRes = await fetch(`https://everysong.site/api/search?${fallbackParams.toString()}`, { next: { revalidate: 0 } });
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        tracks = (fallbackData.tracks ?? []) as Array<{ artist: string; title: string; bpm: number | null; key: string | null }>;
+      }
+    }
+
     if (tracks.length === 0) {
       return NextResponse.json({ found: false });
     }
