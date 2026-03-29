@@ -942,6 +942,32 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         if (d.calculatedBPM) {
           set((s) => ({ [dk]: { ...s[dk], calculatedBPM: d.calculatedBPM as number } }));
         }
+        if (d.stemUrls && typeof d.stemUrls === "object") {
+          const urls = d.stemUrls as Partial<Record<string, string>>;
+          const ctx = getAudioContext();
+          const stemNames = ["vocals", "drums", "bass", "other"] as const;
+          const stems: Partial<Record<StemType, AudioBuffer>> = {};
+          await Promise.all(stemNames.map(async (name) => {
+            const url = urls[name]; if (!url) return;
+            try {
+              const ab = await (await fetch(url)).arrayBuffer();
+              stems[name] = await ctx.decodeAudioData(ab);
+            } catch { /* skip */ }
+          }));
+          const instSrc = (["drums", "bass", "other"] as const).map(n => stems[n]).filter((b): b is AudioBuffer => !!b);
+          if (instSrc.length > 0) {
+            const maxLen = Math.max(...instSrc.map(b => b.length));
+            const nCh = Math.max(...instSrc.map(b => b.numberOfChannels));
+            const inst = ctx.createBuffer(nCh, maxLen, instSrc[0].sampleRate);
+            for (let c = 0; c < nCh; c++) {
+              const out = inst.getChannelData(c);
+              for (const s of instSrc) { if (c < s.numberOfChannels) { const inp = s.getChannelData(c); for (let i = 0; i < inp.length; i++) out[i] += inp[i]; } }
+              for (let i = 0; i < out.length; i++) out[i] = Math.max(-1, Math.min(1, out[i]));
+            }
+            stems.instrumental = inst;
+          }
+          set((s) => ({ [dk]: { ...s[dk], stemBuffers: stems, stemUrls: urls } }));
+        }
         if (d.activeStem) {
           get().setStem(id, d.activeStem as StemType);
         }
@@ -971,9 +997,38 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           title: (d.title as string) || "",
           baseKey: (d.baseKey as number | null) ?? null,
         });
+        const dk2 = deckKey(id);
         if (d.calculatedBPM) {
-          const dk = deckKey(id);
-          set((s) => ({ [dk]: { ...s[dk], calculatedBPM: d.calculatedBPM as number } }));
+          set((s) => ({ [dk2]: { ...s[dk2], calculatedBPM: d.calculatedBPM as number } }));
+        }
+        if (d.stemUrls && typeof d.stemUrls === "object") {
+          const urls = d.stemUrls as Partial<Record<string, string>>;
+          const ctx = getAudioContext();
+          const stemNames = ["vocals", "drums", "bass", "other"] as const;
+          const stems: Partial<Record<StemType, AudioBuffer>> = {};
+          await Promise.all(stemNames.map(async (name) => {
+            const url = urls[name]; if (!url) return;
+            try {
+              const ab = await (await fetch(url)).arrayBuffer();
+              stems[name] = await ctx.decodeAudioData(ab);
+            } catch { /* skip */ }
+          }));
+          const instSrc = (["drums", "bass", "other"] as const).map(n => stems[n]).filter((b): b is AudioBuffer => !!b);
+          if (instSrc.length > 0) {
+            const maxLen = Math.max(...instSrc.map(b => b.length));
+            const nCh = Math.max(...instSrc.map(b => b.numberOfChannels));
+            const inst = ctx.createBuffer(nCh, maxLen, instSrc[0].sampleRate);
+            for (let c = 0; c < nCh; c++) {
+              const out = inst.getChannelData(c);
+              for (const s of instSrc) { if (c < s.numberOfChannels) { const inp = s.getChannelData(c); for (let i = 0; i < inp.length; i++) out[i] += inp[i]; } }
+              for (let i = 0; i < out.length; i++) out[i] = Math.max(-1, Math.min(1, out[i]));
+            }
+            stems.instrumental = inst;
+          }
+          set((s) => ({ [dk2]: { ...s[dk2], stemBuffers: stems, stemUrls: urls } }));
+        }
+        if (d.activeStem) {
+          get().setStem(id, d.activeStem as StemType);
         }
       };
 
@@ -1586,8 +1641,14 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         stems.instrumental = instBuf;
       }
 
+      // Save Pinata URLs so sessions can restore stems without re-running Modal
+      const stemUrlMap: Partial<Record<string, string>> = {};
+      for (const name of stemNames) {
+        if (data[name]) stemUrlMap[name] = data[name];
+      }
+
       set((s) => ({
-        [dk]: { ...s[dk], stemBuffers: stems, isStemLoading: false },
+        [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false },
       }));
 
       // Restart playback with the selected stem

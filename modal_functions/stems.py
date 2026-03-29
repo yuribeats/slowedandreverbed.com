@@ -39,10 +39,10 @@ def separate_stems(item: dict) -> dict:
     import os
     import subprocess
     import tempfile
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     import requests as req_lib
 
-    # Model was pre-baked into the image at this path
     os.environ["TORCH_HOME"] = "/root/.cache/torch"
 
     audio_url  = item.get("audio_url")
@@ -55,7 +55,6 @@ def separate_stems(item: dict) -> dict:
     if not pinata_jwt or not pinata_gw:
         return {"error": "Missing Pinata credentials"}
 
-    # Ensure gateway has scheme
     if not pinata_gw.startswith("http"):
         pinata_gw = f"https://{pinata_gw}"
 
@@ -100,26 +99,20 @@ def separate_stems(item: dict) -> dict:
         if proc.returncode != 0:
             return {"error": f"Demucs failed: {proc.stderr[-600:]}"}
 
-        # Output: <tmp>/htdemucs_ft/input/{vocals,drums,bass,other}.wav
         stem_dir = os.path.join(tmp, "htdemucs_ft", "input")
         if not os.path.isdir(stem_dir):
             return {"error": f"No demucs output dir. stderr: {proc.stderr[-300:]}"}
 
         print(f"[stems] stem_dir={stem_dir}, files={os.listdir(stem_dir)}")
 
-        # ── Encode to MP3 and upload each stem to Pinata ─────────────────────
-        urls: dict = {}
-        upload_errors: dict = {}
-
-        for stem in ["vocals", "drums", "bass", "other"]:
+        # ── Encode + upload all stems in parallel ─────────────────────────
+        def process_stem(stem):
             wav = os.path.join(stem_dir, f"{stem}.wav")
             if not os.path.exists(wav):
-                urls[stem] = None
-                upload_errors[stem] = "wav not found"
-                continue
+                return stem, None, "wav not found"
 
             mp3 = os.path.join(tmp, f"{stem}.mp3")
-            ffmpeg_proc = subprocess.run(
+            subprocess.run(
                 ["ffmpeg", "-i", wav, "-b:a", "192k", "-y", mp3],
                 capture_output=True,
                 timeout=60,
@@ -134,24 +127,34 @@ def separate_stems(item: dict) -> dict:
 
             try:
                 up = req_lib.post(
-                    "https://uploads.pinata.cloud/v3/files",
+                    "https://api.pinata.cloud/pinning/pinFileToIPFS",
                     headers={"Authorization": f"Bearer {pinata_jwt}"},
                     files={"file": (f"{stem}.mp3", data, mime)},
                     timeout=120,
                 )
                 print(f"[stems] Pinata {stem}: HTTP {up.status_code} — {up.text[:300]}")
                 up.raise_for_status()
-                cid = up.json()["data"]["cid"]
-                urls[stem] = f"{pinata_gw}/ipfs/{cid}"
-                print(f"[stems] {stem} uploaded: {urls[stem]}")
+                cid = up.json()["IpfsHash"]
+                url = f"https://gateway.pinata.cloud/ipfs/{cid}"
+                print(f"[stems] {stem} uploaded: {url}")
+                return stem, url, None
             except Exception as e:
-                upload_errors[stem] = str(e)
-                urls[stem] = None
                 print(f"[stems] {stem} upload failed: {e}")
+                return stem, None, str(e)
+
+        urls: dict = {}
+        upload_errors: dict = {}
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {executor.submit(process_stem, s): s for s in ["vocals", "drums", "bass", "other"]}
+            for future in as_completed(futures):
+                stem, url, error = future.result()
+                urls[stem] = url
+                if error:
+                    upload_errors[stem] = error
 
         if upload_errors:
             print(f"[stems] upload_errors: {upload_errors}")
-            # Surface errors if ALL stems failed
             if all(v is None for v in urls.values()):
                 return {"error": f"All Pinata uploads failed: {upload_errors}"}
 

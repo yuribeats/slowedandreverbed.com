@@ -1630,6 +1630,7 @@ export default function Home() {
         title: deck.title,
         baseKey: deck.baseKey,
         activeStem: deck.activeStem || null,
+        stemUrls: deck.stemUrls || null,
       } : null;
 
       const form = new FormData();
