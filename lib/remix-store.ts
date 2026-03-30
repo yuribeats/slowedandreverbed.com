@@ -1186,14 +1186,23 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         }
       }
 
-      // Quantize speed to match the other deck's playback BPM
+      // Deck B always quantizes to deck A. When A detects, re-quantize B if B has a BPM.
       if (detectedBpm > 0) {
-        const otherId: DeckId = id === "A" ? "B" : "A";
-        const otherDeck = getDeck(get(), otherId);
-        if (otherDeck.calculatedBPM) {
-          const otherPlaybackBpm = otherDeck.calculatedBPM * (1.0 + otherDeck.params.speed);
-          const newSpeed = Math.max(-0.5, Math.min(0.5, otherPlaybackBpm / detectedBpm - 1.0));
-          get().setParam(id, "speed", newSpeed);
+        if (id === "B") {
+          const deckA = getDeck(get(), "A");
+          if (deckA.calculatedBPM) {
+            const aPlaybackBpm = deckA.calculatedBPM * (1.0 + deckA.params.speed);
+            const newSpeed = Math.max(-0.5, Math.min(0.5, aPlaybackBpm / detectedBpm - 1.0));
+            get().setParam("B", "speed", newSpeed);
+          }
+        } else {
+          // A just got a BPM — re-quantize B to A's new playback BPM
+          const deckB = getDeck(get(), "B");
+          if (deckB.calculatedBPM) {
+            const aPlaybackBpm = detectedBpm * (1.0 + getDeck(get(), "A").params.speed);
+            const newSpeedB = Math.max(-0.5, Math.min(0.5, aPlaybackBpm / deckB.calculatedBPM - 1.0));
+            get().setParam("B", "speed", newSpeedB);
+          }
         }
       }
 
