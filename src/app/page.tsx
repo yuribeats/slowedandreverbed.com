@@ -100,6 +100,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const setDeckMeta = useRemixStore((s) => s.setDeckMeta);
   const toggleGridlock = useRemixStore((s) => s.toggleGridlock);
   const toggleGridSubdivide = useRemixStore((s) => s.toggleGridSubdivide);
+  const toggleShowAllBeats = useRemixStore((s) => s.toggleShowAllBeats);
   const setGridOffset = useRemixStore((s) => s.setGridOffset);
   const lockGridSectionDur = useRemixStore((s) => s.lockGridSectionDur);
   const detectDownbeat = useRemixStore((s) => s.detectDownbeat);
@@ -425,6 +426,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             gridSectionDur={deck.gridLockedSectionDur > 0 ? deck.gridLockedSectionDur / (deck.gridSubdivide ? 4 : 1) : undefined}
             gridAnchor={deck.gridlockEnabled ? deck.gridFirstTransient + deck.gridOffsetMs / 1000 : undefined}
             downbeatMarkers={deck.downbeatGrid ?? undefined}
+            showAllBeats={deck.showAllBeats}
             leftControls={
               <div className="relative shrink-0">
                 <button
@@ -664,6 +666,18 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 }}
               >
                 ÷4 BEAT
+              </button>
+              <button
+                onClick={() => toggleShowAllBeats(id)}
+                className="text-[12px] uppercase tracking-[0.15em] px-4 py-1 border"
+                style={{
+                  fontFamily: "var(--font-tech)",
+                  color: deck.showAllBeats ? "#000" : "#228B22",
+                  background: deck.showAllBeats ? "#228B22" : "transparent",
+                  borderColor: "#228B22",
+                }}
+              >
+                ALL BEATS
               </button>
               <button
                 onClick={exportToMPC}

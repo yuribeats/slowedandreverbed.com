@@ -146,6 +146,7 @@ interface DeckState {
   automationPoints: AutomationPoint[];
   gridlockEnabled: boolean;
   gridSubdivide: boolean;       // when true, sectionDur = gridLockedSectionDur / 4 (beat-level)
+  showAllBeats: boolean;        // when true, draw every downbeat marker instead of every 4th
   gridOffsetMs: number;
   gridFirstTransient: number;
   gridLockedSectionDur: number; // seconds — frozen at toggle-on
@@ -189,6 +190,7 @@ const defaultDeck = (): DeckState => ({
   automationPoints: [],
   gridlockEnabled: false,
   gridSubdivide: false,
+  showAllBeats: false,
   gridOffsetMs: 0,
   gridFirstTransient: 0,
   gridLockedSectionDur: 0,
@@ -320,6 +322,7 @@ interface RemixStore {
   moveAutomationPoint: (deck: DeckId, index: number, time: number, value: number) => void;
   toggleGridlock: (deck: DeckId) => void;
   toggleGridSubdivide: (deck: DeckId) => void;
+  toggleShowAllBeats: (deck: DeckId) => void;
   setGridOffset: (deck: DeckId, ms: number) => void;
   lockGridSectionDur: (deck: DeckId) => void;
 }
@@ -2055,6 +2058,10 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   toggleGridSubdivide: (id) => {
     const dk = deckKey(id);
     set((s) => ({ [dk]: { ...s[dk], gridSubdivide: !s[dk].gridSubdivide } }));
+  },
+  toggleShowAllBeats: (id) => {
+    const dk = deckKey(id);
+    set((s) => ({ [dk]: { ...s[dk], showAllBeats: !s[dk].showAllBeats } }));
   },
 
   setGridOffset: (id, ms) => {

@@ -24,6 +24,7 @@ interface Props {
   gridSectionDur?: number; // seconds between grid lines (locked at toggle-on)
   gridAnchor?: number;
   downbeatMarkers?: number[]; // detected downbeat positions in seconds
+  showAllBeats?: boolean; // when true, draw every downbeat; when false, every 4th
 }
 
 function computePeaks(buffer: AudioBuffer, numBars: number): Float32Array {
@@ -83,6 +84,7 @@ export default function WaveformDisplay({
   gridSectionDur,
   gridAnchor,
   downbeatMarkers,
+  showAllBeats,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const peaksRef = useRef<Float32Array | null>(null);
@@ -226,11 +228,12 @@ export default function WaveformDisplay({
     ctx.lineTo(w, midY);
     ctx.stroke();
 
-    // Detected downbeat markers (green, every 4th = one per 4 bars)
+    // Detected downbeat markers (green)
     if (downbeatMarkers && downbeatMarkers.length > 0) {
+      const step = showAllBeats ? 1 : 4;
       ctx.strokeStyle = "rgba(34, 139, 34, 0.3)";
       ctx.lineWidth = 1;
-      for (let i = 0; i < downbeatMarkers.length; i += 4) {
+      for (let i = 0; i < downbeatMarkers.length; i += step) {
         const dx = timeToX(downbeatMarkers[i]);
         if (dx >= -1 && dx <= w + 1) {
           ctx.beginPath();
@@ -400,7 +403,7 @@ export default function WaveformDisplay({
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridSectionDur, gridAnchor, downbeatMarkers]);
+  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridSectionDur, gridAnchor, downbeatMarkers, showAllBeats]);
 
   // Animation loop — only useEffect controls scheduling, draw never self-schedules
   useEffect(() => {
