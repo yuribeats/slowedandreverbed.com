@@ -1589,6 +1589,15 @@ export default function Home() {
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const masterBus = useRemixStore((s) => s.masterBus);
   const [manualOpen, setManualOpen] = useState(false);
+
+  // Reactive pitch sync: whenever both decks have keys, set A's pitch to match B's key
+  useEffect(() => {
+    if (deckA.baseKey !== null && deckB.baseKey !== null) {
+      let diff = ((deckB.baseKey - deckA.baseKey) % 12 + 12) % 12;
+      if (diff > 6) diff -= 12;
+      setParam("A", "pitch", diff);
+    }
+  }, [deckA.baseKey, deckB.baseKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
