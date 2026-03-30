@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing video URL" }, { status: 400 });
     }
 
-    const videoTitle = `${artist || "UNKNOWN"} - ${title || "UNTITLED"} (SLOWED + REVERB)`;
+    // Use just the part before any slash if present
+    const cleanArtist = (artist || "").split("/")[0].trim() || "UNKNOWN";
+    const cleanTitle = (title || "").split("/")[0].trim() || "UNTITLED";
+    const videoTitle = `${cleanArtist} - ${cleanTitle} (SLOWED + REVERB)`.slice(0, 100);
     const description = `${artist || ""} - ${title || ""}\nSLOWED + REVERB\n\nMADE WITH SLOWEDANDREVERBED.COM`;
 
     const videoRes = await fetch(url);
