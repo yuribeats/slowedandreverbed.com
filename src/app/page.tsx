@@ -1866,15 +1866,13 @@ function HomeInner() {
                     <span data-tooltip-right="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL" className="ml-3 text-[10px]">?</span>
                   </a>
                   <a
-                    href="https://studio-2026-03-19.vercel.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/gallery"
                     onClick={() => setMenuOpen(false)}
                     className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
                   >
-                    STUDIO
-                    <span data-tooltip-right="OPEN THE DRIFTWAVE STUDIO APP" className="ml-3 text-[10px]">?</span>
+                    GALLERY
+                    <span data-tooltip-right="BROWSE EXPORTED MIXES" className="ml-3 text-[10px]">?</span>
                   </a>
                   <a
                     href="https://everysong.site"
