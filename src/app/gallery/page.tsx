@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useRadioStore, RadioTrack } from "../../../lib/radio-store";
 
 interface GalleryItem {
   id: string;
@@ -66,10 +65,26 @@ function GalleryContent() {
   const [allFiles, setAllFiles] = useState<PinataFile[]>([]);
   const [allFilesLoading, setAllFilesLoading] = useState(false);
   const [showAllFiles, setShowAllFiles] = useState(false);
-  const radioPlay = useRadioStore((s) => s.play);
-  const radioPlayAll = useRadioStore((s) => s.playAll);
-  const radioTrack = useRadioStore((s) => s.queue[s.currentIndex]);
-  const radioPlaying = useRadioStore((s) => s.isPlaying);
+  const openRadio = () => {
+    // Find currently playing video and pause it
+    const videos = document.querySelectorAll("video");
+    let startId = "";
+    let startPos = 0;
+    videos.forEach((v) => {
+      if (!v.paused) {
+        const card = v.closest("[data-item-id]");
+        if (card) {
+          startId = card.getAttribute("data-item-id") || "";
+          startPos = Math.floor(v.currentTime);
+        }
+        v.pause();
+      }
+    });
+    const params = new URLSearchParams();
+    if (startId) params.set("id", startId);
+    if (startPos > 0) params.set("t", String(startPos));
+    window.open(`/radio${params.toString() ? "?" + params.toString() : ""}`, "driftwave-radio", "width=240,height=400,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,status=no");
+  };
 
   useEffect(() => {
     fetch("/api/gallery")
@@ -230,13 +245,9 @@ function GalleryContent() {
               YOUTUBE
             </a>
             <button
-              onClick={() => {
-                const tracks: RadioTrack[] = items.map((i) => ({ id: i.id, url: i.url, artist: i.artist, title: i.title }));
-                if (tracks.length > 0) radioPlayAll(tracks);
-              }}
-              disabled={items.length === 0}
+              onClick={openRadio}
               className="text-[9px] uppercase tracking-wider border-2 border-black px-2 py-1"
-              style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: items.length === 0 ? 0.3 : 1 }}
+              style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
             >
               RADIO
             </button>
@@ -419,7 +430,7 @@ function GalleryContent() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((item) => (
-                <div key={item.id} className="flex flex-col gap-2 border-2 border-black p-2 relative">
+                <div key={item.id} data-item-id={item.id} className="flex flex-col gap-2 border-2 border-black p-2 relative">
                   {editMode && (
                     <button
                       onClick={() => handleDelete(item.id)}
@@ -438,37 +449,25 @@ function GalleryContent() {
                     style={{ background: "#000" }}
                     onError={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
                   />
-                  <div className="flex items-start gap-2">
-                    <button
-                      onClick={() => {
-                        const queue: RadioTrack[] = items.map((i) => ({ id: i.id, url: i.url, artist: i.artist, title: i.title }));
-                        radioPlay({ id: item.id, url: item.url, artist: item.artist, title: item.title }, queue);
-                      }}
-                      className="shrink-0 w-8 h-8 flex items-center justify-center border-2 border-black text-[12px]"
-                      style={{ ...textStyle, fontSize: "12px", background: radioTrack?.id === item.id && radioPlaying ? "#000" : "transparent", color: radioTrack?.id === item.id && radioPlaying ? "#fff" : "#000" }}
+                  <div className="flex flex-col gap-0.5">
+                    <span
+                      className="text-[13px] uppercase tracking-wider truncate"
+                      style={textStyle}
                     >
-                      {radioTrack?.id === item.id && radioPlaying ? "||" : ">>"}
-                    </button>
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span
-                        className="text-[13px] uppercase tracking-wider truncate"
-                        style={textStyle}
-                      >
-                        {item.artist}
-                      </span>
-                      <span
-                        className="text-[11px] uppercase tracking-wider truncate"
-                        style={{ ...textStyle, opacity: 0.7 }}
-                      >
-                        {item.title}
-                      </span>
-                      <span
-                        className="text-[9px] uppercase tracking-wider"
-                        style={{ ...textStyle, opacity: 0.4 }}
-                      >
-                        {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
-                      </span>
-                    </div>
+                      {item.artist}
+                    </span>
+                    <span
+                      className="text-[11px] uppercase tracking-wider truncate"
+                      style={{ ...textStyle, opacity: 0.7 }}
+                    >
+                      {item.title}
+                    </span>
+                    <span
+                      className="text-[9px] uppercase tracking-wider"
+                      style={{ ...textStyle, opacity: 0.4 }}
+                    >
+                      {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
+                    </span>
                   </div>
                   {isAdmin && (
                     <div className="mt-1 flex gap-2 flex-wrap">

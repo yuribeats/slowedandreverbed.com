@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Audiowide, VT323 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import AudioWarmup from "../../components/AudioWarmup";
-import RadioPlayer from "../../components/RadioPlayer";
 import "./globals.css";
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -71,7 +70,6 @@ export default function RootLayout({
       <body className={`${ibmPlexMono.variable} ${audiowide.variable} ${vt323.variable} antialiased`}>
         <AudioWarmup />
         {children}
-        <RadioPlayer />
         <Analytics />
       </body>
     </html>
