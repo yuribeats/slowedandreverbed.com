@@ -227,13 +227,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             className="text-sm tracking-[2px] uppercase"
             style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
           >
-            {id === "A" ? "INSTRUMENTAL" : "ACAPELLA"}
+            DECK {id}
           </span>
           <span
             className="text-[8px] tracking-[1px] uppercase"
             style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.55 }}
           >
-            {id === "A" ? "AUTOMATICALLY REMOVES VOCALS" : "AUTOMATICALLY ISOLATES VOCALS"}
+            ENTER AN ARTIST, TITLE AND HIT LOAD TO BEGIN
           </span>
         </div>
         <div className="flex items-center gap-2">
