@@ -226,7 +226,23 @@ export default function WaveformDisplay({
     ctx.lineTo(w, midY);
     ctx.stroke();
 
-    // Grid lines (GRIDLOCK)
+    // Detected downbeat markers (green, only within region, drawn first so red grid overlays)
+    if (downbeatMarkers && downbeatMarkers.length > 0) {
+      ctx.strokeStyle = "rgba(34, 139, 34, 0.3)";
+      ctx.lineWidth = 1;
+      for (const t of downbeatMarkers) {
+        if (t < effectiveStart || t > effectiveEnd) continue;
+        const dx = timeToX(t);
+        if (dx >= -1 && dx <= w + 1) {
+          ctx.beginPath();
+          ctx.moveTo(dx, 0);
+          ctx.lineTo(dx, waveH);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Grid lines (GRIDLOCK) — drawn on top of downbeat markers
     if (gridEnabled && gridSectionDur && gridSectionDur > 0.01 && gridAnchor != null) {
       const sectionDur = gridSectionDur;
       ctx.strokeStyle = "#c82828";
@@ -241,21 +257,6 @@ export default function WaveformDisplay({
           ctx.beginPath();
           ctx.moveTo(gx, 0);
           ctx.lineTo(gx, waveH);
-          ctx.stroke();
-        }
-      }
-    }
-
-    // Detected downbeat markers (green, full height)
-    if (downbeatMarkers && downbeatMarkers.length > 0) {
-      ctx.strokeStyle = "rgba(34, 139, 34, 0.35)";
-      ctx.lineWidth = 1;
-      for (const t of downbeatMarkers) {
-        const dx = timeToX(t);
-        if (dx >= -1 && dx <= w + 1) {
-          ctx.beginPath();
-          ctx.moveTo(dx, 0);
-          ctx.lineTo(dx, waveH);
           ctx.stroke();
         }
       }
