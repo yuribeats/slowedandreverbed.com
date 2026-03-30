@@ -1588,8 +1588,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (!deck.stemBuffers) {
       const current = deck.activeStems;
       const next = current.includes(stem) ? current.filter((s) => s !== stem) : [...current, stem];
-      set((s) => ({ [dk]: { ...s[dk], activeStem: next[0] ?? null, activeStems: next, mixedStemBuffer: null, stemError: null, isStemLoading: next.length > 0 } }));
-      if (next.length > 0 && !deck.isStemLoading) get().separateStems(id);
+      const alreadySeparating = deck.isStemLoading;
+      set((s) => ({ [dk]: { ...s[dk], activeStem: next[0] ?? null, activeStems: next, mixedStemBuffer: null, stemError: null } }));
+      if (next.length > 0 && !alreadySeparating) get().separateStems(id);
       return;
     }
 
