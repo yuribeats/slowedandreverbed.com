@@ -1595,18 +1595,30 @@ function HomeInner() {
   // Auto-load decks from URL params (from Everysong match page)
   const searchParams = useSearchParams();
   const loadDeckHome = useRemixStore((s) => s.loadDeck);
+  const skipPitchSync = useRef(false);
   useEffect(() => {
-    const aArtist = searchParams.get("a_artist") ?? "";
-    const aTitle  = searchParams.get("a_title") ?? "";
-    const bArtist = searchParams.get("b_artist") ?? "";
-    const bTitle  = searchParams.get("b_title") ?? "";
-    if (aArtist || aTitle) loadDeckHome("A", aArtist, aTitle);
-    if (bArtist || bTitle) loadDeckHome("B", bArtist, bTitle);
+    const run = async () => {
+      const aArtist = searchParams.get("a_artist") ?? "";
+      const aTitle  = searchParams.get("a_title") ?? "";
+      const bArtist = searchParams.get("b_artist") ?? "";
+      const bTitle  = searchParams.get("b_title") ?? "";
+      const bShiftStr = searchParams.get("b_shift");
+      const bShift = bShiftStr !== null ? parseFloat(bShiftStr) : 0;
+      if (aArtist || aTitle) loadDeckHome("A", aArtist, aTitle);
+      if (bArtist || bTitle) {
+        if (bShift !== 0) skipPitchSync.current = true;
+        await loadDeckHome("B", bArtist, bTitle);
+        if (bShift !== 0) setParam("B", "speed", Math.pow(2, bShift / 12) - 1);
+      }
+    };
+    run();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reactive pitch sync: whenever both decks have keys, set A's pitch to match B's key
+  // Skipped when b_shift is set (deck B is varispeed-shifted instead)
   useEffect(() => {
     if (deckA.baseKey !== null && deckB.baseKey !== null) {
+      if (skipPitchSync.current) { skipPitchSync.current = false; return; }
       let diff = ((deckB.baseKey - deckA.baseKey) % 12 + 12) % 12;
       if (diff > 6) diff -= 12;
       setParam("A", "pitch", diff);
