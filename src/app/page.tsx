@@ -1454,7 +1454,9 @@ function Manual({ onClose }: { onClose: () => void }) {
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>LOADING TRACKS</div>
-            <div>LOAD A TRACK INTO A DECK USING THE LOAD BUTTON (LOCAL FILE) OR PASTE A YOUTUBE URL AND HIT GO. EACH DECK HAS INDEPENDENT CONTROLS FOR SPEED, PITCH, VOLUME, REVERB, TONE, AND SATURATION.</div>
+            <div className="mb-1">ENTER AN ARTIST AND TITLE, THEN HIT LOAD. THE TRACK IS FOUND ON YOUTUBE AND LOADED AUTOMATICALLY.</div>
+            <div className="mb-1">LOCAL: LOAD AN AUDIO FILE FROM YOUR DEVICE.</div>
+            <div>YT URL: PASTE A SPECIFIC YOUTUBE URL TO LOAD DIRECTLY.</div>
           </div>
 
           <div>
@@ -1521,13 +1523,25 @@ function Manual({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>STEM ISOLATION</div>
-            <div>CLICK ISOLATE VOCALS TO SEPARATE VOCALS USING ML (DEMUCS). FIRST USE TAKES 30–60 SECONDS. CLICK AGAIN TO TOGGLE OFF.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>STEMS</div>
+            <div className="mb-1">OPEN TOOLS AND TOGGLE INDIVIDUAL STEMS ON/OFF: VOCALS, DRUMS, BASS, OTHER, INSTRUMENTAL. SELECT MULTIPLE TO MIX THEM TOGETHER.</div>
+            <div>FIRST USE TRIGGERS ML SEPARATION (DEMUCS, ~30S). AFTER THAT, SWITCHING BETWEEN STEMS IS INSTANT.</div>
           </div>
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>GRIDLOCK</div>
             <div>TOGGLE FROM TOOLS MENU. OVERLAYS RED GRID LINES EVERY 4 BARS BASED ON BPM. ALIGN SLIDER SHIFTS ALL LINES UNIFORMLY. GRID IN/OUT ARROWS SNAP REGION TO GRID LINES. OUTPUT TO MPC SENDS GRID SECTIONS TO THE STUDIO MPC. THE LAST MPC PAD IS ALWAYS THE FULL LOOP FROM IN TO OUT.</div>
+          </div>
+
+          <div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>GALLERY + RADIO</div>
+            <div className="mb-1">ALL EXPORTS ARE SAVED TO THE GALLERY. ACCESS IT FROM THE MENU.</div>
+            <div>HIT RADIO IN THE GALLERY TO OPEN THE SLOWED + REVERBED RADIO — AN IPOD-STYLE PLAYER THAT SHUFFLES THROUGH ALL YOUR EXPORTS. SUPPORTS IOS LOCK SCREEN PLAYBACK.</div>
+          </div>
+
+          <div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>DOWNBEAT MARKERS</div>
+            <div className="mb-1">GREEN LINES ON THE WAVEFORM SHOW DETECTED DOWNBEATS (EVERY 4TH BY DEFAULT). TOGGLE ALL BEATS ON FROM THE GRIDLOCK SECTION TO SEE EVERY BEAT.</div>
           </div>
 
           <div>
