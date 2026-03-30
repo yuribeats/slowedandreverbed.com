@@ -146,10 +146,22 @@ export default function RadioPage() {
       width: "100vw",
       height: "100vh",
       display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "#222",
+    }}>
+    <div style={{
+      width: 240,
+      maxWidth: 240,
+      height: 400,
+      maxHeight: 400,
+      display: "flex",
       flexDirection: "column",
       background: "linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%)",
       overflow: "hidden",
       userSelect: "none",
+      borderRadius: 12,
+      boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
     }}>
       <audio
         ref={audioRef}
@@ -306,6 +318,7 @@ export default function RadioPage() {
           </span>
         </div>
       </div>
+    </div>
     </div>
   );
 }
