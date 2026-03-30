@@ -226,13 +226,12 @@ export default function WaveformDisplay({
     ctx.lineTo(w, midY);
     ctx.stroke();
 
-    // Detected downbeat markers (green, only within region, drawn first so red grid overlays)
+    // Detected downbeat markers (green, every 4th = one per 4 bars)
     if (downbeatMarkers && downbeatMarkers.length > 0) {
       ctx.strokeStyle = "rgba(34, 139, 34, 0.3)";
       ctx.lineWidth = 1;
-      for (const t of downbeatMarkers) {
-        if (t < effectiveStart || t > effectiveEnd) continue;
-        const dx = timeToX(t);
+      for (let i = 0; i < downbeatMarkers.length; i += 4) {
+        const dx = timeToX(downbeatMarkers[i]);
         if (dx >= -1 && dx <= w + 1) {
           ctx.beginPath();
           ctx.moveTo(dx, 0);
