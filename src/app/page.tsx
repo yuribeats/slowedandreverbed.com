@@ -424,6 +424,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             gridEnabled={deck.gridlockEnabled && deck.gridLockedSectionDur > 0}
             gridSectionDur={deck.gridLockedSectionDur > 0 ? deck.gridLockedSectionDur / (deck.gridSubdivide ? 4 : 1) : undefined}
             gridAnchor={deck.gridlockEnabled ? deck.gridFirstTransient + deck.gridOffsetMs / 1000 : undefined}
+            downbeatMarkers={deck.downbeatGrid ?? undefined}
             leftControls={
               <div className="relative shrink-0">
                 <button
@@ -633,6 +634,24 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 </div>
               </div>
             </div>
+            {/* Beat / bar nudge buttons */}
+            {deck.calculatedBPM && (() => {
+              const beatMs = Math.round(60000 / deck.calculatedBPM);
+              const barMs = beatMs * 4;
+              const nudgeBtnStyle: React.CSSProperties = {
+                fontFamily: "var(--font-tech)", fontSize: "11px", color: "#c82828",
+                background: "transparent", border: "1px solid #c82828",
+                padding: "2px 8px", letterSpacing: "0.1em",
+              };
+              return (
+                <div className="flex justify-center gap-2 mt-2">
+                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs - barMs)}>◀ BAR</button>
+                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs - beatMs)}>◀ BEAT</button>
+                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs + beatMs)}>BEAT ▶</button>
+                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs + barMs)}>BAR ▶</button>
+                </div>
+              );
+            })()}
             <div className="flex justify-center gap-2 mt-2">
               <button
                 onClick={() => toggleGridSubdivide(id)}
@@ -1595,6 +1614,7 @@ function HomeInner() {
   // Auto-load decks from URL params (from Everysong match page)
   const searchParams = useSearchParams();
   const loadDeckHome = useRemixStore((s) => s.loadDeck);
+  const phaseSync = useRemixStore((s) => s.phaseSync);
   const skipPitchSync = useRef(false);
   useEffect(() => {
     const run = async () => {
@@ -1887,6 +1907,17 @@ function HomeInner() {
                 <button
                   onClick={() => { stopDeck("A"); stopDeck("B"); }}
                   disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
+                  className="rocker-switch"
+                  style={{ width: "60px", height: "44px" }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+                </button>
+              </div>
+              <div className="flex flex-col items-center" data-tooltip="SNAPS BOTH DECKS' IN POINTS TO THEIR NEAREST BAR BOUNDARY SO THEY START ON A DOWNBEAT.">
+                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>PHASE SYNC</span>
+                <button
+                  onClick={phaseSync}
+                  disabled={!deckA.gridlockEnabled || !deckB.gridlockEnabled}
                   className="rocker-switch"
                   style={{ width: "60px", height: "44px" }}
                 >

@@ -306,6 +306,7 @@ interface RemixStore {
   playSequencer: () => Promise<void>;
   stopSequencer: () => void;
   lockBPM: () => void;
+  phaseSync: () => void;
   applyStylePreset: (style: BatchStyle) => void;
   renderToBlob: () => Promise<Blob | null>;
   download: () => Promise<void>;
@@ -1862,6 +1863,19 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     }
 
     set({ bpmLocked: true });
+  },
+
+  phaseSync: () => {
+    // Snap each deck's IN point to its nearest bar boundary so both start on a downbeat
+    for (const id of ["A", "B"] as DeckId[]) {
+      const deck = getDeck(get(), id);
+      if (!deck.gridlockEnabled || !deck.gridLockedSectionDur || !deck.sourceBuffer) continue;
+      const anchor = deck.gridFirstTransient + deck.gridOffsetMs / 1000;
+      const barDur = deck.gridLockedSectionDur / 4;
+      const n = Math.round((deck.regionStart - anchor) / barDur);
+      const newStart = Math.max(0, Math.min(deck.sourceBuffer.duration - 0.1, anchor + n * barDur));
+      get().setRegion(id, newStart, deck.regionEnd);
+    }
   },
 
   applyStylePreset: (style) => {

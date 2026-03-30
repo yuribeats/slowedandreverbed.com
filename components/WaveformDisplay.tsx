@@ -23,6 +23,7 @@ interface Props {
   gridEnabled?: boolean;
   gridSectionDur?: number; // seconds between grid lines (locked at toggle-on)
   gridAnchor?: number;
+  downbeatMarkers?: number[]; // detected downbeat positions in seconds
 }
 
 function computePeaks(buffer: AudioBuffer, numBars: number): Float32Array {
@@ -81,6 +82,7 @@ export default function WaveformDisplay({
   gridEnabled,
   gridSectionDur,
   gridAnchor,
+  downbeatMarkers,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const peaksRef = useRef<Float32Array | null>(null);
@@ -244,6 +246,21 @@ export default function WaveformDisplay({
       }
     }
 
+    // Detected downbeat markers (green, full height)
+    if (downbeatMarkers && downbeatMarkers.length > 0) {
+      ctx.strokeStyle = "#228B22";
+      ctx.lineWidth = 1.5;
+      for (const t of downbeatMarkers) {
+        const dx = timeToX(t);
+        if (dx >= -1 && dx <= w + 1) {
+          ctx.beginPath();
+          ctx.moveTo(dx, 0);
+          ctx.lineTo(dx, waveH);
+          ctx.stroke();
+        }
+      }
+    }
+
     // Region handles
     const handleSize = 12;
     const rsX = timeToX(effectiveStart);
@@ -383,7 +400,7 @@ export default function WaveformDisplay({
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridSectionDur, gridAnchor]);
+  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridSectionDur, gridAnchor, downbeatMarkers]);
 
   // Animation loop — only useEffect controls scheduling, draw never self-schedules
   useEffect(() => {
