@@ -97,7 +97,7 @@ export default function RadioPage() {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
       artist: track.artist,
-      album: "SLOWED + REVERBED",
+      album: "SLOWED + REVERBED RADIO",
     });
     navigator.mediaSession.setActionHandler("play", () => setPlaying(true));
     navigator.mediaSession.setActionHandler("pause", () => setPlaying(false));
@@ -186,7 +186,7 @@ export default function RadioPage() {
                 {track.artist.toUpperCase()}
               </span>
               <span style={{ fontSize: 9, fontFamily: F, fontWeight: 700, color: "#555", letterSpacing: "0.1em" }}>
-                SLOWED + REVERBED
+                SLOWED + REVERBED RADIO
               </span>
             </div>
 
