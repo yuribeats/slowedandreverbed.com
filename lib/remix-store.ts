@@ -1129,46 +1129,26 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   detectDownbeat: async (id) => {
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
-    if (!deck.sourceBuffer) {
-      console.warn(`[detectDownbeat:${id}] no source buffer — skipping`);
-      return;
-    }
+    if (!deck.sourceBuffer) return;
 
     set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: true, downbeatError: null } }));
 
     const fail = (msg: string) => {
-      console.error(`[detectDownbeat:${id}] ${msg}`);
       set((s) => ({ [dk]: { ...s[dk], downbeatDetecting: false, downbeatError: msg } }));
     };
 
     try {
-      const priors: Record<string, unknown> = {};
-      if (deck.calculatedBPM) priors.bpm = deck.calculatedBPM;
-      if (deck.baseKey !== null) priors.note_index = deck.baseKey;
-      if (deck.baseMode) priors.mode = deck.baseMode;
-
-      console.log(`[detectDownbeat:${id}] priors:`, { confirmedBpm: deck.calculatedBPM, note_index: deck.baseKey, mode: deck.baseMode });
-
-      // ── Build request to /api/downbeat ──────────────────────────────────
       let requestBody: Record<string, unknown>;
-
       if (deck.sourceCdnUrl) {
-        // CDN URL cached — skip RapidAPI re-fetch
-        console.log(`[detectDownbeat:${id}] using cached CDN URL`);
-        requestBody = { cdnUrl: deck.sourceCdnUrl, ...priors };
+        requestBody = { cdnUrl: deck.sourceCdnUrl };
       } else if (deck.sourceUrl?.includes("youtube")) {
-        // YouTube track — server fetches fresh CDN URL + auth header, passes to Modal
-        console.log(`[detectDownbeat:${id}] YouTube track, passing URL to server`);
-        requestBody = { youtubeUrl: deck.sourceUrl, ...priors };
+        requestBody = { youtubeUrl: deck.sourceUrl };
       } else if (deck.sourceUrl) {
-        // Direct audio URL (non-YouTube)
-        console.log(`[detectDownbeat:${id}] direct URL: ${deck.sourceUrl}`);
-        requestBody = { audioUrl: deck.sourceUrl, ...priors };
+        requestBody = { audioUrl: deck.sourceUrl };
       } else {
         return fail("No audio source — reload the track and try again");
       }
 
-      console.log(`[detectDownbeat:${id}] calling /api/downbeat...`);
       const res = await fetch("/api/downbeat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1181,93 +1161,74 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       }
 
       const data = await res.json();
-      console.log(`[detectDownbeat:${id}] response:`, data);
+      if (data.error) return fail(data.error);
 
-      if (data.error) return fail(`Modal error: ${data.error}`);
+      if (data.first_downbeat_ms == null) return fail("No downbeat returned from Modal");
 
-      if (data.first_downbeat_ms !== null && data.first_downbeat_ms !== undefined) {
-        const firstDownbeatMs = data.first_downbeat_ms as number;
-        const detectedBpm = (data.bpm as number) || 0;
-        console.log(`[detectDownbeat:${id}] first downbeat = ${firstDownbeatMs}ms, BPM=${detectedBpm}, beats=${data.beats_ms?.length}`);
+      const firstDownbeatMs = data.first_downbeat_ms as number;
+      const detectedBpm = (data.bpm as number) || 0;
 
-        // Snap to nearest actual detected downbeat. Fall back to bar extrapolation
-        // only if cursor is past the end of the detected list.
-        const currentPosMs = deck.pauseOffset * 1000;
-        const downbeatList: number[] = (data.downbeats_ms as number[]) ?? [firstDownbeatMs];
-        let targetDownbeatMs = firstDownbeatMs;
-        if (downbeatList.length > 0) {
-          // Find closest downbeat in the detected list
-          const closest = downbeatList.reduce((best, t) =>
+      // BPM: downbeat detection is authoritative — overwrites Everysong estimate
+      if (detectedBpm > 0) get().setBPM(id, detectedBpm);
+
+      // Store downbeat grid (seconds)
+      const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
+
+      // Snap in-point to nearest detected downbeat to current playback position
+      const currentPosMs = deck.pauseOffset * 1000;
+      const downbeatList: number[] = (data.downbeats_ms as number[]) ?? [firstDownbeatMs];
+      let targetDownbeatMs = firstDownbeatMs;
+      if (downbeatList.length > 0) {
+        const lastKnown = downbeatList[downbeatList.length - 1];
+        const barMs = detectedBpm > 0 ? (4 * 60 / detectedBpm) * 1000 : 2000;
+        if (currentPosMs <= lastKnown + barMs) {
+          targetDownbeatMs = downbeatList.reduce((best, t) =>
             Math.abs(t - currentPosMs) < Math.abs(best - currentPosMs) ? t : best
           , downbeatList[0]);
-
-          // If cursor is within the detected range, use the closest detected downbeat
-          const lastKnown = downbeatList[downbeatList.length - 1];
-          if (currentPosMs <= lastKnown + (downbeatList.length > 1 ? (lastKnown - downbeatList[downbeatList.length - 2]) : 2000)) {
-            targetDownbeatMs = closest;
-          } else {
-            // Cursor past detected range — extrapolate from last known downbeat
-            const bpmForCalc = deck.calculatedBPM || detectedBpm;
-            const barDurationMs = bpmForCalc > 0 ? (4 * 60 / bpmForCalc) * 1000 : 0;
-            if (barDurationMs > 0) {
-              const barsFromLast = Math.round((currentPosMs - lastKnown) / barDurationMs);
-              targetDownbeatMs = Math.max(0, lastKnown + barsFromLast * barDurationMs);
-            } else {
-              targetDownbeatMs = closest;
-            }
-          }
+        } else {
+          const barsFromLast = Math.round((currentPosMs - lastKnown) / barMs);
+          targetDownbeatMs = Math.max(0, lastKnown + barsFromLast * barMs);
         }
-        console.log(`[detectDownbeat:${id}] cursor=${currentPosMs.toFixed(0)}ms → snapped to ${targetDownbeatMs.toFixed(0)}ms`);
-        if (detectedBpm > 0) get().setBPM(id, detectedBpm);
-
-        // Store beat grid for drift-corrected looping
-        const rawDownbeats: number[] = (data.downbeats_ms as number[] | null) ?? [];
-        const downbeatGrid = rawDownbeats.map((ms) => ms / 1000);
-
-        // Quantize to grid: match speed to the other deck's playback BPM
-        if (detectedBpm > 0) {
-          const otherId: DeckId = id === "A" ? "B" : "A";
-          const otherDeck = getDeck(get(), otherId);
-          if (otherDeck.calculatedBPM) {
-            const otherPlaybackBpm = otherDeck.calculatedBPM * (1.0 + otherDeck.params.speed);
-            const newSpeed = Math.max(-0.5, Math.min(0.5, otherPlaybackBpm / detectedBpm - 1.0));
-            get().setParam(id, "speed", newSpeed);
-            // Never touch pitch — Everysong key remains authoritative
-            console.log(`[detectDownbeat:${id}] quantized to grid: speed=${newSpeed.toFixed(4)} (${detectedBpm.toFixed(2)} → ${otherPlaybackBpm.toFixed(2)} BPM)`);
-          }
-        }
-
-        const inPoint = targetDownbeatMs / 1000;
-        const currentRate = 1.0 + getDeck(get(), id).params.speed;
-        const updatedDeck = getDeck(get(), id);
-
-        // Compute section duration from actual inter-downbeat intervals (4 bars)
-        // Falls back to BPM-derived duration if grid has < 2 entries
-        let lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
-        if (downbeatGrid.length >= 2) {
-          const intervals = downbeatGrid.slice(1).map((t, i) => t - downbeatGrid[i]);
-          intervals.sort((a, b) => a - b);
-          const medianBarDur = intervals[Math.floor(intervals.length / 2)];
-          if (medianBarDur > 0) lockedDur = 4 * medianBarDur / currentRate;
-        }
-
-        set((s) => ({
-          [dk]: {
-            ...s[dk],
-            firstDownbeatMs,
-            downbeatGrid: downbeatGrid.length > 0 ? downbeatGrid : null,
-            downbeatDetecting: false,
-            downbeatError: null,
-            gridFirstTransient: inPoint,
-            gridlockEnabled: true,
-            gridLockedSectionDur: lockedDur,
-            gridOffsetMs: 0,
-          },
-        }));
-        get().setRegion(id, inPoint, 0);
-      } else {
-        fail("No downbeat returned from Modal");
       }
+
+      // Quantize speed to match the other deck's playback BPM
+      if (detectedBpm > 0) {
+        const otherId: DeckId = id === "A" ? "B" : "A";
+        const otherDeck = getDeck(get(), otherId);
+        if (otherDeck.calculatedBPM) {
+          const otherPlaybackBpm = otherDeck.calculatedBPM * (1.0 + otherDeck.params.speed);
+          const newSpeed = Math.max(-0.5, Math.min(0.5, otherPlaybackBpm / detectedBpm - 1.0));
+          get().setParam(id, "speed", newSpeed);
+        }
+      }
+
+      const inPoint = targetDownbeatMs / 1000;
+      const currentRate = 1.0 + getDeck(get(), id).params.speed;
+      const updatedDeck = getDeck(get(), id);
+
+      // Section duration from median inter-downbeat intervals (4 bars), falls back to BPM
+      let lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
+      if (downbeatGrid.length >= 2) {
+        const intervals = downbeatGrid.slice(1).map((t, i) => t - downbeatGrid[i]);
+        intervals.sort((a, b) => a - b);
+        const medianBarDur = intervals[Math.floor(intervals.length / 2)];
+        if (medianBarDur > 0) lockedDur = 4 * medianBarDur / currentRate;
+      }
+
+      set((s) => ({
+        [dk]: {
+          ...s[dk],
+          firstDownbeatMs,
+          downbeatGrid: downbeatGrid.length > 0 ? downbeatGrid : null,
+          downbeatDetecting: false,
+          downbeatError: null,
+          gridFirstTransient: inPoint,
+          gridlockEnabled: true,
+          gridLockedSectionDur: lockedDur,
+          gridOffsetMs: 0,
+        },
+      }));
+      get().setRegion(id, inPoint, 0);
     } catch (e) {
       fail(e instanceof Error ? e.message : "Unexpected error");
     }

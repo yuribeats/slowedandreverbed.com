@@ -2,8 +2,7 @@
 Driftwave downbeat detector — Modal serverless endpoint.
 
 Uses beat_this (CPJKU, ISMIR 2024) for beat + downbeat detection.
-If a confirmed BPM is supplied (from Everysong), it is passed through
-but beat_this runs its own detection independently.
+Returns raw detection results only — no Everysong priors or key data.
 
 Deploy:
   modal deploy modal_functions/beatnet.py
@@ -30,29 +29,29 @@ def detect_downbeat(item: dict) -> dict:
     """
     POST body:
       {
-        "audio_url":  "https://...",
-        "bpm":        120.5,      # optional — confirmed BPM from Everysong
-        "note_index": 7,          # optional — 0-11 (C=0…B=11)
-        "mode":       "major"     # optional
+        "audio_url": "https://..."
+      }
+
+    Returns:
+      {
+        "first_downbeat_ms": 1234,
+        "downbeats_ms": [...],
+        "beats_ms": [...],
+        "bpm": 108.123
       }
     """
     import os, tempfile
+    import numpy as np
     import requests as req_lib
     from beat_this.inference import File2Beats
 
-    NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-
-    audio_url      = item.get("audio_url")
-    confirmed_bpm  = item.get("bpm")
-    confirmed_ni   = item.get("note_index")
-    confirmed_mode = item.get("mode")
-
+    audio_url = item.get("audio_url")
     if not audio_url:
         return {"error": "No audio_url provided"}
 
-    # ── Download ────────────────────────────────────────────────────────────
     x_run = item.get("x_run")
     download_headers = {"X-RUN": x_run} if x_run else {}
+
     try:
         r = req_lib.get(audio_url, headers=download_headers, timeout=60)
         r.raise_for_status()
@@ -67,7 +66,6 @@ def detect_downbeat(item: dict) -> dict:
         tmp = f.name
 
     try:
-        # ── Beat + downbeat detection ────────────────────────────────────────
         model = File2Beats(checkpoint_path="final0", device="cpu", float16=False, dbn=False)
         downbeats, beats = model(tmp)
 
@@ -79,34 +77,17 @@ def detect_downbeat(item: dict) -> dict:
 
         first_downbeat_ms = round(downbeat_times[0] * 1000) if downbeat_times else round(beat_times[0] * 1000)
 
-        # ── Derive BPM from beat intervals ──────────────────────────────────
-        if confirmed_bpm and confirmed_bpm > 0:
-            detected_bpm = float(confirmed_bpm)
-        elif len(beat_times) >= 2:
-            import numpy as np
+        if len(beat_times) >= 2:
             intervals = np.diff(beat_times)
-            detected_bpm = round(60.0 / float(np.median(intervals)), 2)
+            detected_bpm = round(60.0 / float(np.median(intervals)), 3)
         else:
             detected_bpm = 0.0
-
-        # ── Key: use Everysong if provided ──────────────────────────────────
-        if confirmed_ni is not None and confirmed_mode:
-            key_str = f"{NOTE_NAMES[confirmed_ni]} {confirmed_mode}"
-            note_index = confirmed_ni
-            mode = confirmed_mode
-        else:
-            key_str = None
-            note_index = None
-            mode = None
 
         return {
             "first_downbeat_ms": first_downbeat_ms,
             "downbeats_ms":      [round(t * 1000) for t in downbeat_times[:50]],
             "beats_ms":          [round(t * 1000) for t in beat_times[:200]],
             "bpm":               detected_bpm,
-            "key":               key_str,
-            "note_index":        note_index,
-            "mode":              mode,
         }
 
     except Exception as e:

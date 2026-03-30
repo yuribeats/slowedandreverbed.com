@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { youtubeUrl, audioUrl, cdnUrl, ...priors } = body;
+    const { youtubeUrl, audioUrl, cdnUrl } = body;
 
     let finalAudioUrl: string;
     let xRun: string | null = null;
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing youtubeUrl, cdnUrl, or audioUrl" }, { status: 400 });
     }
 
-    const modalBody: Record<string, unknown> = { audio_url: finalAudioUrl, ...priors };
+    const modalBody: Record<string, unknown> = { audio_url: finalAudioUrl };
     if (xRun) modalBody.x_run = xRun;
 
     const res = await fetch(modalUrl, {
