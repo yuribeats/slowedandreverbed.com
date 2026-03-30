@@ -1180,33 +1180,14 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         }
       }
 
-      // Snap targetDownbeatMs to the strongest transient within ±100ms
-      // (beat_this can be off by tens of ms — this pins to the actual kick/attack)
-      const audioBuffer = deck.sourceBuffer;
-      if (audioBuffer) {
-        const sampleRate = audioBuffer.sampleRate;
-        const hopSize = 64; // ~1.5ms at 44.1kHz
-        const windowMs = 100;
-        const windowSamples = Math.floor(windowMs / 1000 * sampleRate);
-        const centerSample = Math.max(hopSize, Math.floor(targetDownbeatMs / 1000 * sampleRate));
-        const start = Math.max(hopSize, centerSample - windowSamples);
-        const end = Math.min(audioBuffer.length - hopSize, centerSample + windowSamples);
-        const ch0 = audioBuffer.getChannelData(0);
-        const ch1 = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : null;
-        let maxOnset = -1;
-        let bestSample = centerSample;
-        for (let i = start; i < end; i += hopSize) {
-          let eCurr = 0, ePrev = 0;
-          for (let j = 0; j < hopSize; j++) {
-            const c = ch1 ? (ch0[i + j] + ch1[i + j]) * 0.5 : ch0[i + j];
-            const p = ch1 ? (ch0[i - hopSize + j] + ch1[i - hopSize + j]) * 0.5 : ch0[i - hopSize + j];
-            eCurr += c * c;
-            ePrev += p * p;
-          }
-          const onset = Math.max(0, eCurr - ePrev);
-          if (onset > maxOnset) { maxOnset = onset; bestSample = i; }
-        }
-        targetDownbeatMs = (bestSample / sampleRate) * 1000;
+      // Refine targetDownbeatMs by snapping to the nearest beat in beats_ms
+      // (beat_this per-beat timestamps are more reliable than energy analysis)
+      const beatList: number[] = (data.beats_ms as number[] | null) ?? [];
+      if (beatList.length > 0) {
+        const nearest = beatList.reduce((best, t) =>
+          Math.abs(t - targetDownbeatMs) < Math.abs(best - targetDownbeatMs) ? t : best
+        , beatList[0]);
+        if (Math.abs(nearest - targetDownbeatMs) < 500) targetDownbeatMs = nearest;
       }
 
       // Set speed without affecting pitch (automatic BPM matching is tempo-only)
