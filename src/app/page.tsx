@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { expandParams } from "@yuribeats/audio-utils";
 import { useRemixStore, getMasterAnalyser } from "../../lib/remix-store";
 import type { MasterBusParams } from "../../lib/remix-store";
@@ -1570,7 +1571,7 @@ function SaveLoadModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-export default function Home() {
+function HomeInner() {
   const crossfader = useRemixStore((s) => s.crossfader);
   const setCrossfader = useRemixStore((s) => s.setCrossfader);
   const syncPlay = useRemixStore((s) => s.syncPlay);
@@ -1590,6 +1591,18 @@ export default function Home() {
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const masterBus = useRemixStore((s) => s.masterBus);
   const [manualOpen, setManualOpen] = useState(false);
+
+  // Auto-load decks from URL params (from Everysong match page)
+  const searchParams = useSearchParams();
+  const loadDeckHome = useRemixStore((s) => s.loadDeck);
+  useEffect(() => {
+    const aArtist = searchParams.get("a_artist") ?? "";
+    const aTitle  = searchParams.get("a_title") ?? "";
+    const bArtist = searchParams.get("b_artist") ?? "";
+    const bTitle  = searchParams.get("b_title") ?? "";
+    if (aArtist || aTitle) loadDeckHome("A", aArtist, aTitle);
+    if (bArtist || bTitle) loadDeckHome("B", bArtist, bTitle);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reactive pitch sync: whenever both decks have keys, set A's pitch to match B's key
   useEffect(() => {
@@ -1985,5 +1998,13 @@ export default function Home() {
         />
       )}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeInner />
+    </Suspense>
   );
 }
