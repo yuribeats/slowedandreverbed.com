@@ -1186,22 +1186,33 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         }
       }
 
+      // Set speed without affecting pitch (automatic BPM matching is tempo-only)
+      const setSpeedOnly = (deckId: DeckId, speed: number) => {
+        const dkId = deckKey(deckId);
+        set((s) => ({ [dkId]: { ...s[dkId], params: { ...s[dkId].params, speed } } }));
+        const d = getDeck(get(), deckId);
+        if (d.nodes) {
+          const expanded = expandParams(d.params);
+          d.nodes.source.playbackRate.value = expanded.rate;
+          if (d.nodes.pitchShifter) {
+            d.nodes.pitchShifter.port.postMessage(JSON.stringify(["pitch", expanded.pitchFactor / expanded.rate]));
+          }
+        }
+      };
+
       // Deck B always quantizes to deck A. When A detects, re-quantize B if B has a BPM.
       if (detectedBpm > 0) {
         if (id === "B") {
           const deckA = getDeck(get(), "A");
           if (deckA.calculatedBPM) {
             const aPlaybackBpm = deckA.calculatedBPM * (1.0 + deckA.params.speed);
-            const newSpeed = Math.max(-0.5, Math.min(0.5, aPlaybackBpm / detectedBpm - 1.0));
-            get().setParam("B", "speed", newSpeed);
+            setSpeedOnly("B", Math.max(-0.5, Math.min(0.5, aPlaybackBpm / detectedBpm - 1.0)));
           }
         } else {
-          // A just got a BPM — re-quantize B to A's new playback BPM
           const deckB = getDeck(get(), "B");
           if (deckB.calculatedBPM) {
             const aPlaybackBpm = detectedBpm * (1.0 + getDeck(get(), "A").params.speed);
-            const newSpeedB = Math.max(-0.5, Math.min(0.5, aPlaybackBpm / deckB.calculatedBPM - 1.0));
-            get().setParam("B", "speed", newSpeedB);
+            setSpeedOnly("B", Math.max(-0.5, Math.min(0.5, aPlaybackBpm / deckB.calculatedBPM - 1.0)));
           }
         }
       }
