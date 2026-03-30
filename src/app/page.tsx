@@ -447,24 +447,24 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                       YOUTUBE URL
                       <span data-tooltip-right="LOAD A TRACK FROM YOUTUBE" className="ml-3 text-[10px]">?</span>
                     </button>
-                    <button
-                      onClick={() => { setStem(id, "vocals"); setDeckMenuOpen(false); }}
-                      disabled={deck.isStemLoading}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                      style={{ fontFamily: "var(--font-tech)", color: deck.activeStem === "vocals" ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
-                    >
-                      {deck.isStemLoading ? "SEPARATING..." : "ISOLATE VOCALS"}
-                      <span data-tooltip-right="STRIP INSTRUMENTS, KEEP VOCALS (ML-POWERED, ~30S)" className="ml-3 text-[10px]">?</span>
-                    </button>
-                    <button
-                      onClick={() => { setStem(id, "instrumental"); setDeckMenuOpen(false); }}
-                      disabled={deck.isStemLoading}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                      style={{ fontFamily: "var(--font-tech)", color: deck.activeStem === "instrumental" ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
-                    >
-                      {deck.isStemLoading ? "SEPARATING..." : "REMOVE VOCALS"}
-                      <span data-tooltip-right="STRIP VOCALS, KEEP INSTRUMENTS (ML-POWERED, ~30S)" className="ml-3 text-[10px]">?</span>
-                    </button>
+                    {([
+                      ["vocals", "VOCALS ONLY", "ISOLATE VOCALS (ML-POWERED, ~30S)"],
+                      ["instrumental", "NO VOCALS", "REMOVE VOCALS, KEEP ALL INSTRUMENTS"],
+                      ["drums", "DRUMS ONLY", "ISOLATE DRUM TRACK"],
+                      ["bass", "BASS ONLY", "ISOLATE BASS TRACK"],
+                      ["other", "OTHER ONLY", "EVERYTHING EXCEPT VOCALS, DRUMS, AND BASS"],
+                    ] as const).map(([stem, label, tooltip]) => (
+                      <button
+                        key={stem}
+                        onClick={() => { setStem(id, stem); setDeckMenuOpen(false); }}
+                        disabled={deck.isStemLoading}
+                        className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
+                        style={{ fontFamily: "var(--font-tech)", color: deck.activeStem === stem ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
+                      >
+                        {deck.isStemLoading && deck.activeStem === stem ? "SEPARATING..." : label}
+                        <span data-tooltip-right={tooltip} className="ml-3 text-[10px]">?</span>
+                      </button>
+                    ))}
                     <button
                       onClick={() => { detectDownbeat(id); setDeckMenuOpen(false); }}
                       disabled={!deck.sourceBuffer || deck.downbeatDetecting}
