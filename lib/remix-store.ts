@@ -1102,12 +1102,11 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     }
 
     try {
-      console.log(`[loadDeck:${id}] loading audio + Everysong in parallel`);
-      await Promise.all([
-        get().loadFromYouTube(id, url),
-        get().lookupEverysong(id, artist, title),
-      ]);
-      console.log(`[loadDeck:${id}] audio + metadata loaded`);
+      console.log(`[loadDeck:${id}] loading audio`);
+      await get().loadFromYouTube(id, url);
+      console.log(`[loadDeck:${id}] audio loaded, looking up key`);
+      await get().lookupEverysong(id, artist, title);
+      console.log(`[loadDeck:${id}] metadata loaded`);
     } catch (e) {
       console.error(`[loadDeck:${id}] load failed:`, e);
       throw e;

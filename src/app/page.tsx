@@ -510,18 +510,19 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         }
         const sectionDurMs = (sectionDurWallClock * 1000).toFixed(0);
 
+        const barDur = sectionDur / 4;
         const snapGridIn = (dir: number) => {
           const n = dir < 0
-            ? Math.floor((inVal - gridAnchor) / sectionDur - 0.001)
-            : Math.ceil((inVal - gridAnchor) / sectionDur + 0.001);
-          const snapped = gridAnchor + n * sectionDur;
+            ? Math.floor((inVal - gridAnchor) / barDur - 0.001)
+            : Math.ceil((inVal - gridAnchor) / barDur + 0.001);
+          const snapped = gridAnchor + n * barDur;
           setRegion(id, snapped, deck.regionEnd);
         };
         const snapGridOut = (dir: number) => {
           const n = dir < 0
-            ? Math.floor((outVal - gridAnchor) / sectionDur - 0.001)
-            : Math.ceil((outVal - gridAnchor) / sectionDur + 0.001);
-          const snapped = gridAnchor + n * sectionDur;
+            ? Math.floor((outVal - gridAnchor) / barDur - 0.001)
+            : Math.ceil((outVal - gridAnchor) / barDur + 0.001);
+          const snapped = gridAnchor + n * barDur;
           setRegion(id, deck.regionStart, snapped);
         };
         const exportToMPC = () => {
