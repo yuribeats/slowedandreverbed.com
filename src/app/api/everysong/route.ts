@@ -51,6 +51,8 @@ export async function GET(request: NextRequest) {
       tracks = await search({ artist, title }, apiKey);
     } else if (artist) {
       tracks = await search({ artist }, apiKey);
+    } else if (title) {
+      tracks = await search({ title }, apiKey);
     }
 
     if (tracks.length === 0) {
