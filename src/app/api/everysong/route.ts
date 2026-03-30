@@ -10,31 +10,25 @@ function parseKey(keyStr: string): { noteIndex: number; mode: "major" | "minor" 
   if (!keyStr) return null;
   const parts = keyStr.trim().split(/\s+/);
   if (parts.length < 2) return null;
-  const note = parts[0];
-  const mode = parts[1].toLowerCase() === "major" ? "major" : "minor";
-  const noteIndex = KEY_MAP[note];
+  const noteIndex = KEY_MAP[parts[0]];
   if (noteIndex === undefined) return null;
+  const mode = parts[1].toLowerCase() === "major" ? "major" : "minor";
   return { noteIndex, mode };
 }
 
-function normalize(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-}
+type Track = { artist: string; title: string; bpm: number | null; key: string | null };
 
-function wordOverlap(a: string, b: string): number {
-  const wordsA = new Set(normalize(a).split(" ").filter(Boolean));
-  const wordsB = normalize(b).split(" ").filter(Boolean);
-  return wordsB.filter((w) => wordsA.has(w)).length / Math.max(wordsA.size, 1);
-}
-
-function matchScore(
-  track: { artist: string; title: string },
-  artist: string,
-  title: string
-): number {
-  const artistScore = artist ? wordOverlap(artist, track.artist) : 0.5;
-  const titleScore = title ? wordOverlap(title, track.title) : 0.5;
-  return artistScore * 0.5 + titleScore * 0.5;
+async function search(params: Record<string, string>, apiKey: string | undefined): Promise<Track[]> {
+  const p = new URLSearchParams({ limit: "20", sort: "popularity", dir: "desc", ...params });
+  if (apiKey) p.set("api_key", apiKey);
+  try {
+    const res = await fetch(`https://everysong.site/api/search?${p}`, { next: { revalidate: 0 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.tracks ?? []) as Track[];
+  } catch {
+    return [];
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -46,47 +40,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing artist, title, or q" }, { status: 400 });
   }
 
-  const params = new URLSearchParams({ limit: "20", sort: "popularity", dir: "desc" });
-  if (artist) params.set("artist", artist);
-  if (title) params.set("title", title);
-  if (!artist && !title && q) params.set("q", q);
-
   const apiKey = process.env.EVERYSONG_API_KEY;
-  if (apiKey) params.set("api_key", apiKey);
-
-  const url = `https://everysong.site/api/search?${params.toString()}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 0 } });
-    if (!res.ok) throw new Error(`Everysong error: ${res.status}`);
-    const data = await res.json();
+    let tracks: Track[] = [];
 
-    let tracks = (data.tracks ?? []) as Array<{ artist: string; title: string; bpm: number | null; key: string | null }>;
-
-    // Artist+title exact match returned nothing (e.g. apostrophe in title stripped by user input).
-    // Fall back to artist-only search and apply word overlap to find the right track.
-    if (tracks.length === 0 && artist) {
-      const fallbackParams = new URLSearchParams({ artist, limit: "20", sort: "popularity", dir: "desc" });
-      if (apiKey) fallbackParams.set("api_key", apiKey);
-      const fallbackRes = await fetch(`https://everysong.site/api/search?${fallbackParams.toString()}`, { next: { revalidate: 0 } });
-      if (fallbackRes.ok) {
-        const fallbackData = await fallbackRes.json();
-        tracks = (fallbackData.tracks ?? []) as Array<{ artist: string; title: string; bpm: number | null; key: string | null }>;
-      }
+    if (q && !artist && !title) {
+      tracks = await search({ q }, apiKey);
+    } else if (artist && title) {
+      tracks = await search({ artist, title }, apiKey);
+    } else if (artist) {
+      tracks = await search({ artist }, apiKey);
     }
 
     if (tracks.length === 0) {
       return NextResponse.json({ found: false });
     }
 
-    // Prefer tracks that have key data — pick best word-overlap within that pool
-    const withKey = tracks.filter((t) => t.key !== null);
-    const pool = withKey.length > 0 ? withKey : tracks;
-    const best = pool.reduce((best, t) => {
-      const score = matchScore(t, artist, title);
-      const bestScore = matchScore(best, artist, title);
-      return score > bestScore ? t : best;
-    }, pool[0]);
+    // Take the first result that has key data. If none have key data, take the first result.
+    const best = tracks.find((t) => t.key !== null) ?? tracks[0];
 
     const keyParsed = parseKey(best.key ?? "");
 
