@@ -1061,16 +1061,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const data = await res.json();
       console.log(`[lookupEverysong:${id}] response:`, data);
       if (data.found) {
-        if (data.bpm) {
-          console.log(`[lookupEverysong:${id}] setting BPM = ${data.bpm}`);
-          get().setBPM(id, data.bpm);
-        }
         if (data.noteIndex !== null && data.noteIndex !== undefined) {
-          console.log(`[lookupEverysong:${id}] setting key = noteIndex ${data.noteIndex} (${data.key}) mode=${data.mode}`);
           get().setDeckMeta(id, { baseKey: data.noteIndex, baseMode: data.mode ?? null });
         }
-      } else {
-        console.warn(`[lookupEverysong:${id}] no match found for "${artist} ${title}"`);
       }
     } catch (e) {
       console.error(`[lookupEverysong:${id}] error:`, e);
