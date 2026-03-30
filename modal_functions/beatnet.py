@@ -79,7 +79,13 @@ def detect_downbeat(item: dict) -> dict:
 
         if len(beat_times) >= 2:
             intervals = np.diff(beat_times)
-            detected_bpm = round(60.0 / float(np.median(intervals)), 3)
+            raw_bpm = 60.0 / float(np.median(intervals))
+            # Fold into 60–180 BPM range to handle 2x/0.5x detection errors
+            while raw_bpm > 180:
+                raw_bpm /= 2
+            while raw_bpm < 60:
+                raw_bpm *= 2
+            detected_bpm = round(raw_bpm, 3)
         else:
             detected_bpm = 0.0
 
