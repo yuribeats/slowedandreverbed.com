@@ -1586,7 +1586,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     // If stems aren't loaded yet, trigger separation
     if (!deck.stemBuffers) {
-      set((s) => ({ [dk]: { ...s[dk], activeStem: stem, activeStems: [stem], mixedStemBuffer: null, stemError: null } }));
+      set((s) => ({ [dk]: { ...s[dk], activeStem: stem, activeStems: [stem], mixedStemBuffer: null, stemError: null, isStemLoading: true } }));
       get().separateStems(id);
       return;
     }
