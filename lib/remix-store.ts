@@ -1584,10 +1584,12 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
 
-    // If stems aren't loaded yet, trigger separation
+    // If stems aren't loaded yet, toggle the selection and trigger separation
     if (!deck.stemBuffers) {
-      set((s) => ({ [dk]: { ...s[dk], activeStem: stem, activeStems: [stem], mixedStemBuffer: null, stemError: null, isStemLoading: true } }));
-      get().separateStems(id);
+      const current = deck.activeStems;
+      const next = current.includes(stem) ? current.filter((s) => s !== stem) : [...current, stem];
+      set((s) => ({ [dk]: { ...s[dk], activeStem: next[0] ?? null, activeStems: next, mixedStemBuffer: null, stemError: null, isStemLoading: next.length > 0 } }));
+      if (next.length > 0 && !deck.isStemLoading) get().separateStems(id);
       return;
     }
 
