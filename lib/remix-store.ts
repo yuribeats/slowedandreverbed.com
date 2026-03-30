@@ -1180,6 +1180,35 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         }
       }
 
+      // Snap targetDownbeatMs to the strongest transient within ±100ms
+      // (beat_this can be off by tens of ms — this pins to the actual kick/attack)
+      const audioBuffer = deck.sourceBuffer;
+      if (audioBuffer) {
+        const sampleRate = audioBuffer.sampleRate;
+        const hopSize = 64; // ~1.5ms at 44.1kHz
+        const windowMs = 100;
+        const windowSamples = Math.floor(windowMs / 1000 * sampleRate);
+        const centerSample = Math.max(hopSize, Math.floor(targetDownbeatMs / 1000 * sampleRate));
+        const start = Math.max(hopSize, centerSample - windowSamples);
+        const end = Math.min(audioBuffer.length - hopSize, centerSample + windowSamples);
+        const ch0 = audioBuffer.getChannelData(0);
+        const ch1 = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : null;
+        let maxOnset = -1;
+        let bestSample = centerSample;
+        for (let i = start; i < end; i += hopSize) {
+          let eCurr = 0, ePrev = 0;
+          for (let j = 0; j < hopSize; j++) {
+            const c = ch1 ? (ch0[i + j] + ch1[i + j]) * 0.5 : ch0[i + j];
+            const p = ch1 ? (ch0[i - hopSize + j] + ch1[i - hopSize + j]) * 0.5 : ch0[i - hopSize + j];
+            eCurr += c * c;
+            ePrev += p * p;
+          }
+          const onset = Math.max(0, eCurr - ePrev);
+          if (onset > maxOnset) { maxOnset = onset; bestSample = i; }
+        }
+        targetDownbeatMs = (bestSample / sampleRate) * 1000;
+      }
+
       // Set speed without affecting pitch (automatic BPM matching is tempo-only)
       const setSpeedOnly = (deckId: DeckId, speed: number) => {
         const dkId = deckKey(deckId);
