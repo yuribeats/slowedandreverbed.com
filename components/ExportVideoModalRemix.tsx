@@ -123,7 +123,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
       style={{ background: "rgba(0,0,0,0.85)" }}
       onClick={(e) => { if (e.target === e.currentTarget && !exporting) onClose(); }}
     >
-      <div className="console w-full max-w-[440px] mx-4 p-6 flex flex-col gap-4">
+      <div className="console w-full max-w-[440px] mx-4 p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <span
             className="text-sm tracking-[2px] uppercase"
