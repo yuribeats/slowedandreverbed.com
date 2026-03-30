@@ -243,6 +243,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             </button>
             <span className="text-[8px] tracking-[1px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>LOCAL</span>
           </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <button onClick={() => setShowYouTube(!showYouTube)} className="rocker-switch" style={{ width: "28px", height: "28px" }}>
+              <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+            </button>
+            <span className="text-[8px] tracking-[1px]" style={{ color: showYouTube ? "var(--accent-gold)" : "var(--text-dark)", fontFamily: "var(--font-tech)" }}>YT URL</span>
+          </div>
           {onHide && (
             <button
               onClick={onHide}
