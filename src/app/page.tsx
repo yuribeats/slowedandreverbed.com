@@ -439,14 +439,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 </button>
                 {deckMenuOpen && (
                   <div className="absolute left-0 top-full mt-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
-                    <button
-                      onClick={() => { setShowYouTube(!showYouTube); setDeckMenuOpen(false); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                      style={{ fontFamily: "var(--font-tech)", color: showYouTube ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
-                    >
-                      YOUTUBE URL
-                      <span data-tooltip-right="LOAD A TRACK FROM YOUTUBE" className="ml-3 text-[10px]">?</span>
-                    </button>
                     <div className="text-[10px] uppercase tracking-[0.2em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#666" }}>
                       STEMS {deck.isStemLoading ? "(SEPARATING...)" : deck.activeStems.length > 0 ? `(${deck.activeStems.length} ACTIVE)` : ""}
                     </div>
