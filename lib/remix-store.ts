@@ -892,6 +892,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           regionEnd: 0,
         },
       }));
+      get().detectDownbeat(id);
     } catch (err) {
       set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Failed to fetch YouTube audio" } }));
     }
@@ -914,6 +915,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const ab = await res.arrayBuffer();
       const buffer = await decodeArrayBuffer(ab);
       set((s) => ({ [dk]: { ...s[dk], sourceBuffer: buffer, isLoading: false, regionStart: 0, regionEnd: 0 } }));
+      get().detectDownbeat(id);
     } catch (err) {
       set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Load failed" } }));
     }
