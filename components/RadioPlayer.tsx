@@ -52,7 +52,7 @@ export default function RadioPlayer() {
     return (
       <div
         className="fixed bottom-0 left-0 right-0 z-[100]"
-        style={{ background: "#1a1a1a", borderTop: "1px solid #333" }}
+        style={{ background: "#f0f0f0", borderTop: "1px solid #ccc" }}
         onMouseEnter={() => setExpanded(true)}
         onClick={() => setExpanded(true)}
       >
@@ -63,17 +63,17 @@ export default function RadioPlayer() {
           onEnded={() => next()}
         />
         {/* Progress line */}
-        <div style={{ height: 2, background: "#333" }}>
-          <div style={{ width: `${pct}%`, height: "100%", background: "#fff" }} />
+        <div style={{ height: 2, background: "#ccc" }}>
+          <div style={{ width: `${pct}%`, height: "100%", background: "#3a7bd5" }} />
         </div>
         <div className="flex items-center gap-3 px-4 py-1.5">
-          <span style={{ color: isPlaying ? "#fff" : "#666", fontSize: 10, fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, letterSpacing: "0.15em" }}>
+          <span style={{ color: isPlaying ? "#111" : "#999", fontSize: 10, fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, letterSpacing: "0.15em" }}>
             {isPlaying ? "NOW PLAYING" : "PAUSED"}
           </span>
-          <span className="truncate" style={{ color: "#888", fontSize: 10, fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, letterSpacing: "0.1em", flex: 1 }}>
+          <span className="truncate" style={{ color: "#555", fontSize: 10, fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, letterSpacing: "0.1em", flex: 1 }}>
             {track.artist} — {track.title}
           </span>
-          <span style={{ color: "#555", fontSize: 10, fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700 }}>
+          <span style={{ color: "#999", fontSize: 10, fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700 }}>
             {currentIndex + 1}/{queue.length}
           </span>
         </div>
