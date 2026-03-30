@@ -61,12 +61,7 @@ export default function RadioPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Auto-play when queue loads
-  useEffect(() => {
-    if (queue.length > 0 && !playing) {
-      setPlaying(true);
-    }
-  }, [queue.length]);
+  const [started, setStarted] = useState(false);
 
   // Load and play track
   useEffect(() => {
@@ -137,6 +132,36 @@ export default function RadioPage() {
     return (
       <div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%)" }}>
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 11, color: "#666", letterSpacing: "0.15em" }}>LOADING...</span>
+      </div>
+    );
+  }
+
+  if (!started) {
+    return (
+      <div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#222" }}>
+        <div style={{
+          width: 240, height: 400, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16,
+          background: "linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%)", borderRadius: 12, boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+        }}>
+          <span style={{ fontFamily: F, fontWeight: 700, fontSize: 11, color: "#555", letterSpacing: "0.15em" }}>
+            SLOWED + REVERBED RADIO
+          </span>
+          <span style={{ fontFamily: F, fontWeight: 700, fontSize: 10, color: "#888", letterSpacing: "0.1em" }}>
+            {queue.length} TRACKS
+          </span>
+          <button
+            onClick={() => { setStarted(true); setPlaying(true); }}
+            style={{
+              width: 80, height: 80, borderRadius: "50%",
+              background: "linear-gradient(180deg, #d8d8d8 0%, #b8b8b8 100%)",
+              border: "1px solid #999", display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 28, fontFamily: F, fontWeight: 700, color: "#333",
+              boxShadow: "inset 0 2px 4px rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.2)",
+            }}
+          >
+            &gt;
+          </button>
+        </div>
       </div>
     );
   }
