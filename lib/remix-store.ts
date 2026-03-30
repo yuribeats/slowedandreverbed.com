@@ -1216,14 +1216,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const currentRate = 1.0 + getDeck(get(), id).params.speed;
       const updatedDeck = getDeck(get(), id);
 
-      // Section duration from median inter-downbeat intervals (16 bars), falls back to BPM
-      let lockedDur = updatedDeck.calculatedBPM ? 3840 / (updatedDeck.calculatedBPM * currentRate) : 0;
-      if (downbeatGrid.length >= 2) {
-        const intervals = downbeatGrid.slice(1).map((t, i) => t - downbeatGrid[i]);
-        intervals.sort((a, b) => a - b);
-        const medianBarDur = intervals[Math.floor(intervals.length / 2)];
-        if (medianBarDur > 0) lockedDur = 16 * medianBarDur / currentRate;
-      }
+      // Section duration: 4 bars from BPM (downbeat-based calculation removed — unreliable)
+      const lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
 
       set((s) => ({
         [dk]: {
