@@ -153,7 +153,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
             disabled={exporting}
             placeholder="ARTIST NAME"
             className="bg-transparent border border-[#333] px-3 py-2 text-[16px] uppercase tracking-wider"
-            style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
+            style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", outline: "none" }}
           />
         </div>
 
@@ -168,7 +168,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
             disabled={exporting}
             placeholder="TRACK TITLE"
             className="bg-transparent border border-[#333] px-3 py-2 text-[16px] uppercase tracking-wider"
-            style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
+            style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", outline: "none" }}
           />
         </div>
 
