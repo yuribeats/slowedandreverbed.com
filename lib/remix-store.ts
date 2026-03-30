@@ -103,6 +103,25 @@ interface DeckNodes {
 
 type StemType = "vocals" | "drums" | "bass" | "other" | "instrumental";
 
+function mixStemBuffers(stems: StemType[], stemBuffers: Partial<Record<StemType, AudioBuffer>>): AudioBuffer | null {
+  const bufs = stems.map((s) => stemBuffers[s]).filter((b): b is AudioBuffer => !!b);
+  if (bufs.length === 0) return null;
+  if (bufs.length === 1) return bufs[0];
+  const ctx = getAudioContext();
+  const maxLen = Math.max(...bufs.map((b) => b.length));
+  const channels = bufs[0].numberOfChannels;
+  const mixed = ctx.createBuffer(channels, maxLen, bufs[0].sampleRate);
+  for (let ch = 0; ch < channels; ch++) {
+    const out = mixed.getChannelData(ch);
+    for (const buf of bufs) {
+      if (ch >= buf.numberOfChannels) continue;
+      const src = buf.getChannelData(ch);
+      for (let i = 0; i < src.length; i++) out[i] += src[i];
+    }
+  }
+  return mixed;
+}
+
 interface BankedLoop {
   name: string;
   start: number;
@@ -137,7 +156,9 @@ interface DeckState {
   calculatedBPM: number | null;
   regionStart: number;  // seconds into source buffer
   regionEnd: number;    // seconds into source buffer (0 = full track)
-  activeStem: StemType | null;
+  activeStem: StemType | null;  // derived: first of activeStems, kept for compat
+  activeStems: StemType[];       // multiple stems can be selected
+  mixedStemBuffer: AudioBuffer | null; // mixed buffer of selected stems
   stemBuffers: Partial<Record<StemType, AudioBuffer>> | null;
   stemUrls: Partial<Record<string, string>> | null;
   isStemLoading: boolean;
@@ -182,6 +203,8 @@ const defaultDeck = (): DeckState => ({
   regionStart: 0,
   regionEnd: 0,
   activeStem: null,
+  activeStems: [],
+  mixedStemBuffer: null,
   stemBuffers: null,
   stemUrls: null,
   isStemLoading: false,
@@ -293,6 +316,7 @@ interface RemixStore {
   eject: (deck: DeckId) => void;
   setMasterBus: <K extends keyof MasterBusParams>(key: K, value: MasterBusParams[K]) => void;
   setStem: (deck: DeckId, stem: StemType | null) => void;
+  toggleStem: (deck: DeckId, stem: StemType) => void;
   separateStems: (deck: DeckId) => Promise<void>;
   setRegion: (deck: DeckId, start: number, end: number) => void;
   seek: (deck: DeckId, position: number) => Promise<void>;
@@ -651,7 +675,7 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
   ] as [DeckState, number][]) {
     if (!deck.sourceBuffer) continue;
 
-    const buf = (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
+    const buf = deck.mixedStemBuffer || (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
     const rStart = deck.regionStart;
     const rEnd = deck.regionEnd > 0 ? deck.regionEnd : buf.duration;
     const region = extractRegion(buf, rStart, rEnd);
@@ -856,7 +880,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFile: async (id, file) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, stemBuffers: null, stemError: null, sourceFile: file, sourceUrl: null, sourceAudioBytes: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceFile: file, sourceUrl: null, sourceAudioBytes: null } }));
     try {
       const audioBuffer = await decodeFile(file);
       set((s) => ({
@@ -877,7 +901,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFromYouTube: async (id, url) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, baseKey: null, baseMode: null, artist: "", title: "", activeStem: null, stemBuffers: null, stemError: null, sourceCdnUrl: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, baseKey: null, baseMode: null, artist: "", title: "", activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceCdnUrl: null } }));
     try {
       const { fetchYouTubeAudio } = await import("./rapid");
       const { buffer, title, cdnUrl } = await fetchYouTubeAudio(url);
@@ -1277,7 +1301,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     const cfGains = getCrossfaderGains(get().crossfader);
     const cfGain = id === "A" ? cfGains.a : cfGains.b;
 
-    const playBuffer = (freshDeck.activeStem && freshDeck.stemBuffers?.[freshDeck.activeStem]) || freshDeck.sourceBuffer;
+    const playBuffer = freshDeck.mixedStemBuffer || (freshDeck.activeStem && freshDeck.stemBuffers?.[freshDeck.activeStem]) || freshDeck.sourceBuffer;
 
     const rStart = freshDeck.regionStart;
     const rEnd = freshDeck.regionEnd > 0 ? freshDeck.regionEnd : playBuffer.duration;
@@ -1543,29 +1567,52 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   },
 
   setStem: (id, stem) => {
+    // Legacy single-stem set — wraps toggleStem for compat
     const dk = deckKey(id);
     const deck = getDeck(get(), id);
-
-    // Toggle off
-    if (!stem || deck.activeStem === stem) {
+    if (!stem) {
       const wasPlaying = deck.isPlaying;
       if (wasPlaying) get().pause(id);
-      set((s) => ({ [dk]: { ...s[dk], activeStem: null, stemError: null } }));
+      set((s) => ({ [dk]: { ...s[dk], activeStem: null, activeStems: [], mixedStemBuffer: null, stemError: null } }));
       if (wasPlaying) get().play(id);
       return;
     }
+    get().toggleStem(id, stem);
+  },
+
+  toggleStem: (id, stem) => {
+    const dk = deckKey(id);
+    const deck = getDeck(get(), id);
 
     // If stems aren't loaded yet, trigger separation
     if (!deck.stemBuffers) {
-      set((s) => ({ [dk]: { ...s[dk], activeStem: stem, stemError: null } }));
+      set((s) => ({ [dk]: { ...s[dk], activeStem: stem, activeStems: [stem], mixedStemBuffer: null, stemError: null } }));
       get().separateStems(id);
       return;
     }
 
-    // Switch to stem — keep current position
     const wasPlaying = deck.isPlaying;
     if (wasPlaying) get().pause(id);
-    set((s) => ({ [dk]: { ...s[dk], activeStem: stem, stemError: null } }));
+
+    const current = deck.activeStems;
+    let next: StemType[];
+    if (current.includes(stem)) {
+      next = current.filter((s) => s !== stem);
+    } else {
+      // If selecting an individual stem while "instrumental" is active (or vice versa), handle conflicts
+      if (stem === "instrumental") {
+        // "instrumental" = drums+bass+other, deselect those individuals
+        next = [...current.filter((s) => s !== "drums" && s !== "bass" && s !== "other"), stem];
+      } else if (["drums", "bass", "other"].includes(stem) && current.includes("instrumental")) {
+        // Selecting individual while instrumental is on — remove instrumental, add the individual
+        next = [...current.filter((s) => s !== "instrumental"), stem];
+      } else {
+        next = [...current, stem];
+      }
+    }
+
+    const mixed = next.length > 0 && deck.stemBuffers ? mixStemBuffers(next, deck.stemBuffers) : null;
+    set((s) => ({ [dk]: { ...s[dk], activeStem: next[0] ?? null, activeStems: next, mixedStemBuffer: mixed, stemError: null } }));
     if (wasPlaying) get().play(id);
   },
 
@@ -1653,17 +1700,18 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         if (data[name]) stemUrlMap[name] = data[name];
       }
 
-      set((s) => ({
-        [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false },
-      }));
+      // Use previously requested stems if any, otherwise default
+      const pending = getDeck(get(), id).activeStems;
+      const stemTarget: StemType[] = pending.length > 0 ? pending : [id === "A" ? "instrumental" : "vocals"];
+      const mixed = stemTarget.length > 0 ? mixStemBuffers(stemTarget, stems) : null;
 
-      // Auto-apply the correct stem: A = instrumental (vocals removed), B = vocals isolated
-      const stemTarget: StemType = id === "A" ? "instrumental" : "vocals";
-      set((s) => ({ [dk]: { ...s[dk], activeStem: stemTarget } }));
+      set((s) => ({
+        [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false, activeStem: stemTarget[0] ?? null, activeStems: stemTarget, mixedStemBuffer: mixed },
+      }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
       console.error("[stems] Error:", msg);
-      set((s) => ({ [dk]: { ...s[dk], isStemLoading: false, stemError: msg, activeStem: null } }));
+      set((s) => ({ [dk]: { ...s[dk], isStemLoading: false, stemError: msg, activeStem: null, activeStems: [], mixedStemBuffer: null } }));
     }
   },
 
@@ -1780,7 +1828,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       cfGain: number
     ): AudioBufferSourceNode[] => {
       if (!deck.sourceBuffer || trackSlots.length === 0) return [];
-      const buf = (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
+      const buf = deck.mixedStemBuffer || (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
       const expanded = expandParams(deck.params);
       const sources: AudioBufferSourceNode[] = [];
       let offset = 0;
@@ -1943,7 +1991,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // Calculate wall-clock seconds per deck: buffer region / playback rate + reverb tail
       const wallSec = (deck: DeckState): number => {
         if (!deck.sourceBuffer) return 0;
-        const buf = (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
+        const buf = deck.mixedStemBuffer || (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
         const rEnd = deck.regionEnd > 0 ? deck.regionEnd : buf.duration;
         const exp = expandParams(deck.params);
         return (rEnd - deck.regionStart) / exp.rate + exp.reverbDuration;

@@ -104,7 +104,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const setGridOffset = useRemixStore((s) => s.setGridOffset);
   const lockGridSectionDur = useRemixStore((s) => s.lockGridSectionDur);
   const detectDownbeat = useRemixStore((s) => s.detectDownbeat);
-  const setStem = useRemixStore((s) => s.setStem);
+  const toggleStem = useRemixStore((s) => s.toggleStem);
   const loadDeck = useRemixStore((s) => s.loadDeck);
   const lookupEverysong = useRemixStore((s) => s.lookupEverysong);
   const recordArmed = useRemixStore((s) => s.recordArmed);
@@ -304,7 +304,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "12px" }}
           >
             {deck.isStemLoading
-              ? deck.activeStem === "instrumental" ? "REMOVING VOCALS..." : "ISOLATING VOCALS..."
+              ? "SEPARATING STEMS..."
               : deck.downbeatDetecting
               ? "DETECTING DOWNBEAT..."
               : deck.isLoading
@@ -413,7 +413,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       <div ref={waveformWrapRef} style={{ display: "flex", flexDirection: "column" }}>
         <div>
           <WaveformDisplay
-            audioBuffer={deck.activeStem && deck.stemBuffers?.[deck.activeStem] ? deck.stemBuffers[deck.activeStem]! : deck.sourceBuffer}
+            audioBuffer={deck.mixedStemBuffer || (deck.activeStem && deck.stemBuffers?.[deck.activeStem] ? deck.stemBuffers[deck.activeStem]! : deck.sourceBuffer)}
             isPlaying={deck.isPlaying}
             pauseOffset={deck.pauseOffset}
             startedAt={deck.startedAt}
@@ -448,20 +448,20 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                       <span data-tooltip-right="LOAD A TRACK FROM YOUTUBE" className="ml-3 text-[10px]">?</span>
                     </button>
                     {([
-                      ["vocals", "VOCALS ONLY", "ISOLATE VOCALS (ML-POWERED, ~30S)"],
-                      ["instrumental", "NO VOCALS", "REMOVE VOCALS, KEEP ALL INSTRUMENTS"],
-                      ["drums", "DRUMS ONLY", "ISOLATE DRUM TRACK"],
-                      ["bass", "BASS ONLY", "ISOLATE BASS TRACK"],
-                      ["other", "OTHER ONLY", "EVERYTHING EXCEPT VOCALS, DRUMS, AND BASS"],
+                      ["vocals", "VOCALS", "TOGGLE VOCAL TRACK"],
+                      ["instrumental", "NO VOCALS", "EVERYTHING MINUS VOCALS"],
+                      ["drums", "DRUMS", "TOGGLE DRUM TRACK"],
+                      ["bass", "BASS", "TOGGLE BASS TRACK"],
+                      ["other", "OTHER", "SYNTHS, GUITARS, ETC"],
                     ] as const).map(([stem, label, tooltip]) => (
                       <button
                         key={stem}
-                        onClick={() => { setStem(id, stem); setDeckMenuOpen(false); }}
+                        onClick={() => { toggleStem(id, stem); }}
                         disabled={deck.isStemLoading}
                         className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                        style={{ fontFamily: "var(--font-tech)", color: deck.activeStem === stem ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
+                        style={{ fontFamily: "var(--font-tech)", color: deck.activeStems.includes(stem) ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
                       >
-                        {deck.isStemLoading && deck.activeStem === stem ? "SEPARATING..." : label}
+                        {deck.isStemLoading ? "SEPARATING..." : label}
                         <span data-tooltip-right={tooltip} className="ml-3 text-[10px]">?</span>
                       </button>
                     ))}
@@ -1714,6 +1714,7 @@ function HomeInner() {
         title: deck.title,
         baseKey: deck.baseKey,
         activeStem: deck.activeStem || null,
+        activeStems: deck.activeStems || [],
         stemUrls: deck.stemUrls || null,
       } : null;
 
