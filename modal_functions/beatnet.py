@@ -77,22 +77,28 @@ def detect_downbeat(item: dict) -> dict:
 
         first_downbeat_ms = round(downbeat_times[0] * 1000) if downbeat_times else round(beat_times[0] * 1000)
 
+        fold_factor = 1
         if len(beat_times) >= 2:
             intervals = np.diff(beat_times)
             raw_bpm = 60.0 / float(np.median(intervals))
-            # Fold into 60–180 BPM range to handle 2x/0.5x detection errors
+            # Fold into 60–180 BPM range; track how many times we halved
             while raw_bpm > 180:
                 raw_bpm /= 2
+                fold_factor *= 2
             while raw_bpm < 60:
                 raw_bpm *= 2
             detected_bpm = round(raw_bpm, 3)
         else:
             detected_bpm = 0.0
 
+        # Thin downbeats by fold_factor so grid spacing matches folded BPM
+        thinned_downbeats = downbeat_times[::fold_factor]
+        thinned_beats = beat_times[::fold_factor]
+
         return {
             "first_downbeat_ms": first_downbeat_ms,
-            "downbeats_ms":      [round(t * 1000) for t in downbeat_times[:50]],
-            "beats_ms":          [round(t * 1000) for t in beat_times[:200]],
+            "downbeats_ms":      [round(t * 1000) for t in thinned_downbeats[:50]],
+            "beats_ms":          [round(t * 1000) for t in thinned_beats[:200]],
             "bpm":               detected_bpm,
         }
 
