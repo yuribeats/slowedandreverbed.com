@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useRadioStore, RadioTrack } from "../../../lib/radio-store";
 
 interface GalleryItem {
   id: string;
@@ -65,6 +66,10 @@ function GalleryContent() {
   const [allFiles, setAllFiles] = useState<PinataFile[]>([]);
   const [allFilesLoading, setAllFilesLoading] = useState(false);
   const [showAllFiles, setShowAllFiles] = useState(false);
+  const radioPlay = useRadioStore((s) => s.play);
+  const radioPlayAll = useRadioStore((s) => s.playAll);
+  const radioTrack = useRadioStore((s) => s.queue[s.currentIndex]);
+  const radioPlaying = useRadioStore((s) => s.isPlaying);
 
   useEffect(() => {
     fetch("/api/gallery")
@@ -224,6 +229,17 @@ function GalleryContent() {
             >
               YOUTUBE
             </a>
+            <button
+              onClick={() => {
+                const tracks: RadioTrack[] = items.map((i) => ({ id: i.id, url: i.url, artist: i.artist, title: i.title }));
+                if (tracks.length > 0) radioPlayAll(tracks);
+              }}
+              disabled={items.length === 0}
+              className="text-[9px] uppercase tracking-wider border-2 border-black px-2 py-1"
+              style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: items.length === 0 ? 0.3 : 1 }}
+            >
+              RADIO
+            </button>
             <div className="ml-auto flex gap-2">
               {isAdmin && (
                 <button
@@ -239,7 +255,7 @@ function GalleryContent() {
                 className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
                 style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
               >
-                BACK
+                THE SLOWED AND REVERBED MACHINE
               </Link>
             </div>
           </div>
@@ -422,25 +438,37 @@ function GalleryContent() {
                     style={{ background: "#000" }}
                     onError={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
                   />
-                  <div className="flex flex-col gap-0.5">
-                    <span
-                      className="text-[13px] uppercase tracking-wider truncate"
-                      style={textStyle}
+                  <div className="flex items-start gap-2">
+                    <button
+                      onClick={() => {
+                        const queue: RadioTrack[] = items.map((i) => ({ id: i.id, url: i.url, artist: i.artist, title: i.title }));
+                        radioPlay({ id: item.id, url: item.url, artist: item.artist, title: item.title }, queue);
+                      }}
+                      className="shrink-0 w-8 h-8 flex items-center justify-center border-2 border-black text-[12px]"
+                      style={{ ...textStyle, fontSize: "12px", background: radioTrack?.id === item.id && radioPlaying ? "#000" : "transparent", color: radioTrack?.id === item.id && radioPlaying ? "#fff" : "#000" }}
                     >
-                      {item.artist}
-                    </span>
-                    <span
-                      className="text-[11px] uppercase tracking-wider truncate"
-                      style={{ ...textStyle, opacity: 0.7 }}
-                    >
-                      {item.title}
-                    </span>
-                    <span
-                      className="text-[9px] uppercase tracking-wider"
-                      style={{ ...textStyle, opacity: 0.4 }}
-                    >
-                      {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
-                    </span>
+                      {radioTrack?.id === item.id && radioPlaying ? "||" : ">>"}
+                    </button>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span
+                        className="text-[13px] uppercase tracking-wider truncate"
+                        style={textStyle}
+                      >
+                        {item.artist}
+                      </span>
+                      <span
+                        className="text-[11px] uppercase tracking-wider truncate"
+                        style={{ ...textStyle, opacity: 0.7 }}
+                      >
+                        {item.title}
+                      </span>
+                      <span
+                        className="text-[9px] uppercase tracking-wider"
+                        style={{ ...textStyle, opacity: 0.4 }}
+                      >
+                        {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                   {isAdmin && (
                     <div className="mt-1 flex gap-2 flex-wrap">
