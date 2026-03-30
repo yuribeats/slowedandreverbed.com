@@ -302,6 +302,47 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       </div>
 
+      {/* YouTube URL input */}
+      {showYouTube && (
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            value={ytUrl}
+            onChange={(e) => setYtUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && ytUrl.trim()) {
+                const url = ytUrl.trim();
+                setYtUrl("");
+                const ctx = getAudioContext();
+                ctx.resume().then(async () => {
+                  await loadFromYouTube(id, url);
+                });
+              }
+            }}
+            placeholder="PASTE YOUTUBE URL"
+            disabled={deck.isLoading}
+            className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider placeholder:text-black"
+            style={{ fontFamily: "var(--font-tech)", color: "#000", outline: "none" }}
+          />
+          <button
+            onClick={() => {
+              if (!ytUrl.trim()) return;
+              const url = ytUrl.trim();
+              setYtUrl("");
+              const ctx = getAudioContext();
+              ctx.resume().then(async () => {
+                await loadFromYouTube(id, url);
+              });
+            }}
+            disabled={deck.isLoading || !ytUrl.trim()}
+            className="border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider disabled:opacity-30"
+            style={{ fontFamily: "var(--font-tech)", color: "#000", background: "transparent" }}
+          >
+            {deck.isLoading ? "LOADING..." : "GO"}
+          </button>
+        </div>
+      )}
+
       {/* CRT status */}
       <div className="display-bezel flex flex-col gap-2 p-3">
         <div className="flex items-center justify-between">
@@ -849,47 +890,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           </button>
         </div>
       </div>
-
-      {/* YouTube URL input */}
-      {showYouTube && (
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            value={ytUrl}
-            onChange={(e) => setYtUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && ytUrl.trim()) {
-                const url = ytUrl.trim();
-                setYtUrl("");
-                const ctx = getAudioContext();
-                ctx.resume().then(async () => {
-                  await loadFromYouTube(id, url);
-                });
-              }
-            }}
-            placeholder="PASTE YOUTUBE URL"
-            disabled={deck.isLoading}
-            className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider placeholder:text-black"
-            style={{ fontFamily: "var(--font-tech)", color: "#000", outline: "none" }}
-          />
-          <button
-            onClick={() => {
-              if (!ytUrl.trim()) return;
-              const url = ytUrl.trim();
-              setYtUrl("");
-              const ctx = getAudioContext();
-              ctx.resume().then(async () => {
-                await loadFromYouTube(id, url);
-              });
-            }}
-            disabled={deck.isLoading || !ytUrl.trim()}
-            className="border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider disabled:opacity-30"
-            style={{ fontFamily: "var(--font-tech)", color: "#000", background: "transparent" }}
-          >
-            {deck.isLoading ? "LOADING..." : "GO"}
-          </button>
-        </div>
-      )}
       {deck.error && (
         <div className="text-[12px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
           {deck.error}
