@@ -248,8 +248,8 @@ export default function WaveformDisplay({
 
     // Detected downbeat markers (green, full height)
     if (downbeatMarkers && downbeatMarkers.length > 0) {
-      ctx.strokeStyle = "#228B22";
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(34, 139, 34, 0.35)";
+      ctx.lineWidth = 1;
       for (const t of downbeatMarkers) {
         const dx = timeToX(t);
         if (dx >= -1 && dx <= w + 1) {
