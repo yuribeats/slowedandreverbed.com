@@ -779,7 +779,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           )}
           {deck.stemError && (
             <span className="text-[12px]" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
-              {deck.stemError.toUpperCase()}
+              {deck.stemError.replace(/<[^>]*>/g, "").slice(0, 60).toUpperCase()}
             </span>
           )}
         </div>

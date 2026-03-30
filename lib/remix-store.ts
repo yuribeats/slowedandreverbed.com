@@ -1149,8 +1149,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        return fail(`/api/downbeat HTTP ${res.status}: ${errText}`);
+        return fail(`Downbeat service unavailable (HTTP ${res.status})`);
       }
 
       const data = await res.json();

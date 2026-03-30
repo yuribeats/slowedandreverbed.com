@@ -98,8 +98,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!predRes.ok) {
-      const text = await predRes.text();
-      return NextResponse.json({ error: `Prediction failed: ${text}` }, { status: 502 });
+      return NextResponse.json({ error: `Replicate unavailable (HTTP ${predRes.status})` }, { status: 502 });
     }
 
     let prediction = await predRes.json();
@@ -117,6 +116,7 @@ export async function POST(req: NextRequest) {
       const pollRes = await fetch(pollUrl, {
         headers: { Authorization: `Bearer ${REPLICATE_TOKEN}` },
       });
+      if (!pollRes.ok) continue;
       prediction = await pollRes.json();
     }
 
