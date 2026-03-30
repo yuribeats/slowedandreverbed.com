@@ -56,7 +56,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const setParam = useRemixStore((s) => s.setParam);
   const setVolume = useRemixStore((s) => s.setVolume);
   const eject = useRemixStore((s) => s.eject);
-  const setStem = useRemixStore((s) => s.setStem);
+
   const setRegion = useRemixStore((s) => s.setRegion);
   const seek = useRemixStore((s) => s.seek);
   const scrub = useRemixStore((s) => s.scrub);
@@ -73,6 +73,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [showKeyFinder, setShowKeyFinder] = useState(false);
 
   const rate = 1.0 + deck.params.speed;
+  const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
+  const loadPct = Math.round(
+    ((!deck.isLoading ? 1 : 0) + (!deck.downbeatDetecting ? 1 : 0) + (!deck.isStemLoading ? 1 : 0)) / 3 * 100
+  );
   const pitchSemitones = deck.params.pitch ?? 0;
   const linked = deck.params.pitchSpeedLinked ?? true;
   const speedSemitones = 12 * Math.log2(rate);
@@ -83,7 +87,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const expanded = expandParams(deck.params);
   const [ytUrl, setYtUrl] = useState("");
   const [loopEnabled, setLoopEnabled] = useState(false);
-  const [autoStem, setAutoStem] = useState(true);
   const baseKey = deck.baseKey;
   const baseMode = deck.baseMode;
   const [editingKey, setEditingKey] = useState(false);
@@ -112,13 +115,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     setDeckLoading(true);
     setDeckLoadError("");
     try {
-      await loadDeck(id, deckArtist, deckTitle, { autoStem });
+      await loadDeck(id, deckArtist, deckTitle);
     } catch (e) {
       setDeckLoadError(e instanceof Error ? e.message : "LOAD FAILED");
       setTimeout(() => setDeckLoadError(""), 4000);
     }
     setDeckLoading(false);
-  }, [loadDeck, id, deckArtist, deckTitle, autoStem]);
+  }, [loadDeck, id, deckArtist, deckTitle]);
 
   // Reset local input state when source changes (store already resets BPM/key at load start)
   const sourceId = deck.sourceBuffer ? deck.sourceFilename : null;
@@ -185,14 +188,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       const file = e.target.files?.[0];
       if (file) {
         await loadFile(id, file);
-        if (autoStem) {
-          const stemTarget = id === "A" ? "instrumental" : "vocals";
-          setStem(id, stemTarget);
-        }
       }
       if (inputRef.current) inputRef.current.value = "";
     },
-    [loadFile, setStem, id, autoStem]
+    [loadFile, id]
   );
 
   const handleStart = useCallback(async () => {
@@ -226,17 +225,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           >
             {id === "A" ? "INSTRUMENTAL" : "ACAPELLA"}
           </span>
-          <div className="flex items-center gap-1" style={{ opacity: 0.55 }}>
-            <div className="led-cutout" onClick={() => setAutoStem(v => !v)} style={{ cursor: "default" }}>
-              <div className={`led-rect ${autoStem ? "led-green-on" : "led-green"}`} style={{ width: 10, height: 8 }} />
-            </div>
-            <span
-              className="text-[8px] tracking-[1px] uppercase"
-              style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}
-            >
-              {id === "A" ? "AUTOMATICALLY REMOVES VOCALS" : "AUTOMATICALLY ISOLATES VOCALS"}
-            </span>
-          </div>
+          <span
+            className="text-[8px] tracking-[1px] uppercase"
+            style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.55 }}
+          >
+            {id === "A" ? "AUTOMATICALLY REMOVES VOCALS" : "AUTOMATICALLY ISOLATES VOCALS"}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex flex-col items-center gap-0.5">
@@ -801,7 +795,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 const ctx = getAudioContext();
                 ctx.resume().then(async () => {
                   await loadFromYouTube(id, url);
-                  if (autoStem) setStem(id, id === "A" ? "instrumental" : "vocals");
                 });
               }
             }}
@@ -818,7 +811,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               const ctx = getAudioContext();
               ctx.resume().then(async () => {
                 await loadFromYouTube(id, url);
-                if (autoStem) setStem(id, id === "A" ? "instrumental" : "vocals");
               });
             }}
             disabled={deck.isLoading || !ytUrl.trim()}
@@ -836,7 +828,19 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       )}
 
       {/* All controls: Speed/Pitch/Vol on top, Reverb/Tone/Sat below */}
-      <div className="zone-engraved">
+      <div className="zone-engraved" style={{ position: "relative" }}>
+        {isTrackLoading && (
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 10,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(196,184,154,0.92)",
+            pointerEvents: "all",
+          }}>
+            <span style={{ fontFamily: "var(--font-tech)", fontSize: "13px", letterSpacing: "3px", fontWeight: "bold", color: "#000" }}>
+              LOADING {loadPct}%
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-6 gap-2" style={{ justifyItems: "center" }}>
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">

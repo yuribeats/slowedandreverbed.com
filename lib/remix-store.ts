@@ -893,6 +893,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         },
       }));
       get().detectDownbeat(id);
+      get().separateStems(id);
     } catch (err) {
       set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Failed to fetch YouTube audio" } }));
     }
@@ -916,6 +917,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const buffer = await decodeArrayBuffer(ab);
       set((s) => ({ [dk]: { ...s[dk], sourceBuffer: buffer, isLoading: false, regionStart: 0, regionEnd: 0 } }));
       get().detectDownbeat(id);
+      get().separateStems(id);
     } catch (err) {
       set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Load failed" } }));
     }
@@ -1664,11 +1666,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false },
       }));
 
-      // Restart playback with the selected stem
-      const freshDeck = getDeck(get(), id);
-      if (freshDeck.activeStem) {
-        get().play(id);
-      }
+      // Auto-apply the correct stem: A = instrumental (vocals removed), B = vocals isolated
+      const stemTarget: StemType = id === "A" ? "instrumental" : "vocals";
+      get().setStem(id, stemTarget);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
       console.error("[stems] Error:", msg);
