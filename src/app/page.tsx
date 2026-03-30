@@ -447,24 +447,30 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                       YOUTUBE URL
                       <span data-tooltip-right="LOAD A TRACK FROM YOUTUBE" className="ml-3 text-[10px]">?</span>
                     </button>
+                    <div className="text-[10px] uppercase tracking-[0.2em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#666" }}>
+                      STEMS {deck.isStemLoading ? "(SEPARATING...)" : deck.activeStems.length > 0 ? `(${deck.activeStems.length} ACTIVE)` : ""}
+                    </div>
                     {([
-                      ["vocals", "VOCALS", "TOGGLE VOCAL TRACK"],
-                      ["instrumental", "NO VOCALS", "EVERYTHING MINUS VOCALS"],
-                      ["drums", "DRUMS", "TOGGLE DRUM TRACK"],
-                      ["bass", "BASS", "TOGGLE BASS TRACK"],
-                      ["other", "OTHER", "SYNTHS, GUITARS, ETC"],
-                    ] as const).map(([stem, label, tooltip]) => (
-                      <button
-                        key={stem}
-                        onClick={() => { toggleStem(id, stem); }}
-                        disabled={deck.isStemLoading}
-                        className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                        style={{ fontFamily: "var(--font-tech)", color: deck.activeStems.includes(stem) ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
-                      >
-                        {deck.isStemLoading ? "SEPARATING..." : label}
-                        <span data-tooltip-right={tooltip} className="ml-3 text-[10px]">?</span>
-                      </button>
-                    ))}
+                      ["vocals", "VOCALS"],
+                      ["drums", "DRUMS"],
+                      ["bass", "BASS"],
+                      ["other", "OTHER"],
+                      ["instrumental", "INSTRUMENTAL"],
+                    ] as const).map(([stem, label]) => {
+                      const active = deck.activeStems.includes(stem);
+                      return (
+                        <button
+                          key={stem}
+                          onClick={() => { toggleStem(id, stem); }}
+                          disabled={deck.isStemLoading}
+                          className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center gap-3"
+                          style={{ fontFamily: "var(--font-tech)", color: active ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
+                        >
+                          <span style={{ width: 14, textAlign: "center", fontSize: "14px" }}>{active ? "X" : "-"}</span>
+                          {label}
+                        </button>
+                      );
+                    })}
                     <button
                       onClick={() => { detectDownbeat(id); setDeckMenuOpen(false); }}
                       disabled={!deck.sourceBuffer || deck.downbeatDetecting}
