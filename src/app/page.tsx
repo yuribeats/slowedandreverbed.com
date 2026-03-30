@@ -499,7 +499,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         const dur = deck.sourceBuffer!.duration;
         const inVal = deck.regionStart;
         const outVal = deck.regionEnd > 0 ? deck.regionEnd : dur;
-        const rawSectionCount = Math.round((outVal - inVal) / sectionDur);
+        const rawSectionCount = Math.floor((outVal - inVal) / sectionDur + 0.01);
         // Cap to other deck's section count when both have active regions
         let sectionCount = rawSectionCount;
         if (otherDeck.sourceBuffer && otherDeck.gridlockEnabled && otherDeck.gridLockedSectionDur > 0) {
@@ -507,7 +507,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           const otherDur = otherDeck.sourceBuffer.duration;
           const otherIn = otherDeck.regionStart;
           const otherOut = otherDeck.regionEnd > 0 ? otherDeck.regionEnd : otherDur;
-          const otherCount = Math.round((otherOut - otherIn) / otherSectionDur);
+          const otherCount = Math.floor((otherOut - otherIn) / otherSectionDur + 0.01);
           if (otherCount > 0) sectionCount = Math.min(rawSectionCount, otherCount);
         }
         const sectionDurMs = (sectionDurWallClock * 1000).toFixed(0);
