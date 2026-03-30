@@ -1083,7 +1083,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     get().setDeckMeta(id, { artist, title });
   },
 
-  loadDeck: async (id, artist, title, opts) => {
+  loadDeck: async (id, artist, title) => {
     const searchQuery = `${artist} ${title}`;
     console.log(`[loadDeck:${id}] starting — searching YouTube for "${searchQuery}"`);
 
@@ -1111,21 +1111,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     } catch (e) {
       console.error(`[loadDeck:${id}] load failed:`, e);
       throw e;
-    }
-
-    if (opts?.autoStem !== false) {
-      const stemTarget: StemType = id === "A" ? "instrumental" : "vocals";
-      console.log(`[loadDeck:${id}] starting stem isolation → ${stemTarget}`);
-      try {
-        await get().separateStems(id);
-        get().setStem(id, stemTarget);
-        console.log(`[loadDeck:${id}] ${stemTarget} stem active`);
-      } catch (e) {
-        console.error(`[loadDeck:${id}] stem separation failed:`, e);
-        throw e;
-      }
-    } else {
-      console.log(`[loadDeck:${id}] autoStem disabled — skipping stem separation`);
     }
 
     console.log(`[loadDeck:${id}] complete`);
@@ -1231,13 +1216,13 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const currentRate = 1.0 + getDeck(get(), id).params.speed;
       const updatedDeck = getDeck(get(), id);
 
-      // Section duration from median inter-downbeat intervals (4 bars), falls back to BPM
-      let lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
+      // Section duration from median inter-downbeat intervals (16 bars), falls back to BPM
+      let lockedDur = updatedDeck.calculatedBPM ? 3840 / (updatedDeck.calculatedBPM * currentRate) : 0;
       if (downbeatGrid.length >= 2) {
         const intervals = downbeatGrid.slice(1).map((t, i) => t - downbeatGrid[i]);
         intervals.sort((a, b) => a - b);
         const medianBarDur = intervals[Math.floor(intervals.length / 2)];
-        if (medianBarDur > 0) lockedDur = 4 * medianBarDur / currentRate;
+        if (medianBarDur > 0) lockedDur = 16 * medianBarDur / currentRate;
       }
 
       set((s) => ({
@@ -1668,7 +1653,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
       // Auto-apply the correct stem: A = instrumental (vocals removed), B = vocals isolated
       const stemTarget: StemType = id === "A" ? "instrumental" : "vocals";
-      get().setStem(id, stemTarget);
+      set((s) => ({ [dk]: { ...s[dk], activeStem: stemTarget } }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
       console.error("[stems] Error:", msg);
