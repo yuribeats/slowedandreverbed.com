@@ -32,6 +32,9 @@ export default function RadioPage() {
 
   const track = queue.length > 0 ? queue[idx] : null;
 
+  const hasHandoff = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("id");
+  const [started, setStarted] = useState(hasHandoff);
+
   // Fetch gallery, shuffle, and optionally resume from URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -47,12 +50,12 @@ export default function RadioPage() {
         if (startId) {
           const startIdx = items.findIndex((t) => t.id === startId);
           if (startIdx >= 0) {
-            // Put the starting track first, shuffle the rest
             const rest = [...items.slice(0, startIdx), ...items.slice(startIdx + 1)];
             setQueue([items[startIdx], ...shuffle(rest)]);
           } else {
             setQueue(shuffle(items));
           }
+          setPlaying(true);
         } else {
           setQueue(shuffle(items));
         }
@@ -60,8 +63,6 @@ export default function RadioPage() {
       })
       .catch(() => setLoading(false));
   }, []);
-
-  const [started, setStarted] = useState(false);
 
   // Load and play track
   useEffect(() => {
