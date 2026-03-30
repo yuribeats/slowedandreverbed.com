@@ -1461,7 +1461,7 @@ function Manual({ onClose }: { onClose: () => void }) {
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>TWO DECKS</div>
-            <div>STARTS WITH ONE DECK. HIT ADD A SECOND DECK TO SHOW DECK B. CLICK HIDE ON DECK B TO COLLAPSE BACK TO SINGLE DECK. SYNC CONTROLS AND CROSSFADER ONLY APPEAR WHEN BOTH DECKS ARE VISIBLE.</div>
+            <div>DECK A AND DECK B ARE ALWAYS VISIBLE. EACH DECK HAS ITS OWN ARTIST/TITLE INPUTS, LOAD BUTTON, AND FULL INDEPENDENT EFFECTS CHAIN. SYNC CONTROLS AND CROSSFADER APPEAR BELOW THE DECKS.</div>
           </div>
 
           <div>
@@ -1497,7 +1497,7 @@ function Manual({ onClose }: { onClose: () => void }) {
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>LOOP FINE-TUNE</div>
-            <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE LOOP BOUNDARIES. STEP SIZE SLIDER ADJUSTS FROM 0.1MS TO 1S (LOGARITHMIC).</div>
+            <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE LOOP BOUNDARIES. STEP SIZE SLIDER ADJUSTS FROM 10MS TO 1S.</div>
           </div>
 
           <div>
@@ -1512,13 +1512,13 @@ function Manual({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>RECORDING</div>
-            <div>ARM THE REC BUTTON. RECORDING STARTS ON SYNC START AND CAPTURES THE LIVE MIX. WHEN DECK A STOPS, RECORDING ENDS AND THE EXPORT MODAL OPENS AUTOMATICALLY.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>LIVE RECORDING</div>
+            <div>CLICK LIVE RECORDING TO ARM. RECORDING CAPTURES THE LIVE MIX WHEN BOTH DECKS PLAY. CLICK AGAIN TO STOP. THE RECORDING CAN BE DOWNLOADED AS WAV OR EXPORTED AS MP4.</div>
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>EXPORT</div>
-            <div className="mb-1">HIT EXPORT IN THE HEADER TO RENDER DECK A WITH ALL EFFECTS APPLIED. ENTER ARTIST AND TITLE. THE VIDEO IS GENERATED WITH COVER ART AND STORED ON PINATA. DOWNLOADS AUTOMATICALLY.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>EXPORT MP4</div>
+            <div className="mb-1">OPEN THE MENU AND HIT EXPORT MP4. RENDERS THE MIX WITH ALL EFFECTS APPLIED. ENTER ARTIST AND TITLE. A VIDEO IS GENERATED WITH COVER ART AND STORED ON PINATA. DOWNLOADS AUTOMATICALLY.</div>
             <div>ALL EXPORTS ARE SAVED TO THE GALLERY.</div>
           </div>
 
@@ -1530,18 +1530,16 @@ function Manual({ onClose }: { onClose: () => void }) {
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>GRIDLOCK</div>
-            <div>TOGGLE FROM TOOLS MENU. OVERLAYS RED GRID LINES EVERY 4 BARS BASED ON BPM. ALIGN SLIDER SHIFTS ALL LINES UNIFORMLY. GRID IN/OUT ARROWS SNAP REGION TO GRID LINES. OUTPUT TO MPC SENDS GRID SECTIONS TO THE STUDIO MPC. THE LAST MPC PAD IS ALWAYS THE FULL LOOP FROM IN TO OUT.</div>
+            <div className="mb-1">TOGGLE FROM TOOLS MENU. OVERLAYS RED GRID LINES EVERY 4 BARS BASED ON BPM. ALIGN SLIDER SHIFTS ALL LINES UNIFORMLY. GRID IN/OUT ARROWS SNAP REGION TO GRID LINES.</div>
+            <div className="mb-1">BEAT/BAR NUDGE BUTTONS SHIFT THE GRID BY ONE BEAT OR ONE BAR AT A TIME.</div>
+            <div className="mb-1">÷4 BEAT: SUBDIVIDES GRID TO SHOW LINES EVERY BAR INSTEAD OF EVERY 4 BARS.</div>
+            <div>ALL BEATS: TOGGLES GREEN DOWNBEAT MARKERS ON EVERY BEAT ACROSS THE WAVEFORM.</div>
           </div>
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>GALLERY + RADIO</div>
             <div className="mb-1">ALL EXPORTS ARE SAVED TO THE GALLERY. ACCESS IT FROM THE MENU.</div>
             <div>HIT RADIO IN THE GALLERY TO OPEN THE SLOWED + REVERBED RADIO — AN IPOD-STYLE PLAYER THAT SHUFFLES THROUGH ALL YOUR EXPORTS. SUPPORTS IOS LOCK SCREEN PLAYBACK.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>DOWNBEAT MARKERS</div>
-            <div className="mb-1">GREEN LINES ON THE WAVEFORM SHOW DETECTED DOWNBEATS (EVERY 4TH BY DEFAULT). TOGGLE ALL BEATS ON FROM THE GRIDLOCK SECTION TO SEE EVERY BEAT.</div>
           </div>
 
           <div>
