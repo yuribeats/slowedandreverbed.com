@@ -48,6 +48,7 @@ const detailBtnStyle: React.CSSProperties = { fontFamily: "var(--font-tech)", co
 
 function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const deck = useRemixStore((s) => (id === "A" ? s.deckA : s.deckB));
+  const otherDeck = useRemixStore((s) => (id === "A" ? s.deckB : s.deckA));
   const loadFile = useRemixStore((s) => s.loadFile);
   const loadFromYouTube = useRemixStore((s) => s.loadFromYouTube);
   const play = useRemixStore((s) => s.play);
@@ -496,7 +497,17 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         const dur = deck.sourceBuffer!.duration;
         const inVal = deck.regionStart;
         const outVal = deck.regionEnd > 0 ? deck.regionEnd : dur;
-        const sectionCount = Math.round((outVal - inVal) / sectionDur);
+        const rawSectionCount = Math.round((outVal - inVal) / sectionDur);
+        // Cap to other deck's section count when both have active regions
+        let sectionCount = rawSectionCount;
+        if (otherDeck.sourceBuffer && otherDeck.gridlockEnabled && otherDeck.gridLockedSectionDur > 0) {
+          const otherSectionDur = otherDeck.gridLockedSectionDur / (otherDeck.gridSubdivide ? 4 : 1);
+          const otherDur = otherDeck.sourceBuffer.duration;
+          const otherIn = otherDeck.regionStart;
+          const otherOut = otherDeck.regionEnd > 0 ? otherDeck.regionEnd : otherDur;
+          const otherCount = Math.round((otherOut - otherIn) / otherSectionDur);
+          if (otherCount > 0) sectionCount = Math.min(rawSectionCount, otherCount);
+        }
         const sectionDurMs = (sectionDurWallClock * 1000).toFixed(0);
 
         const snapGridIn = (dir: number) => {
