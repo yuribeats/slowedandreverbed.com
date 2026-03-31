@@ -1719,14 +1719,13 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // Re-snap in-point using vocal stem — vocals starting = where the song really begins
       const vocalBuf = stems.vocals;
       const updatedDeck = getDeck(get(), id);
+      console.log(`[stems] vocal re-snap check: vocalBuf=${!!vocalBuf}, downbeatGrid=${updatedDeck.downbeatGrid?.length ?? "null"}, regionStart=${updatedDeck.regionStart.toFixed(3)}`);
       if (vocalBuf && updatedDeck.downbeatGrid && updatedDeck.downbeatGrid.length > 0) {
         const downbeatsMs = updatedDeck.downbeatGrid.map((s) => s * 1000);
         const vocalInMs = findFirstLoudDownbeat(downbeatsMs, vocalBuf);
         const vocalInSec = vocalInMs / 1000;
         console.log(`[stems] vocal in-point: ${vocalInSec.toFixed(3)}s (was ${updatedDeck.regionStart.toFixed(3)}s)`);
-        if (vocalInSec > updatedDeck.regionStart) {
-          get().setRegion(id, vocalInSec, 0);
-        }
+        get().setRegion(id, vocalInSec, 0);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
