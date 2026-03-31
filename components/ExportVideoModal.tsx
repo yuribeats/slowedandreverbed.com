@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { generateCover } from "../lib/cover-generator";
 import { useStore } from "../lib/store";
 import { expandParams, renderOffline, encodeWAV } from "@yuribeats/audio-utils";
@@ -32,6 +32,7 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("");
   const [exporting, setExporting] = useState(false);
+  const pointerDownOnBackdrop = useRef(false);
   const sourceBuffer = useStore((s) => s.sourceBuffer);
   const sourceFilename = useStore((s) => s.sourceFilename);
   const params = useStore((s) => s.params);
@@ -138,9 +139,10 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.85)" }}
-      onClick={(e) => { if (e.target === e.currentTarget && !exporting) onClose(); }}
+      onPointerDown={(e) => { pointerDownOnBackdrop.current = e.target === e.currentTarget; }}
+      onClick={(e) => { if (pointerDownOnBackdrop.current && e.target === e.currentTarget && !exporting) onClose(); }}
     >
-      <div className="console w-full max-w-[440px] mx-4 p-6 flex flex-col gap-4">
+      <div className="console w-full max-w-[440px] mx-4 p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <span
             className="text-sm tracking-[2px] uppercase"

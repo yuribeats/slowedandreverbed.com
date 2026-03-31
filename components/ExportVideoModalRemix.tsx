@@ -47,6 +47,8 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
   const [customImageName, setCustomImageName] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  const pointerDownOnBackdrop = useRef(false);
+
   const progress = step < 0 ? 0 : Math.min(((step + 1) / STEPS.length) * 100, 100);
   const status = step >= 0 && step < STEPS.length ? STEPS[step] : "";
 
@@ -121,7 +123,8 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.85)" }}
-      onClick={(e) => { if (e.target === e.currentTarget && !exporting) onClose(); }}
+      onPointerDown={(e) => { pointerDownOnBackdrop.current = e.target === e.currentTarget; }}
+      onClick={(e) => { if (pointerDownOnBackdrop.current && e.target === e.currentTarget && !exporting) onClose(); }}
     >
       <div className="console w-full max-w-[440px] mx-4 p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
