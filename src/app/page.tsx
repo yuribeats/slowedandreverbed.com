@@ -135,12 +135,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     if (deck.title) setDeckTitle(deck.title);
   }, [deck.artist, deck.title]);
 
-  // Lock grid section duration when BPM is set while GRIDLOCK is enabled
-  useEffect(() => {
-    if (deck.gridlockEnabled && deck.calculatedBPM && deck.gridLockedSectionDur <= 0) {
-      lockGridSectionDur(id);
-    }
-  }, [deck.gridlockEnabled, deck.calculatedBPM, deck.gridLockedSectionDur, lockGridSectionDur, id]);
 
   const handleSpeed = (v: number) => {
     if (linked) {
