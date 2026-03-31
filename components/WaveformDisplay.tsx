@@ -20,11 +20,6 @@ interface Props {
   precomputedPeaks?: Float32Array | null;
   precomputedDuration?: number;
   perfStartedAt?: number; // performance.now()-based start time
-  gridEnabled?: boolean;
-  gridSectionDur?: number; // seconds between grid lines (locked at toggle-on)
-  gridAnchor?: number;
-  downbeatMarkers?: number[]; // detected downbeat positions in seconds
-  showAllBeats?: boolean; // when true, draw every downbeat; when false, every 4th
 }
 
 function computePeaks(buffer: AudioBuffer, numBars: number): Float32Array {
@@ -80,11 +75,6 @@ export default function WaveformDisplay({
   precomputedPeaks,
   precomputedDuration,
   perfStartedAt,
-  gridEnabled,
-  gridSectionDur,
-  gridAnchor,
-  downbeatMarkers,
-  showAllBeats,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const peaksRef = useRef<Float32Array | null>(null);
@@ -228,42 +218,6 @@ export default function WaveformDisplay({
     ctx.lineTo(w, midY);
     ctx.stroke();
 
-    // Detected downbeat markers (green)
-    if (downbeatMarkers && downbeatMarkers.length > 0) {
-      const step = showAllBeats ? 1 : 4;
-      ctx.strokeStyle = "rgba(34, 139, 34, 0.3)";
-      ctx.lineWidth = 1;
-      for (let i = 0; i < downbeatMarkers.length; i += step) {
-        const dx = timeToX(downbeatMarkers[i]);
-        if (dx >= -1 && dx <= w + 1) {
-          ctx.beginPath();
-          ctx.moveTo(dx, 0);
-          ctx.lineTo(dx, waveH);
-          ctx.stroke();
-        }
-      }
-    }
-
-    // Grid lines (GRIDLOCK) — drawn on top of downbeat markers
-    if (gridEnabled && gridSectionDur && gridSectionDur > 0.01 && gridAnchor != null) {
-      const sectionDur = gridSectionDur;
-      ctx.strokeStyle = "#c82828";
-      ctx.lineWidth = 1;
-      const anchor = gridAnchor;
-      const firstN = Math.floor((viewStart - anchor) / sectionDur);
-      const lastN = Math.ceil((viewEnd - anchor) / sectionDur);
-      for (let n = firstN; n <= lastN; n++) {
-        const gt = anchor + n * sectionDur;
-        const gx = timeToX(gt);
-        if (gx >= -1 && gx <= w + 1) {
-          ctx.beginPath();
-          ctx.moveTo(gx, 0);
-          ctx.lineTo(gx, waveH);
-          ctx.stroke();
-        }
-      }
-    }
-
     // Region handles
     const handleSize = 12;
     const rsX = timeToX(effectiveStart);
@@ -403,7 +357,7 @@ export default function WaveformDisplay({
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, gridEnabled, gridSectionDur, gridAnchor, downbeatMarkers, showAllBeats]);
+  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime]);
 
   // Animation loop — only useEffect controls scheduling, draw never self-schedules
   useEffect(() => {

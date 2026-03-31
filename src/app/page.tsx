@@ -49,7 +49,6 @@ const detailBtnStyle: React.CSSProperties = { fontFamily: "var(--font-tech)", co
 
 function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const deck = useRemixStore((s) => (id === "A" ? s.deckA : s.deckB));
-  const otherDeck = useRemixStore((s) => (id === "A" ? s.deckB : s.deckA));
   const loadFile = useRemixStore((s) => s.loadFile);
   const loadFromYouTube = useRemixStore((s) => s.loadFromYouTube);
   const play = useRemixStore((s) => s.play);
@@ -98,11 +97,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [speedInput, setSpeedInput] = useState("");
   const setBPM = useRemixStore((s) => s.setBPM);
   const setDeckMeta = useRemixStore((s) => s.setDeckMeta);
-  const toggleGridlock = useRemixStore((s) => s.toggleGridlock);
-  const toggleGridSubdivide = useRemixStore((s) => s.toggleGridSubdivide);
-  const toggleShowAllBeats = useRemixStore((s) => s.toggleShowAllBeats);
-  const setGridOffset = useRemixStore((s) => s.setGridOffset);
-  const lockGridSectionDur = useRemixStore((s) => s.lockGridSectionDur);
   const detectDownbeat = useRemixStore((s) => s.detectDownbeat);
   const toggleStem = useRemixStore((s) => s.toggleStem);
   const loadDeck = useRemixStore((s) => s.loadDeck);
@@ -470,11 +464,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onRegionChange={(s, e) => setRegion(id, s, e)}
             onSeek={(pos) => seek(id, pos)}
             onScrub={(pos) => scrub(id, pos)}
-            gridEnabled={deck.gridlockEnabled && deck.gridLockedSectionDur > 0}
-            gridSectionDur={deck.gridLockedSectionDur > 0 ? deck.gridLockedSectionDur / (deck.gridSubdivide ? 4 : 1) : undefined}
-            gridAnchor={deck.gridlockEnabled ? deck.gridFirstTransient + deck.gridOffsetMs / 1000 : undefined}
-            downbeatMarkers={deck.downbeatGrid ?? undefined}
-            showAllBeats={deck.showAllBeats}
             leftControls={
               <div className="relative shrink-0">
                 <button
@@ -531,14 +520,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                       KEY FINDER
                       <span data-tooltip-right="DETECT THE MUSICAL KEY OF THE TRACK" className="ml-3 text-[10px]">?</span>
                     </button>
-                    <button
-                      onClick={() => { toggleGridlock(id); setDeckMenuOpen(false); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
-                      style={{ fontFamily: "var(--font-tech)", color: deck.gridlockEnabled ? "#c82828" : "var(--text-dark)", background: "transparent" }}
-                    >
-                      GRIDLOCK
-                      <span data-tooltip-right="LOCK LOOP LENGTH TO THE BPM GRID" className="ml-3 text-[10px]">?</span>
-                    </button>
                   </div>
                 )}
               </div>
@@ -548,212 +529,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       </div>
 
 
-      {/* GRIDLOCK section */}
-      {deck.gridlockEnabled && deck.sourceBuffer && (() => {
-        if (!deck.calculatedBPM || deck.gridLockedSectionDur <= 0) {
-          return (
-            <div className="zone-engraved" style={{ borderColor: "rgba(200,40,40,0.4)" }}>
-              <div className="text-[12px] text-center" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
-                SET BPM TO ENABLE GRIDLOCK
-              </div>
-            </div>
-          );
-        }
-        const sectionDur = deck.gridLockedSectionDur / (deck.gridSubdivide ? 4 : 1);
-        const sectionDurWallClock = sectionDur / rate; // actual playback time between lines
-        const gridAnchor = deck.gridFirstTransient + deck.gridOffsetMs / 1000;
-        const dur = deck.sourceBuffer!.duration;
-        const inVal = deck.regionStart;
-        const outVal = deck.regionEnd > 0 ? deck.regionEnd : dur;
-        const rawSectionCount = Math.floor((outVal - inVal) / sectionDur + 0.01);
-        // Cap to other deck's section count when both have active regions
-        let sectionCount = rawSectionCount;
-        if (otherDeck.sourceBuffer && otherDeck.gridlockEnabled && otherDeck.gridLockedSectionDur > 0) {
-          const otherSectionDur = otherDeck.gridLockedSectionDur / (otherDeck.gridSubdivide ? 4 : 1);
-          const otherDur = otherDeck.sourceBuffer.duration;
-          const otherIn = otherDeck.regionStart;
-          const otherOut = otherDeck.regionEnd > 0 ? otherDeck.regionEnd : otherDur;
-          const otherCount = Math.floor((otherOut - otherIn) / otherSectionDur + 0.01);
-          if (otherCount > 0) sectionCount = Math.min(rawSectionCount, otherCount);
-        }
-        const sectionDurMs = (sectionDurWallClock * 1000).toFixed(0);
-
-        const barDur = sectionDur / 4;
-        const snapGridIn = (dir: number) => {
-          const n = dir < 0
-            ? Math.floor((inVal - gridAnchor) / barDur - 0.001)
-            : Math.ceil((inVal - gridAnchor) / barDur + 0.001);
-          const snapped = gridAnchor + n * barDur;
-          setRegion(id, snapped, deck.regionEnd);
-        };
-        const snapGridOut = (dir: number) => {
-          const n = dir < 0
-            ? Math.floor((outVal - gridAnchor) / barDur - 0.001)
-            : Math.ceil((outVal - gridAnchor) / barDur + 0.001);
-          const snapped = gridAnchor + n * barDur;
-          setRegion(id, deck.regionStart, snapped);
-        };
-        const exportToMPC = () => {
-          if (!deck.sourceBuffer) return;
-          const buf = deck.sourceBuffer;
-          const sr = buf.sampleRate;
-          const ch0 = buf.getChannelData(0);
-          const loops: { name: string; sampleRate: number; length: number; data: Float32Array }[] = [];
-
-          // Calculate grid line positions within the region
-          const firstN = Math.ceil((inVal - gridAnchor) / sectionDur);
-          const lastN = Math.floor((outVal - gridAnchor) / sectionDur);
-          const gridLines: number[] = [];
-          for (let n = firstN; n <= lastN; n++) {
-            const t = gridAnchor + n * sectionDur;
-            if (t >= inVal - 0.001 && t <= outVal + 0.001) gridLines.push(t);
-          }
-          // Add region boundaries if not already at a grid line
-          if (gridLines.length === 0 || gridLines[0] > inVal + 0.001) gridLines.unshift(inVal);
-          if (gridLines[gridLines.length - 1] < outVal - 0.001) gridLines.push(outVal);
-
-          // Extract audio between consecutive grid lines (max 15 for MPC pads, last pad = full track)
-          for (let i = 0; i < gridLines.length - 1 && loops.length < 15; i++) {
-            const start = Math.max(0, gridLines[i]);
-            const end = Math.min(dur, gridLines[i + 1]);
-            if (end <= start) continue;
-            const startSample = Math.floor(start * sr);
-            const endSample = Math.min(Math.ceil(end * sr), ch0.length);
-            const sliceLen = endSample - startSample;
-            if (sliceLen <= 0) continue;
-            const data = new Float32Array(sliceLen);
-            data.set(ch0.subarray(startSample, endSample));
-            loops.push({
-              name: `${(i + 1).toString().padStart(2, "0")} - ${Math.round(start * 1000)}MS`,
-              sampleRate: sr,
-              length: sliceLen,
-              data,
-            });
-          }
-
-          // Last pad (16): entire track from IN to OUT
-          const fullStart = Math.max(0, inVal);
-          const fullEnd = Math.min(dur, outVal);
-          if (fullEnd > fullStart) {
-            const fs = Math.floor(fullStart * sr);
-            const fe = Math.min(Math.ceil(fullEnd * sr), ch0.length);
-            const fullData = new Float32Array(fe - fs);
-            fullData.set(ch0.subarray(fs, fe));
-            loops.push({ name: "FULL LOOP", sampleRate: sr, length: fe - fs, data: fullData });
-          }
-
-          if (loops.length === 0) return;
-
-          // Open full studio and send data to MPC
-          const studioUrl = "https://studio-2026-03-19.vercel.app/mpc.html";
-          const studioWin = window.open(studioUrl, "driftwave-studio");
-          if (!studioWin) return;
-          const msg = { type: "deck-export-mpc", loops, bank: id === "B" ? "B" : "A", bpm: deck.calculatedBPM ?? undefined };
-          let attempts = 0;
-          const trySend = setInterval(() => {
-            attempts++;
-            try { studioWin.postMessage(msg, "https://studio-2026-03-19.vercel.app"); } catch { /* cross-origin timing */ }
-            if (attempts >= 10) clearInterval(trySend);
-          }, 500);
-        };
-        const gridBtnStyle: React.CSSProperties = {
-          fontFamily: "var(--font-tech)", color: "#c82828", background: "transparent",
-          fontSize: "12px", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center",
-          border: "1px solid #c82828",
-        };
-        return (
-          <div className="zone-engraved" style={{ borderColor: "rgba(200,40,40,0.4)" }}>
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div className="label" style={{ fontSize: "12px", margin: 0, color: "#c82828" }}>IN</div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => snapGridIn(-1)} style={gridBtnStyle}>&lt;</button>
-                  <button onClick={() => snapGridIn(1)} style={gridBtnStyle}>&gt;</button>
-                </div>
-              </div>
-              <div className="flex-1 flex flex-col items-center gap-0.5">
-                <div className="label" style={{ fontSize: "12px", margin: 0, color: "#c82828" }}>ALIGN</div>
-                <input
-                  type="range" min={-10000} max={10000} step={10}
-                  value={deck.gridOffsetMs}
-                  onChange={(e) => setGridOffset(id, parseFloat(e.target.value))}
-                  className="w-full gridlock-slider"
-                  style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "16px", accentColor: "#c82828" }}
-                />
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px]" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
-                    {deck.gridOffsetMs >= 0 ? "+" : ""}{deck.gridOffsetMs}MS
-                  </span>
-                  <span className="text-[12px]" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
-                    {sectionCount} SECTION{sectionCount !== 1 ? "S" : ""}
-                  </span>
-                  <span className="text-[12px]" style={{ color: "#c82828", fontFamily: "var(--font-tech)" }}>
-                    {sectionDurMs}MS APART
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div className="label" style={{ fontSize: "12px", margin: 0, color: "#c82828" }}>OUT</div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => snapGridOut(-1)} style={gridBtnStyle}>&lt;</button>
-                  <button onClick={() => snapGridOut(1)} style={gridBtnStyle}>&gt;</button>
-                </div>
-              </div>
-            </div>
-            {/* Beat / bar nudge buttons */}
-            {deck.calculatedBPM && (() => {
-              const beatMs = Math.round(60000 / deck.calculatedBPM);
-              const barMs = beatMs * 4;
-              const nudgeBtnStyle: React.CSSProperties = {
-                fontFamily: "var(--font-tech)", fontSize: "11px", color: "#c82828",
-                background: "transparent", border: "1px solid #c82828",
-                padding: "2px 8px", letterSpacing: "0.1em",
-              };
-              return (
-                <div className="flex justify-center gap-2 mt-2">
-                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs - barMs)}>◀ BAR</button>
-                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs - beatMs)}>◀ BEAT</button>
-                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs + beatMs)}>BEAT ▶</button>
-                  <button style={nudgeBtnStyle} onClick={() => setGridOffset(id, deck.gridOffsetMs + barMs)}>BAR ▶</button>
-                </div>
-              );
-            })()}
-            <div className="flex justify-center gap-2 mt-2">
-              <button
-                onClick={() => toggleGridSubdivide(id)}
-                className="text-[12px] uppercase tracking-[0.15em] px-4 py-1 border"
-                style={{
-                  fontFamily: "var(--font-tech)",
-                  color: deck.gridSubdivide ? "#000" : "#c82828",
-                  background: deck.gridSubdivide ? "#c82828" : "transparent",
-                  borderColor: "#c82828",
-                }}
-              >
-                ÷4 BEAT
-              </button>
-              <button
-                onClick={() => toggleShowAllBeats(id)}
-                className="text-[12px] uppercase tracking-[0.15em] px-4 py-1 border"
-                style={{
-                  fontFamily: "var(--font-tech)",
-                  color: deck.showAllBeats ? "#000" : "#228B22",
-                  background: deck.showAllBeats ? "#228B22" : "transparent",
-                  borderColor: "#228B22",
-                }}
-              >
-                ALL BEATS
-              </button>
-              <button
-                onClick={exportToMPC}
-                className="text-[12px] uppercase tracking-[0.15em] px-4 py-1 border"
-                style={{ fontFamily: "var(--font-tech)", color: "#c82828", background: "transparent", borderColor: "#c82828" }}
-              >
-                OUTPUT TO MPC
-              </button>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Loop IN/OUT nudge controls */}
       {deck.sourceBuffer && (deck.regionStart !== 0 || deck.regionEnd > 0) && (() => {
