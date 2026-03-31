@@ -1190,49 +1190,49 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
 
-      // Find the first downbeat where the song actually kicks in
-      // Scan downbeats for the first one with a big energy spike relative to what came before
-      const findFirstRealDownbeat = (downbeatsMs: number[], buf: AudioBuffer): number => {
+      // Find the first loud moment: scan the audio for the first sample
+      // that exceeds 20% of the track's peak amplitude, then snap to the
+      // nearest downbeat at or before that point
+      const findFirstLoudDownbeat = (downbeatsMs: number[], buf: AudioBuffer): number => {
         if (downbeatsMs.length === 0) return 0;
-        const sr = buf.sampleRate;
         const ch0 = buf.getChannelData(0);
+        const sr = buf.sampleRate;
 
-        // Compute RMS energy in a short window around each downbeat
-        const windowMs = 50; // 50ms window
-        const windowSamples = Math.round((windowMs / 1000) * sr);
-        const energies: number[] = [];
-        for (const ms of downbeatsMs) {
-          const center = Math.round((ms / 1000) * sr);
-          const start = Math.max(0, center);
-          const end = Math.min(ch0.length, center + windowSamples);
-          let sum = 0;
-          for (let i = start; i < end; i++) sum += ch0[i] * ch0[i];
-          energies.push(Math.sqrt(sum / Math.max(1, end - start)));
+        // Find peak amplitude (sample every 100 samples for speed)
+        let peak = 0;
+        for (let i = 0; i < ch0.length; i += 100) {
+          const abs = Math.abs(ch0[i]);
+          if (abs > peak) peak = abs;
         }
+        if (peak <= 0) return downbeatsMs[0];
 
-        // Find the peak energy across all downbeats
-        const peakEnergy = Math.max(...energies);
-        if (peakEnergy <= 0) return downbeatsMs[0];
-
-        // First downbeat that reaches at least 30% of peak energy = the song kicks in
-        const threshold = peakEnergy * 0.3;
-        let picked = -1;
-        for (let i = 0; i < energies.length; i++) {
-          if (energies[i] >= threshold) {
-            picked = i;
+        // Scan for first sample exceeding 20% of peak
+        const threshold = peak * 0.2;
+        let firstLoudSample = 0;
+        for (let i = 0; i < ch0.length; i++) {
+          if (Math.abs(ch0[i]) >= threshold) {
+            firstLoudSample = i;
             break;
           }
         }
-        console.log(`[downbeat] peak energy: ${peakEnergy.toFixed(4)}, threshold (30%): ${threshold.toFixed(4)}`);
-        console.log(`[downbeat] first 10 downbeats (ms):`, downbeatsMs.slice(0, 10));
-        console.log(`[downbeat] first 10 energies:`, energies.slice(0, 10).map(e => e.toFixed(4)));
-        console.log(`[downbeat] picked index: ${picked}, ms: ${picked >= 0 ? downbeatsMs[picked] : "none"}, sec: ${picked >= 0 ? (downbeatsMs[picked] / 1000).toFixed(3) : "none"}`);
-        return picked >= 0 ? downbeatsMs[picked] : downbeatsMs[0];
+        const firstLoudMs = (firstLoudSample / sr) * 1000;
+
+        // Find the nearest downbeat at or before that point
+        let best = downbeatsMs[0];
+        for (const ms of downbeatsMs) {
+          if (ms <= firstLoudMs + 50) best = ms; // allow 50ms slack
+          else break;
+        }
+
+        console.log(`[downbeat] peak amplitude: ${peak.toFixed(4)}, threshold (20%): ${(threshold).toFixed(4)}`);
+        console.log(`[downbeat] first loud sample at ${firstLoudMs.toFixed(1)}ms (${(firstLoudMs/1000).toFixed(3)}s)`);
+        console.log(`[downbeat] snapped to downbeat at ${best}ms (${(best/1000).toFixed(3)}s)`);
+        return best;
       };
 
       const downbeatsMs = (data.downbeats_ms as number[] | null) ?? [firstDownbeatMs];
       const targetDownbeatMs = deck.sourceBuffer
-        ? findFirstRealDownbeat(downbeatsMs, deck.sourceBuffer)
+        ? findFirstLoudDownbeat(downbeatsMs, deck.sourceBuffer)
         : firstDownbeatMs;
 
       // Set speed without affecting pitch (automatic BPM matching is tempo-only)
