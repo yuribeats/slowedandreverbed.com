@@ -1216,12 +1216,18 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
         // First downbeat that reaches at least 30% of peak energy = the song kicks in
         const threshold = peakEnergy * 0.3;
+        let picked = -1;
         for (let i = 0; i < energies.length; i++) {
           if (energies[i] >= threshold) {
-            return downbeatsMs[i];
+            picked = i;
+            break;
           }
         }
-        return downbeatsMs[0];
+        console.log(`[downbeat] peak energy: ${peakEnergy.toFixed(4)}, threshold (30%): ${threshold.toFixed(4)}`);
+        console.log(`[downbeat] first 10 downbeats (ms):`, downbeatsMs.slice(0, 10));
+        console.log(`[downbeat] first 10 energies:`, energies.slice(0, 10).map(e => e.toFixed(4)));
+        console.log(`[downbeat] picked index: ${picked}, ms: ${picked >= 0 ? downbeatsMs[picked] : "none"}, sec: ${picked >= 0 ? (downbeatsMs[picked] / 1000).toFixed(3) : "none"}`);
+        return picked >= 0 ? downbeatsMs[picked] : downbeatsMs[0];
       };
 
       const downbeatsMs = (data.downbeats_ms as number[] | null) ?? [firstDownbeatMs];
