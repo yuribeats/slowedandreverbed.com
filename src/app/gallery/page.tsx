@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -34,6 +34,37 @@ interface PlaylistTrack {
 }
 
 const textStyle: React.CSSProperties = { fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, color: "#000" };
+const PAGE_SIZE = 12;
+
+function LazyVideo({ src, onError }: { src: string; onError: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className="w-full aspect-square" style={{ background: "#000" }}>
+      {visible && (
+        <video
+          src={src}
+          controls
+          preload="metadata"
+          className="w-full h-full object-cover"
+          onError={onError}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function GalleryPage() {
   return (
@@ -61,6 +92,8 @@ function GalleryContent() {
   const [playlistDownloading, setPlaylistDownloading] = useState(false);
   const [playlistProgress, setPlaylistProgress] = useState({ current: 0, total: 0 });
   const [playlistError, setPlaylistError] = useState("");
+
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const [allFiles, setAllFiles] = useState<PinataFile[]>([]);
   const [allFilesLoading, setAllFilesLoading] = useState(false);
@@ -428,8 +461,9 @@ function GalleryContent() {
               NO EXPORTS YET
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {items.map((item) => (
+              {items.slice(0, visibleCount).map((item) => (
                 <div key={item.id} data-item-id={item.id} className="flex flex-col gap-2 border-2 border-black p-2 relative">
                   {editMode && (
                     <button
@@ -441,12 +475,8 @@ function GalleryContent() {
                       {deleting === item.id ? "..." : "X"}
                     </button>
                   )}
-                  <video
+                  <LazyVideo
                     src={item.url}
-                    controls
-                    preload="metadata"
-                    className="w-full aspect-square object-cover"
-                    style={{ background: "#000" }}
                     onError={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
                   />
                   <div className="flex flex-col gap-0.5">
@@ -519,6 +549,16 @@ function GalleryContent() {
                 </div>
               ))}
             </div>
+            {visibleCount < items.length && (
+              <button
+                onClick={() => setVisibleCount((c) => Math.min(c + PAGE_SIZE, items.length))}
+                className="w-full py-3 border-2 border-black text-[11px] uppercase tracking-[0.15em]"
+                style={{ ...textStyle, fontSize: "11px", background: "transparent" }}
+              >
+                LOAD MORE ({items.length - visibleCount} REMAINING)
+              </button>
+            )}
+            </>
           )}
         </div>
         <div className="flex gap-4 justify-center py-4">
