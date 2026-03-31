@@ -122,38 +122,38 @@ function mixStemBuffers(stems: StemType[], stemBuffers: Partial<Record<StemType,
   return mixed;
 }
 
-// Find the first downbeat where the audio has sustained energy (not silence/bleed)
-// Uses RMS in a 200ms window at each downbeat position
+// Find the first downbeat where the audio is loud (not silence/quiet intro)
+// Scans for the first sample exceeding 50% of peak amplitude, snaps to nearest downbeat
 function findFirstLoudDownbeat(downbeatsMs: number[], buf: AudioBuffer): number {
   if (downbeatsMs.length === 0) return 0;
   const ch0 = buf.getChannelData(0);
   const sr = buf.sampleRate;
-  const winSamples = Math.round(0.2 * sr); // 200ms window
 
-  // Compute RMS at each downbeat
-  const rmsValues: number[] = [];
-  let peakRms = 0;
-  for (const ms of downbeatsMs) {
-    const start = Math.round((ms / 1000) * sr);
-    const end = Math.min(ch0.length, start + winSamples);
-    let sum = 0;
-    for (let i = start; i < end; i++) sum += ch0[i] * ch0[i];
-    const rms = Math.sqrt(sum / Math.max(1, end - start));
-    rmsValues.push(rms);
-    if (rms > peakRms) peakRms = rms;
+  let peak = 0;
+  for (let i = 0; i < ch0.length; i += 100) {
+    const a = Math.abs(ch0[i]);
+    if (a > peak) peak = a;
   }
+  if (peak <= 0) return downbeatsMs[0];
 
-  if (peakRms <= 0) return downbeatsMs[0];
-
-  // First downbeat with RMS above 40% of peak RMS
-  const threshold = peakRms * 0.4;
-  for (let i = 0; i < rmsValues.length; i++) {
-    if (rmsValues[i] >= threshold) {
-      console.log(`[downbeat] peakRms=${peakRms.toFixed(4)}, threshold(40%)=${threshold.toFixed(4)}, picked=${(downbeatsMs[i]/1000).toFixed(3)}s, rms=${rmsValues[i].toFixed(4)}`);
-      return downbeatsMs[i];
+  const threshold = peak * 0.5;
+  let firstLoudSample = 0;
+  for (let i = 0; i < ch0.length; i++) {
+    if (Math.abs(ch0[i]) >= threshold) {
+      firstLoudSample = i;
+      break;
     }
   }
-  return downbeatsMs[0];
+  const firstLoudMs = (firstLoudSample / sr) * 1000;
+
+  let best = downbeatsMs[0];
+  for (const ms of downbeatsMs) {
+    if (ms <= firstLoudMs + 50) best = ms;
+    else break;
+  }
+
+  console.log(`[downbeat] peak=${peak.toFixed(4)}, threshold=${(threshold).toFixed(4)}, firstLoud=${(firstLoudMs/1000).toFixed(3)}s, snapped=${(best/1000).toFixed(3)}s`);
+  return best;
 }
 
 interface BankedLoop {
