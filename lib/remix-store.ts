@@ -1190,8 +1190,52 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
 
-      // Set in-point to the first downbeat of the song
-      const targetDownbeatMs = firstDownbeatMs;
+      // Snap first downbeat to nearest transient (onset) in the audio
+      // Search ±30ms window around detected position for the sharpest attack
+      const snapToTransient = (posMs: number, buf: AudioBuffer): number => {
+        const sr = buf.sampleRate;
+        const ch0 = buf.getChannelData(0);
+        const centerSample = Math.round((posMs / 1000) * sr);
+        const windowSamples = Math.round(0.03 * sr); // 30ms each direction
+        const start = Math.max(0, centerSample - windowSamples);
+        const end = Math.min(ch0.length - 1, centerSample + windowSamples);
+
+        // Find the sample with the steepest amplitude rise (transient onset)
+        let bestSample = centerSample;
+        let bestRise = 0;
+        const hopSize = Math.max(1, Math.round(sr * 0.001)); // 1ms hops
+        for (let i = start + hopSize; i <= end; i += hopSize) {
+          // Energy in a small window after vs before this point
+          const winSize = Math.min(hopSize, 32);
+          let before = 0, after = 0;
+          for (let j = 0; j < winSize; j++) {
+            const bi = i - j - 1;
+            const ai = i + j;
+            if (bi >= 0) before += ch0[bi] * ch0[bi];
+            if (ai < ch0.length) after += ch0[ai] * ch0[ai];
+          }
+          const rise = after - before;
+          if (rise > bestRise) {
+            bestRise = rise;
+            bestSample = i;
+          }
+        }
+
+        // If we found a transient, snap to the nearest zero crossing before it
+        if (bestRise > 0) {
+          for (let i = bestSample; i > Math.max(0, bestSample - hopSize * 2); i--) {
+            if (ch0[i] >= 0 && ch0[i - 1] < 0) {
+              return (i / sr) * 1000;
+            }
+          }
+          return (bestSample / sr) * 1000;
+        }
+        return posMs;
+      };
+
+      const targetDownbeatMs = deck.sourceBuffer
+        ? snapToTransient(firstDownbeatMs, deck.sourceBuffer)
+        : firstDownbeatMs;
 
       // Set speed without affecting pitch (automatic BPM matching is tempo-only)
       const setSpeedOnly = (deckId: DeckId, speed: number) => {
