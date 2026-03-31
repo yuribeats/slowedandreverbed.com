@@ -122,6 +122,39 @@ function mixStemBuffers(stems: StemType[], stemBuffers: Partial<Record<StemType,
   return mixed;
 }
 
+// Find the first downbeat where the audio is loud (not silence/quiet intro)
+function findFirstLoudDownbeat(downbeatsMs: number[], buf: AudioBuffer): number {
+  if (downbeatsMs.length === 0) return 0;
+  const ch0 = buf.getChannelData(0);
+  const sr = buf.sampleRate;
+
+  let peak = 0;
+  for (let i = 0; i < ch0.length; i += 100) {
+    const abs = Math.abs(ch0[i]);
+    if (abs > peak) peak = abs;
+  }
+  if (peak <= 0) return downbeatsMs[0];
+
+  const threshold = peak * 0.5;
+  let firstLoudSample = 0;
+  for (let i = 0; i < ch0.length; i++) {
+    if (Math.abs(ch0[i]) >= threshold) {
+      firstLoudSample = i;
+      break;
+    }
+  }
+  const firstLoudMs = (firstLoudSample / sr) * 1000;
+
+  let best = downbeatsMs[0];
+  for (const ms of downbeatsMs) {
+    if (ms <= firstLoudMs + 50) best = ms;
+    else break;
+  }
+
+  console.log(`[downbeat] buf=${(buf.duration).toFixed(1)}s, peak=${peak.toFixed(4)}, threshold=${threshold.toFixed(4)}, firstLoud=${(firstLoudMs/1000).toFixed(3)}s, snapped=${(best/1000).toFixed(3)}s`);
+  return best;
+}
+
 interface BankedLoop {
   name: string;
   start: number;
@@ -1190,46 +1223,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
 
-      // Find the first loud moment: scan the audio for the first sample
-      // that exceeds 20% of the track's peak amplitude, then snap to the
-      // nearest downbeat at or before that point
-      const findFirstLoudDownbeat = (downbeatsMs: number[], buf: AudioBuffer): number => {
-        if (downbeatsMs.length === 0) return 0;
-        const ch0 = buf.getChannelData(0);
-        const sr = buf.sampleRate;
-
-        // Find peak amplitude (sample every 100 samples for speed)
-        let peak = 0;
-        for (let i = 0; i < ch0.length; i += 100) {
-          const abs = Math.abs(ch0[i]);
-          if (abs > peak) peak = abs;
-        }
-        if (peak <= 0) return downbeatsMs[0];
-
-        // Scan for first sample exceeding 50% of peak
-        const threshold = peak * 0.5;
-        let firstLoudSample = 0;
-        for (let i = 0; i < ch0.length; i++) {
-          if (Math.abs(ch0[i]) >= threshold) {
-            firstLoudSample = i;
-            break;
-          }
-        }
-        const firstLoudMs = (firstLoudSample / sr) * 1000;
-
-        // Find the nearest downbeat at or before that point
-        let best = downbeatsMs[0];
-        for (const ms of downbeatsMs) {
-          if (ms <= firstLoudMs + 50) best = ms; // allow 50ms slack
-          else break;
-        }
-
-        console.log(`[downbeat] peak amplitude: ${peak.toFixed(4)}, threshold (50%): ${(threshold).toFixed(4)}`);
-        console.log(`[downbeat] first loud sample at ${firstLoudMs.toFixed(1)}ms (${(firstLoudMs/1000).toFixed(3)}s)`);
-        console.log(`[downbeat] snapped to downbeat at ${best}ms (${(best/1000).toFixed(3)}s)`);
-        return best;
-      };
-
       const downbeatsMs = (data.downbeats_ms as number[] | null) ?? [firstDownbeatMs];
       const targetDownbeatMs = deck.sourceBuffer
         ? findFirstLoudDownbeat(downbeatsMs, deck.sourceBuffer)
@@ -1721,6 +1714,19 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       set((s) => ({
         [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false, activeStem: stemTarget[0] ?? null, activeStems: stemTarget, mixedStemBuffer: mixed },
       }));
+
+      // Re-snap in-point using vocal stem — vocals starting = where the song really begins
+      const vocalBuf = stems.vocals;
+      const updatedDeck = getDeck(get(), id);
+      if (vocalBuf && updatedDeck.downbeatGrid && updatedDeck.downbeatGrid.length > 0) {
+        const downbeatsMs = updatedDeck.downbeatGrid.map((s) => s * 1000);
+        const vocalInMs = findFirstLoudDownbeat(downbeatsMs, vocalBuf);
+        const vocalInSec = vocalInMs / 1000;
+        console.log(`[stems] vocal in-point: ${vocalInSec.toFixed(3)}s (was ${updatedDeck.regionStart.toFixed(3)}s)`);
+        if (vocalInSec > updatedDeck.regionStart) {
+          get().setRegion(id, vocalInSec, 0);
+        }
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
       console.error("[stems] Error:", msg);
