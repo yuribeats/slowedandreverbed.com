@@ -1206,8 +1206,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         }
         if (peak <= 0) return downbeatsMs[0];
 
-        // Scan for first sample exceeding 20% of peak
-        const threshold = peak * 0.2;
+        // Scan for first sample exceeding 50% of peak
+        const threshold = peak * 0.5;
         let firstLoudSample = 0;
         for (let i = 0; i < ch0.length; i++) {
           if (Math.abs(ch0[i]) >= threshold) {
@@ -1224,7 +1224,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           else break;
         }
 
-        console.log(`[downbeat] peak amplitude: ${peak.toFixed(4)}, threshold (20%): ${(threshold).toFixed(4)}`);
+        console.log(`[downbeat] peak amplitude: ${peak.toFixed(4)}, threshold (50%): ${(threshold).toFixed(4)}`);
         console.log(`[downbeat] first loud sample at ${firstLoudMs.toFixed(1)}ms (${(firstLoudMs/1000).toFixed(3)}s)`);
         console.log(`[downbeat] snapped to downbeat at ${best}ms (${(best/1000).toFixed(3)}s)`);
         return best;
