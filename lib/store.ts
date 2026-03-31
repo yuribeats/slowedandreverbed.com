@@ -381,6 +381,14 @@ export const useStore = create<AppStore>((set, get) => ({
       await ctx.resume();
     }
     const nodes = buildGraph(ctx, sourceBuffer, params, pauseOffset, () => {
+      const { nodes: currentNodes } = get();
+      if (currentNodes) {
+        for (const n of Object.values(currentNodes)) {
+          if (n && typeof (n as AudioNode).disconnect === "function") {
+            try { (n as AudioNode).disconnect(); } catch { /* ok */ }
+          }
+        }
+      }
       set({ isPlaying: false, nodes: null, pauseOffset: 0 });
     });
 
@@ -398,6 +406,11 @@ export const useStore = create<AppStore>((set, get) => ({
       const elapsed = (ctx.currentTime - startedAt) * expandParams(params).rate;
       set({ pauseOffset: elapsed });
       try { nodes.source.stop(); } catch { /* already stopped */ }
+      for (const n of Object.values(nodes)) {
+        if (n && typeof (n as AudioNode).disconnect === "function") {
+          try { (n as AudioNode).disconnect(); } catch { /* ok */ }
+        }
+      }
     }
     set({ isPlaying: false, nodes: null });
   },

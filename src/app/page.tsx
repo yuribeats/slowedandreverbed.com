@@ -458,6 +458,21 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onRegionChange={(s, e) => setRegion(id, s, e)}
             onSeek={(pos) => seek(id, pos)}
             onScrub={(pos) => scrub(id, pos)}
+            rightControls={
+              <button
+                onClick={() => setLoopEnabled((v) => !v)}
+                className="text-[12px] px-1.5 py-0 border border-[#555]"
+                style={{
+                  fontFamily: "var(--font-tech)",
+                  color: loopEnabled ? "var(--accent-gold)" : "var(--text-dark)",
+                  background: "transparent",
+                  lineHeight: "16px",
+                  borderColor: loopEnabled ? "var(--accent-gold)" : "#555",
+                }}
+              >
+                LOOP {loopEnabled ? "ON" : "OFF"}
+              </button>
+            }
             leftControls={
               <div className="relative shrink-0">
                 <button
@@ -567,20 +582,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 <span className="text-[12px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
                   {(nudgeStep * 1000).toFixed(0)}MS
                 </span>
-              </div>
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div className="label" style={{ fontSize: "12px", margin: 0 }}>LOOP</div>
-                <button
-                  onClick={() => setLoopEnabled((v) => !v)}
-                  style={{
-                    ...btnStyle,
-                    width: 40, height: 24,
-                    color: loopEnabled ? "var(--accent-gold)" : "var(--text-dark)",
-                    borderColor: loopEnabled ? "var(--accent-gold)" : "#444",
-                  }}
-                >
-                  {loopEnabled ? "ON" : "OFF"}
-                </button>
               </div>
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <div className="label" style={{ fontSize: "12px", margin: 0 }}>OUT</div>

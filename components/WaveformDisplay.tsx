@@ -16,6 +16,7 @@ interface Props {
   onScrub?: (position: number) => void;
   height?: number; // px, default 120
   leftControls?: React.ReactNode;
+  rightControls?: React.ReactNode;
   // For cross-tab rendering without AudioBuffer
   precomputedPeaks?: Float32Array | null;
   precomputedDuration?: number;
@@ -72,6 +73,7 @@ export default function WaveformDisplay({
   onSeek,
   onScrub,
   leftControls,
+  rightControls,
   precomputedPeaks,
   precomputedDuration,
   perfStartedAt,
@@ -556,6 +558,7 @@ export default function WaveformDisplay({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {rightControls}
             <button
               onClick={zoomToRegion}
               className="text-[12px] px-1.5 py-0 border border-[#555]"

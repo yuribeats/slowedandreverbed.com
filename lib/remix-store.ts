@@ -101,6 +101,16 @@ interface DeckNodes {
   deckGain: GainNode;
 }
 
+function disconnectDeckNodes(nodes: DeckNodes) {
+  try { nodes.source.onended = null; } catch { /* ok */ }
+  try { nodes.source.stop(); } catch { /* ok */ }
+  for (const n of Object.values(nodes)) {
+    if (n && typeof (n as AudioNode).disconnect === "function") {
+      try { (n as AudioNode).disconnect(); } catch { /* ok */ }
+    }
+  }
+}
+
 type StemType = "vocals" | "drums" | "bass" | "other" | "instrumental";
 
 function mixStemBuffers(stems: StemType[], stemBuffers: Partial<Record<StemType, AudioBuffer>>): AudioBuffer | null {
@@ -1287,10 +1297,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     deckGeneration[id] = (deckGeneration[id] || 0) + 1;
     const gen = deckGeneration[id];
 
-    // Kill existing source
+    // Kill existing source and disconnect all nodes to free WASM memory
     if (deck.nodes) {
-      try { deck.nodes.source.onended = null; } catch { /* ok */ }
-      try { deck.nodes.source.stop(); } catch { /* ok */ }
+      disconnectDeckNodes(deck.nodes);
     }
     set((s) => ({ [key]: { ...s[key], isPlaying: false, nodes: null } }));
 
@@ -1325,7 +1334,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       () => {
         // Only fires for non-looping playback (native loop never triggers onEnded)
         if (deckGeneration[id] !== gen) return;
-        if (!getDeck(get(), id).isPlaying) return;
+        const currentDeck = getDeck(get(), id);
+        if (!currentDeck.isPlaying) return;
+        if (currentDeck.nodes) disconnectDeckNodes(currentDeck.nodes);
         set((s) => ({
           [key]: { ...s[key], isPlaying: false, nodes: null, pauseOffset: rStart },
         }));
@@ -1354,8 +1365,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       [key]: { ...s[key], pauseOffset: s[key].regionStart, isPlaying: false, nodes: null },
     }));
     if (deck.nodes) {
-      try { deck.nodes.source.onended = null; } catch { /* ok */ }
-      try { deck.nodes.source.stop(); } catch { /* ok */ }
+      disconnectDeckNodes(deck.nodes);
     }
 
   },
@@ -1373,8 +1383,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     set((s) => ({
       [key]: { ...s[key], pauseOffset: elapsed, isPlaying: false, nodes: null },
     }));
-    try { deck.nodes.source.onended = null; } catch { /* ok */ }
-    try { deck.nodes.source.stop(); } catch { /* ok */ }
+    disconnectDeckNodes(deck.nodes);
   },
 
   setParam: (id, paramKey, value) => {
