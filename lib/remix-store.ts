@@ -1190,32 +1190,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
 
-      // Snap in-point to nearest detected downbeat to current playback position
-      const currentPosMs = deck.pauseOffset * 1000;
-      const downbeatList: number[] = (data.downbeats_ms as number[]) ?? [firstDownbeatMs];
-      let targetDownbeatMs = firstDownbeatMs;
-      if (downbeatList.length > 0) {
-        const lastKnown = downbeatList[downbeatList.length - 1];
-        const barMs = detectedBpm > 0 ? (4 * 60 / detectedBpm) * 1000 : 2000;
-        if (currentPosMs <= lastKnown + barMs) {
-          targetDownbeatMs = downbeatList.reduce((best, t) =>
-            Math.abs(t - currentPosMs) < Math.abs(best - currentPosMs) ? t : best
-          , downbeatList[0]);
-        } else {
-          const barsFromLast = Math.round((currentPosMs - lastKnown) / barMs);
-          targetDownbeatMs = Math.max(0, lastKnown + barsFromLast * barMs);
-        }
-      }
-
-      // Refine targetDownbeatMs by snapping to the nearest beat in beats_ms
-      // (beat_this per-beat timestamps are more reliable than energy analysis)
-      const beatList: number[] = (data.beats_ms as number[] | null) ?? [];
-      if (beatList.length > 0) {
-        const nearest = beatList.reduce((best, t) =>
-          Math.abs(t - targetDownbeatMs) < Math.abs(best - targetDownbeatMs) ? t : best
-        , beatList[0]);
-        if (Math.abs(nearest - targetDownbeatMs) < 500) targetDownbeatMs = nearest;
-      }
+      // Set in-point to the first downbeat of the song
+      const targetDownbeatMs = firstDownbeatMs;
 
       // Set speed without affecting pitch (automatic BPM matching is tempo-only)
       const setSpeedOnly = (deckId: DeckId, speed: number) => {
@@ -1249,11 +1225,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       }
 
       const inPoint = targetDownbeatMs / 1000;
-      const currentRate = 1.0 + getDeck(get(), id).params.speed;
-      const updatedDeck = getDeck(get(), id);
-
-      // Section duration: 4 bars from BPM (downbeat-based calculation removed — unreliable)
-      const lockedDur = updatedDeck.calculatedBPM ? 960 / (updatedDeck.calculatedBPM * currentRate) : 0;
 
       set((s) => ({
         [dk]: {
@@ -1262,12 +1233,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           downbeatGrid: downbeatGrid.length > 0 ? downbeatGrid : null,
           downbeatDetecting: false,
           downbeatError: null,
-          gridFirstTransient: inPoint,
-          gridlockEnabled: true,
-          gridLockedSectionDur: lockedDur,
-          gridOffsetMs: 0,
         },
       }));
+      // Set in-point to the first downbeat
       get().setRegion(id, inPoint, 0);
     } catch (e) {
       fail(e instanceof Error ? e.message : "Unexpected error");
