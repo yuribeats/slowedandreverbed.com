@@ -303,8 +303,8 @@ const defaultMasterBus: MasterBusParams = {
   eqLow: 0,
   eqMid: 0,
   eqHigh: 0,
-  compAmount: 0,
-  limiterAmount: 0,
+  compAmount: 0.25,
+  limiterAmount: 0.1,
 };
 
 interface RemixStore {
