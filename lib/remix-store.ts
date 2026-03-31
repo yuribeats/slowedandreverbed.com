@@ -1190,51 +1190,43 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
 
-      // Snap first downbeat to nearest transient (onset) in the audio
-      // Search ±30ms window around detected position for the sharpest attack
-      const snapToTransient = (posMs: number, buf: AudioBuffer): number => {
+      // Find the first downbeat where the song actually kicks in
+      // Scan downbeats for the first one with a big energy spike relative to what came before
+      const findFirstRealDownbeat = (downbeatsMs: number[], buf: AudioBuffer): number => {
+        if (downbeatsMs.length === 0) return 0;
         const sr = buf.sampleRate;
         const ch0 = buf.getChannelData(0);
-        const centerSample = Math.round((posMs / 1000) * sr);
-        const windowSamples = Math.round(0.03 * sr); // 30ms each direction
-        const start = Math.max(0, centerSample - windowSamples);
-        const end = Math.min(ch0.length - 1, centerSample + windowSamples);
 
-        // Find the sample with the steepest amplitude rise (transient onset)
-        let bestSample = centerSample;
-        let bestRise = 0;
-        const hopSize = Math.max(1, Math.round(sr * 0.001)); // 1ms hops
-        for (let i = start + hopSize; i <= end; i += hopSize) {
-          // Energy in a small window after vs before this point
-          const winSize = Math.min(hopSize, 32);
-          let before = 0, after = 0;
-          for (let j = 0; j < winSize; j++) {
-            const bi = i - j - 1;
-            const ai = i + j;
-            if (bi >= 0) before += ch0[bi] * ch0[bi];
-            if (ai < ch0.length) after += ch0[ai] * ch0[ai];
-          }
-          const rise = after - before;
-          if (rise > bestRise) {
-            bestRise = rise;
-            bestSample = i;
-          }
+        // Compute RMS energy in a short window around each downbeat
+        const windowMs = 50; // 50ms window
+        const windowSamples = Math.round((windowMs / 1000) * sr);
+        const energies: number[] = [];
+        for (const ms of downbeatsMs) {
+          const center = Math.round((ms / 1000) * sr);
+          const start = Math.max(0, center);
+          const end = Math.min(ch0.length, center + windowSamples);
+          let sum = 0;
+          for (let i = start; i < end; i++) sum += ch0[i] * ch0[i];
+          energies.push(Math.sqrt(sum / Math.max(1, end - start)));
         }
 
-        // If we found a transient, snap to the nearest zero crossing before it
-        if (bestRise > 0) {
-          for (let i = bestSample; i > Math.max(0, bestSample - hopSize * 2); i--) {
-            if (ch0[i] >= 0 && ch0[i - 1] < 0) {
-              return (i / sr) * 1000;
-            }
+        // Find the peak energy across all downbeats
+        const peakEnergy = Math.max(...energies);
+        if (peakEnergy <= 0) return downbeatsMs[0];
+
+        // First downbeat that reaches at least 30% of peak energy = the song kicks in
+        const threshold = peakEnergy * 0.3;
+        for (let i = 0; i < energies.length; i++) {
+          if (energies[i] >= threshold) {
+            return downbeatsMs[i];
           }
-          return (bestSample / sr) * 1000;
         }
-        return posMs;
+        return downbeatsMs[0];
       };
 
+      const downbeatsMs = (data.downbeats_ms as number[] | null) ?? [firstDownbeatMs];
       const targetDownbeatMs = deck.sourceBuffer
-        ? snapToTransient(firstDownbeatMs, deck.sourceBuffer)
+        ? findFirstRealDownbeat(downbeatsMs, deck.sourceBuffer)
         : firstDownbeatMs;
 
       // Set speed without affecting pitch (automatic BPM matching is tempo-only)
