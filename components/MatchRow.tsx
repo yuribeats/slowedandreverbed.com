@@ -34,7 +34,7 @@ export default function MatchRow({ track, sourceKey, selected, onClick }: Props)
     >
       <div className="flex-1 min-w-0">
         <span className="text-[12px] uppercase tracking-[0.05em] truncate block" style={{ color: "var(--text-dark)" }}>
-          {track.artist} — {track.title}
+          <span style={{ opacity: 0.6 }}>{track.artist}</span> {track.title}
         </span>
       </div>
       <span className="text-[11px] uppercase tracking-[0.05em] shrink-0 w-[40px] text-right" style={{ color: "var(--text-dark)", opacity: 0.6 }}>

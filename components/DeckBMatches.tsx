@@ -212,7 +212,7 @@ export default function DeckBMatches() {
         >
           {/* Header row */}
           <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[rgba(0,0,0,0.2)]" style={{ background: "rgba(0,0,0,0.05)" }}>
-            <span className="flex-1 text-[10px] uppercase tracking-[0.1em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>ARTIST — TITLE</span>
+            <span className="flex-1 text-[10px] uppercase tracking-[0.1em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>ARTIST / TITLE</span>
             <span className="text-[10px] uppercase tracking-[0.1em] w-[40px] text-right" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>BPM</span>
             <span className="text-[10px] uppercase tracking-[0.1em] w-[70px] text-right" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>KEY</span>
             <span className="text-[10px] uppercase tracking-[0.1em] w-[90px] text-right hidden sm:block" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>MATCH</span>
@@ -271,7 +271,7 @@ export default function DeckBMatches() {
         <div className="flex items-center justify-between">
           {selectedTrack ? (
             <span className="text-[12px] tracking-[0.5px] uppercase truncate flex-1 mr-3" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-              {selectedTrack.artist} — {selectedTrack.title}
+              <span style={{ opacity: 0.6 }}>{selectedTrack.artist}</span> {selectedTrack.title}
             </span>
           ) : (
             <span className="text-[12px] tracking-[0.5px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>
