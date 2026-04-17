@@ -24,7 +24,7 @@ export default function DeckBMatches() {
   const [error, setError] = useState("");
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("popularity");
-  const [bpmWindow, setBpmWindow] = useState(8);
+  const [bpmWindow, setBpmWindow] = useState(0);
   const [deckBLoading, setDeckBLoading] = useState(false);
   const [deckBError, setDeckBError] = useState("");
   const [page, setPage] = useState(0);
