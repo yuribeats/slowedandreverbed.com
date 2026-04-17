@@ -72,6 +72,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [deckMenuOpen, setDeckMenuOpen] = useState(false);
   const [showEQ, setShowEQ] = useState(false);
+  const stemsBtnRef = useRef<HTMLButtonElement>(null);
+  const [stemsMenuPos, setStemsMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [showYouTube, setShowYouTube] = useState(false);
   const [showKeyFinder, setShowKeyFinder] = useState(false);
 
@@ -479,7 +481,14 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             leftControls={
               <div className="shrink-0">
                 <button
-                  onClick={() => setDeckMenuOpen(!deckMenuOpen)}
+                  ref={stemsBtnRef}
+                  onClick={() => {
+                    if (!deckMenuOpen && stemsBtnRef.current) {
+                      const rect = stemsBtnRef.current.getBoundingClientRect();
+                      setStemsMenuPos({ top: rect.bottom + 4, left: rect.left });
+                    }
+                    setDeckMenuOpen(!deckMenuOpen);
+                  }}
                   className="text-[12px] px-1.5 py-0 border border-[#555]"
                   style={{ fontFamily: "var(--font-tech)", color: deckMenuOpen ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
                 >
@@ -866,7 +875,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {deckMenuOpen && (
         <>
           <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setDeckMenuOpen(false)} />
-          <div className="fixed left-4 top-1/2 -translate-y-1/2 border-2 border-[#555] flex flex-col" style={{ minWidth: "220px", zIndex: 9999, backgroundColor: "var(--bg-base, #c4b89a)" }}>
+          <div className="fixed border-2 border-[#555] flex flex-col" style={{ minWidth: "220px", zIndex: 9999, backgroundColor: "var(--bg-base, #c4b89a)", top: stemsMenuPos?.top ?? 0, left: stemsMenuPos?.left ?? 0 }}>
             <div className="text-[10px] uppercase tracking-[0.2em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#666" }}>
               DECK {id} STEMS {deck.isStemLoading ? "(SEPARATING...)" : deck.activeStems.length > 0 ? `(${deck.activeStems.length} ACTIVE)` : ""}
             </div>
