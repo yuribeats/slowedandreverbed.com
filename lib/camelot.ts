@@ -1,113 +1,74 @@
-/* ─── Camelot Wheel ─── */
+/* ─── Key Compatibility — Music Theory ─── */
 
-export interface CamelotEntry {
-  number: number;  // 1–12
-  letter: "A" | "B";  // A = minor, B = major
-  keyName: string;  // e.g. "Db Major"
-  note: string;     // e.g. "Db"
-  mode: "major" | "minor";
-}
-
-// Full Camelot wheel lookup
-const WHEEL: CamelotEntry[] = [
-  { number: 1,  letter: "B", keyName: "B Major",  note: "B",  mode: "major" },
-  { number: 1,  letter: "A", keyName: "Ab Minor", note: "Ab", mode: "minor" },
-  { number: 2,  letter: "B", keyName: "Gb Major", note: "Gb", mode: "major" },
-  { number: 2,  letter: "A", keyName: "Eb Minor", note: "Eb", mode: "minor" },
-  { number: 3,  letter: "B", keyName: "Db Major", note: "Db", mode: "major" },
-  { number: 3,  letter: "A", keyName: "Bb Minor", note: "Bb", mode: "minor" },
-  { number: 4,  letter: "B", keyName: "Ab Major", note: "Ab", mode: "major" },
-  { number: 4,  letter: "A", keyName: "F Minor",  note: "F",  mode: "minor" },
-  { number: 5,  letter: "B", keyName: "Eb Major", note: "Eb", mode: "major" },
-  { number: 5,  letter: "A", keyName: "C Minor",  note: "C",  mode: "minor" },
-  { number: 6,  letter: "B", keyName: "Bb Major", note: "Bb", mode: "major" },
-  { number: 6,  letter: "A", keyName: "G Minor",  note: "G",  mode: "minor" },
-  { number: 7,  letter: "B", keyName: "F Major",  note: "F",  mode: "major" },
-  { number: 7,  letter: "A", keyName: "D Minor",  note: "D",  mode: "minor" },
-  { number: 8,  letter: "B", keyName: "C Major",  note: "C",  mode: "major" },
-  { number: 8,  letter: "A", keyName: "A Minor",  note: "A",  mode: "minor" },
-  { number: 9,  letter: "B", keyName: "G Major",  note: "G",  mode: "major" },
-  { number: 9,  letter: "A", keyName: "E Minor",  note: "E",  mode: "minor" },
-  { number: 10, letter: "B", keyName: "D Major",  note: "D",  mode: "major" },
-  { number: 10, letter: "A", keyName: "B Minor",  note: "B",  mode: "minor" },
-  { number: 11, letter: "B", keyName: "A Major",  note: "A",  mode: "major" },
-  { number: 11, letter: "A", keyName: "Gb Minor", note: "Gb", mode: "minor" },
-  { number: 12, letter: "B", keyName: "E Major",  note: "E",  mode: "major" },
-  { number: 12, letter: "A", keyName: "Db Minor", note: "Db", mode: "minor" },
-];
-
-// noteIndex (0=C..11=B) + mode → Camelot entry
-const NOTE_TO_KEY: Record<string, string> = {
-  "0_major": "C Major",   "0_minor": "C Minor",
-  "1_major": "Db Major",  "1_minor": "Db Minor",
-  "2_major": "D Major",   "2_minor": "D Minor",
-  "3_major": "Eb Major",  "3_minor": "Eb Minor",
-  "4_major": "E Major",   "4_minor": "E Minor",
-  "5_major": "F Major",   "5_minor": "F Minor",
-  "6_major": "Gb Major",  "6_minor": "Gb Minor",
-  "7_major": "G Major",   "7_minor": "G Minor",
-  "8_major": "Ab Major",  "8_minor": "Ab Minor",
-  "9_major": "A Major",   "9_minor": "A Minor",
-  "10_major": "Bb Major", "10_minor": "Bb Minor",
-  "11_major": "B Major",  "11_minor": "B Minor",
-};
-
-function findEntry(keyName: string): CamelotEntry | undefined {
-  return WHEEL.find((e) => e.keyName === keyName);
-}
+const NOTE_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 
 export function noteIndexToKeyName(noteIndex: number, mode: "major" | "minor"): string {
-  return NOTE_TO_KEY[`${noteIndex}_${mode}`] ?? `${noteIndex} ${mode}`;
+  return `${NOTE_NAMES[noteIndex % 12]} ${mode === "major" ? "Major" : "Minor"}`;
 }
 
 /**
- * Returns compatible key names for harmonic mixing via Camelot wheel.
- * Same slot (cross-mode) + same letter ±1.
- * Example: 3B (Db Major) → { Db Major, Bb Minor, Gb Major, Ab Major }
+ * Returns all compatible key names:
+ * 1. Same key (exact match)
+ * 2. Relative major/minor (shares all notes)
+ * 3. Keys ±1 to ±3 semitones away in same mode (nearby keys)
  */
 export function getCompatibleKeys(keyName: string): string[] {
-  const entry = findEntry(keyName);
-  if (!entry) return [keyName];
+  const parts = keyName.trim().split(/\s+/);
+  if (parts.length < 2) return [keyName];
+
+  const note = parts[0];
+  const mode = parts[1].toLowerCase() as "major" | "minor";
+  const noteIdx = NOTE_NAMES.indexOf(note);
+  if (noteIdx < 0) return [keyName];
 
   const results: string[] = [keyName];
 
-  // Same number, opposite letter (relative major/minor)
-  const crossMode = WHEEL.find(
-    (e) => e.number === entry.number && e.letter !== entry.letter
-  );
-  if (crossMode) results.push(crossMode.keyName);
+  // Relative major/minor
+  if (mode === "major") {
+    const relIdx = (noteIdx - 3 + 12) % 12;
+    results.push(`${NOTE_NAMES[relIdx]} Minor`);
+  } else {
+    const relIdx = (noteIdx + 3) % 12;
+    results.push(`${NOTE_NAMES[relIdx]} Major`);
+  }
 
-  // Same letter, number ±1 (wrap 12→1, 1→12)
-  const prev = ((entry.number - 2 + 12) % 12) + 1;
-  const next = (entry.number % 12) + 1;
-
-  const prevEntry = WHEEL.find((e) => e.number === prev && e.letter === entry.letter);
-  const nextEntry = WHEEL.find((e) => e.number === next && e.letter === entry.letter);
-
-  if (prevEntry) results.push(prevEntry.keyName);
-  if (nextEntry) results.push(nextEntry.keyName);
+  // ±1 to ±3 semitones in same mode
+  const modeLabel = mode === "major" ? "Major" : "Minor";
+  for (let i = 1; i <= 3; i++) {
+    const upIdx = (noteIdx + i) % 12;
+    const downIdx = (noteIdx - i + 12) % 12;
+    const upKey = `${NOTE_NAMES[upIdx]} ${modeLabel}`;
+    const downKey = `${NOTE_NAMES[downIdx]} ${modeLabel}`;
+    if (!results.includes(upKey)) results.push(upKey);
+    if (!results.includes(downKey)) results.push(downKey);
+  }
 
   return results;
 }
 
-/**
- * Returns a label describing *why* a key is compatible.
- */
 export function matchReason(sourceKey: string, matchKey: string): string {
   if (sourceKey === matchKey) return "SAME KEY";
-  const src = findEntry(sourceKey);
-  const dst = findEntry(matchKey);
-  if (!src || !dst) return "";
-  if (src.number === dst.number && src.letter !== dst.letter) {
-    return dst.mode === "minor" ? "RELATIVE MINOR" : "RELATIVE MAJOR";
-  }
-  return "ADJACENT CAMELOT";
-}
 
-/**
- * Format a Camelot code for display (e.g. "3B")
- */
-export function camelotCode(keyName: string): string {
-  const entry = findEntry(keyName);
-  return entry ? `${entry.number}${entry.letter}` : "";
+  const srcParts = sourceKey.trim().split(/\s+/);
+  const dstParts = matchKey.trim().split(/\s+/);
+  if (srcParts.length < 2 || dstParts.length < 2) return "";
+
+  const srcIdx = NOTE_NAMES.indexOf(srcParts[0]);
+  const dstIdx = NOTE_NAMES.indexOf(dstParts[0]);
+  const srcMode = srcParts[1].toLowerCase();
+  const dstMode = dstParts[1].toLowerCase();
+
+  if (srcMode !== dstMode) {
+    // Check relative
+    if (srcMode === "major" && (srcIdx - 3 + 12) % 12 === dstIdx) return "RELATIVE MINOR";
+    if (srcMode === "minor" && (srcIdx + 3) % 12 === dstIdx) return "RELATIVE MAJOR";
+    return "";
+  }
+
+  // Same mode — check semitone distance
+  let diff = Math.abs(dstIdx - srcIdx);
+  if (diff > 6) diff = 12 - diff;
+  if (diff >= 1 && diff <= 3) return `±${diff} SEMITONE${diff > 1 ? "S" : ""}`;
+
+  return "";
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { camelotCode, matchReason } from "../lib/camelot";
+import { matchReason } from "../lib/camelot";
 
 export interface MatchTrack {
   artist: string;
@@ -20,7 +20,6 @@ interface Props {
 }
 
 export default function MatchRow({ track, sourceKey, selected, onClick }: Props) {
-  const cam = track.key ? camelotCode(track.key) : "";
   const reason = track.key ? matchReason(sourceKey, track.key) : "";
 
   return (
@@ -44,11 +43,8 @@ export default function MatchRow({ track, sourceKey, selected, onClick }: Props)
       <span className="text-[11px] uppercase tracking-[0.05em] shrink-0 w-[70px] text-right" style={{ color: "var(--text-dark)" }}>
         {track.key ? track.key.toUpperCase() : "—"}
       </span>
-      <span className="text-[10px] uppercase tracking-[0.05em] shrink-0 w-[24px] text-center" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)" }}>
-        {cam}
-      </span>
       {reason && (
-        <span className="text-[9px] uppercase tracking-[0.05em] shrink-0 w-[80px] text-right hidden sm:block" style={{ color: "var(--text-dark)", opacity: 0.4 }}>
+        <span className="text-[10px] uppercase tracking-[0.05em] shrink-0 w-[90px] text-right hidden sm:block" style={{ color: "var(--text-dark)", opacity: 0.4 }}>
           {reason}
         </span>
       )}

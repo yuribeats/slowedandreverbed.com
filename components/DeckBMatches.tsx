@@ -22,6 +22,7 @@ export default function DeckBMatches() {
   const [deckBError, setDeckBError] = useState("");
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [pitchMatch, setPitchMatch] = useState(false);
   const fetchedRef = useRef(false);
 
   const sourceKey = deckA.baseKey !== null && deckA.baseMode
@@ -75,6 +76,32 @@ export default function DeckBMatches() {
         }
       }
 
+      // Pitch-match results (if toggled on, first page only)
+      if (pitchMatch && pageNum === 0 && sourceKey) {
+        try {
+          const pmParams = new URLSearchParams({
+            key: sourceKey,
+            bpmMin: String(Math.round(sourceBPM - bpmWindow)),
+            bpmMax: String(Math.round(sourceBPM + bpmWindow)),
+            range: "3",
+            limit: "20",
+          });
+          const pmRes = await fetch(`/api/everysong/pitch-match?${pmParams}`);
+          if (pmRes.ok) {
+            const pmData = await pmRes.json();
+            for (const bucket of (pmData.results ?? [])) {
+              for (const t of (bucket.tracks ?? [])) {
+                const k = `${(t.artist as string).toLowerCase()}|${(t.title as string).toLowerCase()}`;
+                if (!seen.has(k)) {
+                  seen.add(k);
+                  newTracks.push({ ...t, shift: bucket.shift } as MatchTrack);
+                }
+              }
+            }
+          }
+        } catch { /* pitch-match is optional */ }
+      }
+
       setTracks(append ? [...tracks, ...newTracks] : newTracks);
       setHasMore(data.hasMore ?? false);
       setPage(pageNum);
@@ -82,7 +109,7 @@ export default function DeckBMatches() {
       setError(e instanceof Error ? e.message : "MATCH SEARCH FAILED");
     }
     setLoading(false);
-  }, [sourceKey, sourceBPM, bpmWindow, sortMode, deckA.artist, deckA.title, tracks]);
+  }, [sourceKey, sourceBPM, bpmWindow, sortMode, pitchMatch, deckA.artist, deckA.title, tracks]);
 
   // Initial fetch — trigger when BOTH key AND BPM are available
   useEffect(() => {
@@ -159,6 +186,18 @@ export default function DeckBMatches() {
               style={{ fontSize: "12px", padding: "4px" }}
             />
           </div>
+          <button
+            onClick={() => { setPitchMatch(!pitchMatch); setTimeout(handleRefetch, 0); }}
+            className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border"
+            style={{
+              fontFamily: "var(--font-tech)",
+              color: "var(--text-dark)",
+              background: pitchMatch ? "rgba(255,115,0,0.15)" : "transparent",
+              borderColor: pitchMatch ? "#333" : "#777",
+            }}
+          >
+            PITCH MATCH
+          </button>
         </div>
 
         {/* Track list */}
@@ -176,8 +215,7 @@ export default function DeckBMatches() {
             <span className="flex-1 text-[10px] uppercase tracking-[0.1em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>ARTIST — TITLE</span>
             <span className="text-[10px] uppercase tracking-[0.1em] w-[40px] text-right" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>BPM</span>
             <span className="text-[10px] uppercase tracking-[0.1em] w-[70px] text-right" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>KEY</span>
-            <span className="text-[10px] uppercase tracking-[0.1em] w-[24px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>CAM</span>
-            <span className="text-[10px] uppercase tracking-[0.1em] w-[80px] text-right hidden sm:block" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>WHY</span>
+            <span className="text-[10px] uppercase tracking-[0.1em] w-[90px] text-right hidden sm:block" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>MATCH</span>
           </div>
 
           {loading && tracks.length === 0 ? (
