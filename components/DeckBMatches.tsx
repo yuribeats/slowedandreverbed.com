@@ -30,7 +30,7 @@ export default function DeckBMatches() {
   const sourceBPM = deckA.calculatedBPM;
 
   const fetchMatches = useCallback(async (pageNum: number, append: boolean) => {
-    if (!sourceKey) return;
+    if (!sourceKey || !sourceBPM) return;
     setLoading(true);
     setError("");
 
@@ -45,10 +45,8 @@ export default function DeckBMatches() {
       excludeArtist: deckA.artist,
       excludeTitle: deckA.title,
     });
-    if (sourceBPM) {
-      params.set("bpmMin", String(Math.round(sourceBPM - bpmWindow)));
-      params.set("bpmMax", String(Math.round(sourceBPM + bpmWindow)));
-    }
+    params.set("bpmMin", String(Math.round(sourceBPM - bpmWindow)));
+    params.set("bpmMax", String(Math.round(sourceBPM + bpmWindow)));
 
     try {
       const res = await fetch(`/api/everysong/match?${params}`);
@@ -86,13 +84,13 @@ export default function DeckBMatches() {
     setLoading(false);
   }, [sourceKey, sourceBPM, bpmWindow, sortMode, deckA.artist, deckA.title, tracks]);
 
-  // Initial fetch — trigger when key is available
+  // Initial fetch — trigger when BOTH key AND BPM are available
   useEffect(() => {
-    if (sourceKey && !fetchedRef.current) {
+    if (sourceKey && sourceBPM && !fetchedRef.current) {
       fetchedRef.current = true;
       fetchMatches(0, false);
     }
-  }, [sourceKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sourceKey, sourceBPM]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefetch = useCallback(() => {
     fetchedRef.current = true;
