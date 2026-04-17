@@ -10,6 +10,8 @@ import WaveformDisplay from "../../components/WaveformDisplay";
 import PianoKeyboard from "../../components/PianoKeyboard";
 import Toast from "../../components/Toast";
 import ExportVideoModalRemix from "../../components/ExportVideoModalRemix";
+import SceneLanding from "../../components/SceneLanding";
+import DeckBMatches from "../../components/DeckBMatches";
 
 
 type DeckId = "A" | "B";
@@ -1862,10 +1864,40 @@ function HomeInner() {
   );
 }
 
+function SceneRouter() {
+  const deckA = useRemixStore((s) => s.deckA);
+  const deckB = useRemixStore((s) => s.deckB);
+  const searchParams = useSearchParams();
+
+  // If URL has deck params, go straight to dual-deck (Scene 3)
+  const hasUrlParams = searchParams.get("a_artist") || searchParams.get("s");
+
+  // Scene 1: no Deck A loaded
+  const deckAReady = deckA.sourceBuffer && (deckA.baseKey !== null || deckA.calculatedBPM !== null);
+  // Scene 3: both decks loaded
+  const deckBReady = deckB.sourceBuffer;
+
+  if (hasUrlParams || (deckAReady && deckBReady)) {
+    return <HomeInner />;
+  }
+
+  if (deckAReady) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
+        <div className="w-full max-w-[800px]">
+          <DeckBMatches />
+        </div>
+      </main>
+    );
+  }
+
+  return <SceneLanding />;
+}
+
 export default function Home() {
   return (
     <Suspense>
-      <HomeInner />
+      <SceneRouter />
     </Suspense>
   );
 }
