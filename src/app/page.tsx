@@ -16,7 +16,7 @@ import DeckBMatches from "../../components/DeckBMatches";
 
 type DeckId = "A" | "B";
 
-const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
+const NOTE_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"] as const;
 
 function semitoneToKey(baseKeyIndex: number, semitones: number, mode?: "major" | "minor" | null): string {
   const idx = ((baseKeyIndex + Math.round(semitones)) % 12 + 12) % 12;
