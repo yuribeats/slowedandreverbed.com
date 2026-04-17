@@ -1403,8 +1403,14 @@ function HomeInner() {
     run();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-pitch sync disabled — shifting by large intervals sounds bad.
-  // Users can manually adjust pitch per deck.
+  // Reactive pitch sync: whenever both decks have keys, set A's pitch to match B's key
+  useEffect(() => {
+    if (deckA.baseKey !== null && deckB.baseKey !== null) {
+      let diff = ((deckB.baseKey - deckA.baseKey) % 12 + 12) % 12;
+      if (diff > 6) diff -= 12;
+      setParam("A", "pitch", diff);
+    }
+  }, [deckA.baseKey, deckB.baseKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-match Deck B region length to Deck A when Deck B loads
   const setRegionHome = useRemixStore((s) => s.setRegion);
