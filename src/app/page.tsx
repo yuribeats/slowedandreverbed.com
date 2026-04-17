@@ -485,7 +485,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   STEMS
                 </button>
                 {deckMenuOpen && (
-                  <div className="absolute left-0 top-full mt-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
+                  <div className="absolute left-0 bottom-full mb-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
                     <div className="text-[10px] uppercase tracking-[0.2em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#666" }}>
                       STEMS {deck.isStemLoading ? "(SEPARATING...)" : deck.activeStems.length > 0 ? `(${deck.activeStems.length} ACTIVE)` : ""}
                     </div>
