@@ -1148,6 +1148,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
             get().setParam("A", "pitch", diff);
           }
         }
+        if (data.bpm) {
+          get().setBPM(id, data.bpm);
+        }
       }
     } catch (e) {
       console.error(`[lookupEverysong:${id}] error:`, e);

@@ -32,18 +32,14 @@ export default function DeckBMatches() {
 
   // Fetch matches when Deck A key/BPM are known
   const fetchMatches = useCallback(async (pageNum: number, append: boolean) => {
-    if (!sourceKey || !sourceBPM) return;
+    if (!sourceKey) return;
     setLoading(true);
     setError("");
 
     const compatKeys = getCompatibleKeys(sourceKey);
-    const bpmMin = Math.round(sourceBPM - bpmWindow);
-    const bpmMax = Math.round(sourceBPM + bpmWindow);
 
     const params = new URLSearchParams({
       keys: compatKeys.join(","),
-      bpmMin: String(bpmMin),
-      bpmMax: String(bpmMax),
       limit: "100",
       page: String(pageNum),
       sort: sortMode === "random" ? "popularity" : sortMode,
@@ -51,6 +47,10 @@ export default function DeckBMatches() {
       excludeArtist: deckA.artist,
       excludeTitle: deckA.title,
     });
+    if (sourceBPM) {
+      params.set("bpmMin", String(Math.round(sourceBPM - bpmWindow)));
+      params.set("bpmMax", String(Math.round(sourceBPM + bpmWindow)));
+    }
 
     try {
       const res = await fetch(`/api/everysong/match?${params}`);
@@ -138,8 +138,11 @@ export default function DeckBMatches() {
               <span className="text-[12px] tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", fontWeight: 700 }}>
                 DECK A
               </span>
-              <span className="text-[14px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                {deckA.artist} — {deckA.title}
+              <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>
+                ARTIST: {deckA.artist}
+              </span>
+              <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>
+                TITLE: {deckA.title}
               </span>
             </div>
             <div className="flex items-center gap-4">

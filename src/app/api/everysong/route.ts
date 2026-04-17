@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
       found: true,
       artist: best.artist,
       title: best.title,
+      bpm: best.bpm ? Math.round((best.bpm as number) * 10) / 10 : null,
       key: best.key ?? null,
       noteIndex: keyParsed?.noteIndex ?? null,
       mode: keyParsed?.mode ?? null,
