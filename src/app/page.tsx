@@ -476,7 +476,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               </button>
             }
             leftControls={
-              <div className="relative shrink-0">
+              <div className="shrink-0">
                 <button
                   onClick={() => setDeckMenuOpen(!deckMenuOpen)}
                   className="text-[12px] px-1.5 py-0 border border-[#555]"
@@ -484,55 +484,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 >
                   STEMS
                 </button>
-                {deckMenuOpen && (
-                  <div className="absolute left-0 bottom-full mb-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
-                    <div className="text-[10px] uppercase tracking-[0.2em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#666" }}>
-                      STEMS {deck.isStemLoading ? "(SEPARATING...)" : deck.activeStems.length > 0 ? `(${deck.activeStems.length} ACTIVE)` : ""}
-                    </div>
-                    {([
-                      ["vocals", "VOCALS"],
-                      ["drums", "DRUMS"],
-                      ["bass", "BASS"],
-                      ["other", "OTHER"],
-                      ["instrumental", "INSTRUMENTAL"],
-                    ] as const).map(([stem, label]) => {
-                      const active = deck.activeStems.includes(stem);
-                      return (
-                        <button
-                          key={stem}
-                          onClick={() => { toggleStem(id, stem); }}
-                          disabled={deck.isStemLoading}
-                          className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center gap-3"
-                          style={{ fontFamily: "var(--font-tech)", color: active ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
-                        >
-                          <span style={{ width: 14, textAlign: "center", fontSize: "14px" }}>{active ? "X" : "-"}</span>
-                          {label}
-                        </button>
-                      );
-                    })}
-                    <button
-                      onClick={() => { detectDownbeat(id); setDeckMenuOpen(false); }}
-                      disabled={!deck.sourceBuffer || deck.downbeatDetecting}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                      style={{ fontFamily: "var(--font-tech)", color: deck.firstDownbeatMs !== null ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.5 : 1 }}
-                    >
-                      <span>{deck.downbeatDetecting
-                        ? "DETECTING..."
-                        : deck.firstDownbeatMs !== null
-                        ? `DOWNBEAT: ${(deck.firstDownbeatMs / 1000).toFixed(3)}S`
-                        : "DETECT DOWNBEAT"}</span>
-                      <span data-tooltip-right="FIND THE FIRST BEAT FOR LOOP ALIGNMENT" className="ml-3 text-[10px]">?</span>
-                    </button>
-                    <button
-                      onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
-                      className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                      style={{ fontFamily: "var(--font-tech)", color: showKeyFinder ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
-                    >
-                      KEY FINDER
-                      <span data-tooltip-right="DETECT THE MUSICAL KEY OF THE TRACK" className="ml-3 text-[10px]">?</span>
-                    </button>
-                  </div>
-                )}
               </div>
             }
           />
@@ -921,6 +872,58 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       )}
       {/* end showEQ */}
       </>}
+
+      {/* Stems menu — fixed overlay to escape stacking contexts */}
+      {deckMenuOpen && (
+        <>
+          <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setDeckMenuOpen(false)} />
+          <div className="fixed left-4 top-1/2 -translate-y-1/2 border-2 border-[#555] flex flex-col" style={{ minWidth: "220px", zIndex: 9999, backgroundColor: "var(--bg-base, #c4b89a)" }}>
+            <div className="text-[10px] uppercase tracking-[0.2em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#666" }}>
+              DECK {id} STEMS {deck.isStemLoading ? "(SEPARATING...)" : deck.activeStems.length > 0 ? `(${deck.activeStems.length} ACTIVE)` : ""}
+            </div>
+            {([
+              ["vocals", "VOCALS"],
+              ["drums", "DRUMS"],
+              ["bass", "BASS"],
+              ["other", "OTHER"],
+              ["instrumental", "INSTRUMENTAL"],
+            ] as const).map(([stem, label]) => {
+              const active = deck.activeStems.includes(stem);
+              return (
+                <button
+                  key={stem}
+                  onClick={() => { toggleStem(id, stem); }}
+                  disabled={deck.isStemLoading}
+                  className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center gap-3"
+                  style={{ fontFamily: "var(--font-tech)", color: active ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
+                >
+                  <span style={{ width: 14, textAlign: "center", fontSize: "14px" }}>{active ? "X" : "-"}</span>
+                  {label}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => { detectDownbeat(id); setDeckMenuOpen(false); }}
+              disabled={!deck.sourceBuffer || deck.downbeatDetecting}
+              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
+              style={{ fontFamily: "var(--font-tech)", color: deck.firstDownbeatMs !== null ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.5 : 1 }}
+            >
+              <span>{deck.downbeatDetecting
+                ? "DETECTING..."
+                : deck.firstDownbeatMs !== null
+                ? `DOWNBEAT: ${(deck.firstDownbeatMs / 1000).toFixed(3)}S`
+                : "DETECT DOWNBEAT"}</span>
+            </button>
+            <button
+              onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
+              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
+              style={{ fontFamily: "var(--font-tech)", color: showKeyFinder ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
+            >
+              KEY FINDER
+            </button>
+          </div>
+        </>
+      )}
 
     </div>
   );
