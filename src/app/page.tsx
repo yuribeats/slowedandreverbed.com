@@ -69,9 +69,9 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [reverbDetail, setReverbDetail] = useState(false);
   const [toneDetail, setToneDetail] = useState(false);
   const [satDetail, setSatDetail] = useState(false);
-  const [nudgeStep, setNudgeStep] = useState(0.01);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [deckMenuOpen, setDeckMenuOpen] = useState(false);
+  const [showEQ, setShowEQ] = useState(false);
   const [showYouTube, setShowYouTube] = useState(false);
   const [showKeyFinder, setShowKeyFinder] = useState(false);
 
@@ -380,7 +380,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 onClick={() => setEditingKey(true)}
               >
                 {baseKey !== null
-                  ? `KEY: ${semitoneToKey(baseKey, displaySemitones, baseMode)}`
+                  ? `KEY: ${NOTE_NAMES[baseKey]}${baseMode === "minor" ? "m" : ""}`
                   : "SET KEY"
                 }
               </span>
@@ -482,7 +482,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   className="text-[12px] px-1.5 py-0 border border-[#555]"
                   style={{ fontFamily: "var(--font-tech)", color: deckMenuOpen ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
                 >
-                  TOOLS
+                  STEMS
                 </button>
                 {deckMenuOpen && (
                   <div className="absolute left-0 top-full mt-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
@@ -541,64 +541,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
 
 
-      {/* Loop IN/OUT nudge controls */}
-      {deck.sourceBuffer && (deck.regionStart !== 0 || deck.regionEnd > 0) && (() => {
-        const dur = deck.sourceBuffer!.duration;
-        const inVal = deck.regionStart;
-        const outVal = deck.regionEnd > 0 ? deck.regionEnd : dur;
-        const nudgeIn = (dir: number) => {
-          const v = Math.min(outVal - 0.001, inVal + dir * nudgeStep);
-          setRegion(id, v, deck.regionEnd);
-        };
-        const nudgeOut = (dir: number) => {
-          const v = Math.max(inVal + 0.001, outVal + dir * nudgeStep);
-          setRegion(id, deck.regionStart, v);
-        };
-        const btnStyle: React.CSSProperties = {
-          fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent",
-          fontSize: "12px", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center",
-          border: "1px solid #444",
-        };
-        return (
-          <div className="zone-engraved">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div className="label" style={{ fontSize: "12px", margin: 0 }}>IN</div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => nudgeIn(-1)} style={btnStyle}>&lt;</button>
-                  <span className="text-[12px] w-[70px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                    {inVal.toFixed(4)}S
-                  </span>
-                  <button onClick={() => nudgeIn(1)} style={btnStyle}>&gt;</button>
-                </div>
-              </div>
-              <div className="flex-1 flex flex-col items-center gap-0.5">
-                <div className="label" style={{ fontSize: "12px", margin: 0 }}>STEP</div>
-                <input
-                  type="range" min={0.01} max={1} step={0.01}
-                  value={nudgeStep}
-                  onChange={(e) => setNudgeStep(parseFloat(e.target.value))}
-                  className="w-full"
-                  style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "16px" }}
-                />
-                <span className="text-[12px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                  {(nudgeStep * 1000).toFixed(0)}MS
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div className="label" style={{ fontSize: "12px", margin: 0 }}>OUT</div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => nudgeOut(-1)} style={btnStyle}>&lt;</button>
-                  <span className="text-[12px] w-[70px] text-center" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-                    {outVal.toFixed(4)}S
-                  </span>
-                  <button onClick={() => nudgeOut(1)} style={btnStyle}>&gt;</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Step nudger removed */}
 
       {/* Stem status */}
       {(deck.isStemLoading || deck.stemError) && (
@@ -668,8 +611,19 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       )}
 
+      {/* EQ toggle button */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => setShowEQ(!showEQ)}
+          className={detailBtnClass(showEQ)}
+          style={detailBtnStyle}
+        >
+          EQ
+        </button>
+      </div>
+
       {/* All controls: Speed/Pitch/Vol on top, Reverb/Tone/Sat below */}
-      <div className="zone-engraved" style={{ position: "relative" }}>
+      {showEQ && <><div className="zone-engraved" style={{ position: "relative" }}>
         {isTrackLoading && (
           <div style={{
             position: "absolute", inset: 0, zIndex: 10,
@@ -965,6 +919,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           </div>
         </div>
       )}
+      {/* end showEQ */}
+      </>}
 
     </div>
   );
@@ -1469,6 +1425,7 @@ function HomeInner() {
   const [saveStatus, setSaveStatus] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(true);
+  const [showMasterEQ, setShowMasterEQ] = useState(false);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
   const restoreSession = useRemixStore((s) => s.restoreSession);
@@ -1682,91 +1639,94 @@ function HomeInner() {
             </div>
           </div>
 
-          {/* Sync start + Lock BPM + Record — only when deck B visible */}
+          {/* Sync controls — only when deck B visible */}
           {showDeckB && (
-            <div className="flex justify-center gap-6 boot-stagger boot-delay-3">
-              <div className="flex flex-col items-center" data-tooltip="ARMS THE RECORDER. CAPTURES THE MIX WHEN BOTH DECKS PLAY.">
-                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>LIVE RECORDING</span>
-                <button
-                  onClick={() => armRecord()}
-                  className="rocker-switch"
-                  style={{
-                    width: "60px", height: "44px",
-                    boxShadow: recordArmed ? "inset 0 0 8px rgba(200,40,40,0.4)" : isRecording ? "inset 0 0 12px rgba(200,40,40,0.6)" : undefined,
-                  }}
-                >
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
+            <div className="flex flex-col items-center gap-4 boot-stagger boot-delay-3">
+              {/* Primary: Sync Start + Stop — large */}
+              <div className="flex justify-center gap-6">
+                <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
+                  <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
+                  <button
+                    onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
+                    disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
+                    className="rocker-switch"
+                    style={{ width: "90px", height: "60px" }}
+                  >
+                    <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                  </button>
+                </div>
+                <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
+                  <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
+                  <button
+                    onClick={() => { stopDeck("A"); stopDeck("B"); }}
+                    disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
+                    className="rocker-switch"
+                    style={{ width: "90px", height: "60px" }}
+                  >
+                    <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                  </button>
+                </div>
+              </div>
+              {/* Secondary: Record, Phase Sync, Match Len — small */}
+              <div className="flex justify-center gap-4">
+                <div className="flex flex-col items-center" data-tooltip="ARMS THE RECORDER. CAPTURES THE MIX WHEN BOTH DECKS PLAY.">
+                  <span className="label" style={{ margin: 0, fontSize: "10px", marginBottom: "2px" }}>REC</span>
+                  <button
+                    onClick={() => armRecord()}
+                    className="rocker-switch"
                     style={{
-                      background: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "#555",
-                      animation: isRecording ? "pulse 1s infinite" : undefined,
+                      width: "40px", height: "30px",
+                      boxShadow: recordArmed ? "inset 0 0 8px rgba(200,40,40,0.4)" : isRecording ? "inset 0 0 12px rgba(200,40,40,0.6)" : undefined,
                     }}
-                  />
-                </button>
-                <span className="text-[12px] mt-0.5" style={{
-                  fontFamily: "var(--font-tech)",
-                  color: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "var(--text-dark)",
-                  opacity: isRecording || recordArmed ? 1 : 0.4,
-                }}>
-                  {isRecording ? "STOP" : recordArmed ? "ARMED" : "OFF"}
-                </span>
-              </div>
-              <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
-                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
-                <button
-                  onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
-                  disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
-                  className="rocker-switch"
-                  style={{ width: "60px", height: "44px" }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-                </button>
-              </div>
-              <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
-                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
-                <button
-                  onClick={() => { stopDeck("A"); stopDeck("B"); }}
-                  disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
-                  className="rocker-switch"
-                  style={{ width: "60px", height: "44px" }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-                </button>
-              </div>
-              <div className="flex flex-col items-center" data-tooltip="SNAPS BOTH DECKS' IN POINTS TO THEIR NEAREST BAR BOUNDARY SO THEY START ON A DOWNBEAT.">
-                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>PHASE SYNC</span>
-                <button
-                  onClick={phaseSync}
-                  disabled={!deckA.gridlockEnabled || !deckB.gridlockEnabled}
-                  className="rocker-switch"
-                  style={{ width: "60px", height: "44px" }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-                </button>
-              </div>
-              <div className="flex flex-col items-center" data-tooltip="ADJUSTS BOTH DECK SPEEDS SO THEIR REGIONS PLAY IN EQUAL TIME. PITCH PRESERVED.">
-                <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>MATCH LEN</span>
-                <button
-                  onClick={() => {
-                    if (!deckA.sourceBuffer || !deckB.sourceBuffer) return;
-                    const aLen = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
-                    const bLen = (deckB.regionEnd > 0 ? deckB.regionEnd : deckB.sourceBuffer.duration) - deckB.regionStart;
-                    if (aLen <= 0 || bLen <= 0) return;
-                    // Target duration = geometric mean — both decks meet in the middle.
-                    // Each deck adjusts its own speed (BPM) to play its selection in T seconds.
-                    // Speed is always pitch-independent: unlink first so pitch is preserved.
-                    const T = Math.sqrt(aLen * bLen);
-                    if (deckA.params.pitchSpeedLinked ?? true) setParam("A", "pitchSpeedLinked", 0);
-                    if (deckB.params.pitchSpeedLinked ?? true) setParam("B", "pitchSpeedLinked", 0);
-                    setParam("A", "speed", aLen / T - 1);
-                    setParam("B", "speed", bLen / T - 1);
-                  }}
-                  disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
-                  className="rocker-switch"
-                  style={{ width: "60px", height: "44px" }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-                </button>
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        background: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "#555",
+                        animation: isRecording ? "pulse 1s infinite" : undefined,
+                      }}
+                    />
+                  </button>
+                  <span className="text-[10px] mt-0.5" style={{
+                    fontFamily: "var(--font-tech)",
+                    color: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "var(--text-dark)",
+                    opacity: isRecording || recordArmed ? 1 : 0.4,
+                  }}>
+                    {isRecording ? "STOP" : recordArmed ? "ARMED" : "OFF"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center" data-tooltip="SNAPS BOTH DECKS' IN POINTS TO THEIR NEAREST BAR BOUNDARY SO THEY START ON A DOWNBEAT.">
+                  <span className="label" style={{ margin: 0, fontSize: "10px", marginBottom: "2px" }}>PHASE</span>
+                  <button
+                    onClick={phaseSync}
+                    disabled={!deckA.gridlockEnabled || !deckB.gridlockEnabled}
+                    className="rocker-switch"
+                    style={{ width: "40px", height: "30px" }}
+                  >
+                    <div className="w-1 h-1 rounded-full border-2 border-[#555]" />
+                  </button>
+                </div>
+                <div className="flex flex-col items-center" data-tooltip="ADJUSTS BOTH DECK SPEEDS SO THEIR REGIONS PLAY IN EQUAL TIME. PITCH PRESERVED.">
+                  <span className="label" style={{ margin: 0, fontSize: "10px", marginBottom: "2px" }}>MATCH LEN</span>
+                  <button
+                    onClick={() => {
+                      if (!deckA.sourceBuffer || !deckB.sourceBuffer) return;
+                      const aLen = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
+                      const bLen = (deckB.regionEnd > 0 ? deckB.regionEnd : deckB.sourceBuffer.duration) - deckB.regionStart;
+                      if (aLen <= 0 || bLen <= 0) return;
+                      const T = Math.sqrt(aLen * bLen);
+                      if (deckA.params.pitchSpeedLinked ?? true) setParam("A", "pitchSpeedLinked", 0);
+                      if (deckB.params.pitchSpeedLinked ?? true) setParam("B", "pitchSpeedLinked", 0);
+                      setParam("A", "speed", aLen / T - 1);
+                      setParam("B", "speed", bLen / T - 1);
+                    }}
+                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
+                    className="rocker-switch"
+                    style={{ width: "40px", height: "30px" }}
+                  >
+                    <div className="w-1 h-1 rounded-full border-2 border-[#555]" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1839,9 +1799,20 @@ function HomeInner() {
           )}
 
           {/* Master output bus */}
-          <div className="zone-inset boot-stagger boot-delay-4">
-            <MasterBus />
+          <div className="flex justify-center boot-stagger boot-delay-4">
+            <button
+              onClick={() => setShowMasterEQ(!showMasterEQ)}
+              className={detailBtnClass(showMasterEQ)}
+              style={detailBtnStyle}
+            >
+              MASTER EQ
+            </button>
           </div>
+          {showMasterEQ && (
+            <div className="zone-inset boot-stagger boot-delay-4">
+              <MasterBus />
+            </div>
+          )}
         </div>
 
         <Toast />
