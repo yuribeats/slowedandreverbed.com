@@ -77,6 +77,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
   const rate = 1.0 + deck.params.speed;
   const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
+  const deckReady = deck.sourceBuffer && !isTrackLoading && deck.stemBuffers && deck.firstDownbeatMs !== null;
   const loadPct = Math.round(
     ((!deck.isLoading ? 1 : 0) + (!deck.downbeatDetecting ? 1 : 0) + (!deck.isStemLoading ? 1 : 0)) / 3 * 100
   );
@@ -494,24 +495,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
       {/* Step nudger removed */}
 
-      {/* Stem status */}
-      {(deck.isStemLoading || deck.stemError) && (
+      {/* Stem error only */}
+      {deck.stemError && (
         <div className="flex flex-col items-center gap-1">
-          {deck.isStemLoading && (
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] animate-pulse" style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)", letterSpacing: "0.15em" }}>
-                ISOLATING VOCALS
-              </span>
-              <span className="text-[12px] animate-pulse" style={{ color: "var(--accent-gold)", fontFamily: "var(--font-tech)" }}>
-                &#9679; &#9679; &#9679;
-              </span>
-            </div>
-          )}
-          {deck.stemError && (
-            <span className="text-[12px]" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
-              {deck.stemError.replace(/<[^>]*>/g, "").slice(0, 60).toUpperCase()}
-            </span>
-          )}
+          <span className="text-[12px]" style={{ color: "var(--led-red-on)", fontFamily: "var(--font-tech)" }}>
+            {deck.stemError.replace(/<[^>]*>/g, "").slice(0, 60).toUpperCase()}
+          </span>
         </div>
       )}
       {showKeyFinder && (
@@ -524,19 +513,19 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       <div className="flex items-center gap-2 justify-center">
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>REW</span>
-          <button onClick={() => handleSkip(-5)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+          <button onClick={() => handleSkip(-5)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>START</span>
-          <button onClick={handleStart} disabled={!deck.sourceBuffer || deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+          <button onClick={handleStart} disabled={!deckReady || deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>STOP</span>
-          <button onClick={() => stop(id)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+          <button onClick={() => stop(id)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full" style={{
               background: (id === "A" && recordArmed) ? "var(--led-red-on, #c82828)" : undefined,
               border: (id === "A" && recordArmed) ? "none" : "2px solid #555",
@@ -545,13 +534,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>PAUSE</span>
-          <button onClick={() => pause(id)} disabled={!deck.sourceBuffer || !deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+          <button onClick={() => pause(id)} disabled={!deckReady || !deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
         <div className="flex flex-col items-center">
           <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>FF</span>
-          <button onClick={() => handleSkip(5)} disabled={!deck.sourceBuffer} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+          <button onClick={() => handleSkip(5)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
             <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
           </button>
         </div>
@@ -1414,16 +1403,8 @@ function HomeInner() {
     run();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reactive pitch sync: whenever both decks have keys, set A's pitch to match B's key
-  // Skipped when b_shift is set (deck B is varispeed-shifted instead)
-  useEffect(() => {
-    if (deckA.baseKey !== null && deckB.baseKey !== null) {
-      if (skipPitchSync.current) { skipPitchSync.current = false; return; }
-      let diff = ((deckB.baseKey - deckA.baseKey) % 12 + 12) % 12;
-      if (diff > 6) diff -= 12;
-      setParam("A", "pitch", diff);
-    }
-  }, [deckA.baseKey, deckB.baseKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-pitch sync disabled — shifting by large intervals sounds bad.
+  // Users can manually adjust pitch per deck.
 
   // Auto-match Deck B region length to Deck A when Deck B loads
   const setRegionHome = useRemixStore((s) => s.setRegion);
@@ -1662,7 +1643,7 @@ function HomeInner() {
                   <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
                   <button
                     onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
-                    disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
+                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer || deckA.isStemLoading || deckB.isStemLoading || deckA.downbeatDetecting || deckB.downbeatDetecting || !deckA.stemBuffers || !deckB.stemBuffers || deckA.firstDownbeatMs === null || deckB.firstDownbeatMs === null}
                     className="rocker-switch"
                     style={{ width: "90px", height: "60px" }}
                   >
@@ -1673,7 +1654,7 @@ function HomeInner() {
                   <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
                   <button
                     onClick={() => { stopDeck("A"); stopDeck("B"); }}
-                    disabled={!deckA.sourceBuffer && !deckB.sourceBuffer}
+                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer || deckA.isStemLoading || deckB.isStemLoading || deckA.downbeatDetecting || deckB.downbeatDetecting || !deckA.stemBuffers || !deckB.stemBuffers || deckA.firstDownbeatMs === null || deckB.firstDownbeatMs === null}
                     className="rocker-switch"
                     style={{ width: "90px", height: "60px" }}
                   >
