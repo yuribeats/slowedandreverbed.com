@@ -8,6 +8,13 @@ import MatchRow, { type MatchTrack } from "./MatchRow";
 
 type SortMode = "popularity" | "bpm" | "random";
 
+const ALL_KEYS = [
+  "C Major", "Db Major", "D Major", "Eb Major", "E Major", "F Major",
+  "Gb Major", "G Major", "Ab Major", "A Major", "Bb Major", "B Major",
+  "C Minor", "Db Minor", "D Minor", "Eb Minor", "E Minor", "F Minor",
+  "Gb Minor", "G Minor", "Ab Minor", "A Minor", "Bb Minor", "B Minor",
+];
+
 export default function DeckBMatches() {
   const deckA = useRemixStore((s) => s.deckA);
   const loadDeck = useRemixStore((s) => s.loadDeck);
@@ -25,13 +32,32 @@ export default function DeckBMatches() {
   const [pitchMatch, setPitchMatch] = useState(false);
   const fetchedRef = useRef(false);
 
-  const sourceKey = deckA.baseKey !== null && deckA.baseMode
+  // Editable key/BPM — auto-populated from Deck A
+  const deckAKey = deckA.baseKey !== null && deckA.baseMode
     ? noteIndexToKeyName(deckA.baseKey, deckA.baseMode)
     : null;
-  const sourceBPM = deckA.calculatedBPM;
+  const [searchKey, setSearchKey] = useState<string>("");
+  const [searchBPM, setSearchBPM] = useState<string>("");
+  const initializedRef = useRef(false);
+
+  // Auto-populate from Deck A when values arrive
+  useEffect(() => {
+    if (deckAKey && !initializedRef.current) {
+      setSearchKey(deckAKey);
+    }
+  }, [deckAKey]);
+  useEffect(() => {
+    if (deckA.calculatedBPM && !initializedRef.current) {
+      setSearchBPM(String(Math.round(deckA.calculatedBPM * 10) / 10));
+    }
+  }, [deckA.calculatedBPM]);
+
+  const sourceKey = searchKey || null;
+  const sourceBPM = parseFloat(searchBPM) || null;
 
   const fetchMatches = useCallback(async (pageNum: number, append: boolean) => {
     if (!sourceKey || !sourceBPM) return;
+    initializedRef.current = true;
     setLoading(true);
     setError("");
 
@@ -152,6 +178,36 @@ export default function DeckBMatches() {
           <span className="text-[11px] tracking-[0.5px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>
             {tracks.length} RESULTS
           </span>
+        </div>
+
+        {/* Key + BPM fields */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] tracking-[1px] uppercase shrink-0" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>KEY</span>
+            <select
+              value={searchKey}
+              onChange={(e) => { setSearchKey(e.target.value); setTimeout(handleRefetch, 0); }}
+              className="tactical-input uppercase"
+              style={{ fontSize: "11px", padding: "3px 6px", appearance: "none", WebkitAppearance: "none" }}
+            >
+              <option value="">—</option>
+              {ALL_KEYS.map((k) => (
+                <option key={k} value={k}>{k.toUpperCase()}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] tracking-[1px] uppercase shrink-0" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>BPM</span>
+            <input
+              type="number"
+              value={searchBPM}
+              onChange={(e) => setSearchBPM(e.target.value)}
+              onBlur={handleRefetch}
+              onKeyDown={(e) => e.key === "Enter" && handleRefetch()}
+              className="tactical-input w-[65px] text-center"
+              style={{ fontSize: "11px", padding: "3px 6px" }}
+            />
+          </div>
         </div>
 
         {/* Controls */}
