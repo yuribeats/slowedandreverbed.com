@@ -33,9 +33,6 @@ export async function GET(request: NextRequest) {
   }
 
   const apiKey = process.env.EVERYSONG_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "EVERYSONG_API_KEY not configured" }, { status: 500 });
-  }
 
   const p = new URLSearchParams({
     key: keys,
@@ -45,8 +42,8 @@ export async function GET(request: NextRequest) {
     limit,
     popMin: "1",
     speechMax: "0.33",
-    api_key: apiKey,
   });
+  if (apiKey) p.set("api_key", apiKey);
   if (bpmMin) p.set("bpmMin", bpmMin);
   if (bpmMax) p.set("bpmMax", bpmMax);
 

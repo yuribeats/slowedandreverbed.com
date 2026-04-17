@@ -1864,6 +1864,29 @@ function HomeInner() {
   );
 }
 
+function SceneMatchBrowser() {
+  return (
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-[1100px] flex flex-col gap-5">
+        <div className="console flex flex-col gap-5">
+          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1">
+            <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
+              <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
+            </div>
+            <span className="text-lg sm:text-xl tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}>
+              SLOWED AND REVERBED MACHINE
+            </span>
+          </div>
+          <div className="zone-inset boot-stagger boot-delay-2">
+            <Deck id="A" />
+          </div>
+        </div>
+        <DeckBMatches />
+      </div>
+    </main>
+  );
+}
+
 function SceneRouter() {
   const deckA = useRemixStore((s) => s.deckA);
   const deckB = useRemixStore((s) => s.deckB);
@@ -1882,13 +1905,7 @@ function SceneRouter() {
   }
 
   if (deckAReady) {
-    return (
-      <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
-        <div className="w-full max-w-[800px]">
-          <DeckBMatches />
-        </div>
-      </main>
-    );
+    return <SceneMatchBrowser />;
   }
 
   return <SceneLanding />;
