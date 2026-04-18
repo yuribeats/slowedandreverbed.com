@@ -24,9 +24,11 @@ export default function DeckBMatches() {
   const [error, setError] = useState("");
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("popularity");
-  const [bpmWindow, setBpmWindow] = useState(0);
+  const [bpmWindow, setBpmWindow] = useState(10);
   const [deckBLoading, setDeckBLoading] = useState(false);
   const [deckBError, setDeckBError] = useState("");
+  const [manualArtist, setManualArtist] = useState("");
+  const [manualTitle, setManualTitle] = useState("");
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [pitchMatch, setPitchMatch] = useState(false);
@@ -349,6 +351,69 @@ export default function DeckBMatches() {
             {deckBError}
           </span>
         )}
+
+        {/* Manual artist/title load */}
+        <div className="zone-engraved flex flex-col gap-2">
+          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>OR LOAD MANUALLY</span>
+          <div className="flex gap-2">
+            <div className="flex-1 flex flex-col gap-0.5">
+              <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>ARTIST</span>
+              <input
+                value={manualArtist}
+                onChange={(e) => setManualArtist(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (manualArtist || manualTitle)) {
+                    getAudioContext();
+                    setDeckBLoading(true);
+                    setDeckBError("");
+                    loadDeck("B", manualArtist.trim(), manualTitle.trim())
+                      .catch((err) => { setDeckBError(err instanceof Error ? err.message : "LOAD FAILED"); setTimeout(() => setDeckBError(""), 4000); })
+                      .finally(() => setDeckBLoading(false));
+                  }
+                }}
+                className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+              />
+            </div>
+            <div className="flex-1 flex flex-col gap-0.5">
+              <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>TITLE</span>
+              <input
+                value={manualTitle}
+                onChange={(e) => setManualTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (manualArtist || manualTitle)) {
+                    getAudioContext();
+                    setDeckBLoading(true);
+                    setDeckBError("");
+                    loadDeck("B", manualArtist.trim(), manualTitle.trim())
+                      .catch((err) => { setDeckBError(err instanceof Error ? err.message : "LOAD FAILED"); setTimeout(() => setDeckBError(""), 4000); })
+                      .finally(() => setDeckBLoading(false));
+                  }
+                }}
+                className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+              />
+            </div>
+            <div className="flex flex-col justify-end">
+              <button
+                onClick={() => {
+                  if (!manualArtist && !manualTitle) return;
+                  getAudioContext();
+                  setDeckBLoading(true);
+                  setDeckBError("");
+                  loadDeck("B", manualArtist.trim(), manualTitle.trim())
+                    .catch((err) => { setDeckBError(err instanceof Error ? err.message : "LOAD FAILED"); setTimeout(() => setDeckBError(""), 4000); })
+                    .finally(() => setDeckBLoading(false));
+                }}
+                disabled={deckBLoading || (!manualArtist && !manualTitle)}
+                className="tactical-button"
+                style={{ opacity: (!manualArtist && !manualTitle) ? 0.3 : 1 }}
+              >
+                {deckBLoading ? "..." : "LOAD"}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
