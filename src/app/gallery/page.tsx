@@ -299,7 +299,7 @@ function GalleryContent() {
                 className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
                 style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
               >
-                THE SLOWED AND REVERBED MACHINE
+                AUTO MASH
               </Link>
             </div>
           </div>

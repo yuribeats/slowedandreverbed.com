@@ -50,7 +50,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
               className="text-lg sm:text-xl tracking-[2px] uppercase"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
             >
-              SLOWED AND REVERBED MACHINE
+              AUTO MASH
             </a>
             {sourceFilename && (
               <span className="text-[10px] uppercase tracking-[0.1em] ml-auto" style={{ color: "var(--text-dark)" }}>

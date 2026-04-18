@@ -30,8 +30,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "THE SLOWED AND REVERB MACHINE",
-  description: "Slowed + reverb audio processor with vintage hi-fi aesthetic",
+  title: "AUTO MASH",
+  description: "Automatic harmonic mashup engine",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -41,17 +41,17 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "THE SLOWED AND REVERB MACHINE",
-    description: "Slowed + reverb audio processor with vintage hi-fi aesthetic",
-    url: "https://slowedandreverbed.com",
-    siteName: "THE SLOWED AND REVERB MACHINE",
+    title: "AUTO MASH",
+    description: "Automatic harmonic mashup engine",
+    url: "https://automash.xyz",
+    siteName: "AUTO MASH",
     images: [{ url: "https://slowedandreverbed.com/og.png", width: 1312, height: 940 }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "THE SLOWED AND REVERB MACHINE",
-    description: "Slowed + reverb audio processor with vintage hi-fi aesthetic",
+    title: "AUTO MASH",
+    description: "Automatic harmonic mashup engine",
     images: ["https://slowedandreverbed.com/og.png"],
   },
 };

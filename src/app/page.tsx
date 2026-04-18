@@ -1543,7 +1543,7 @@ function HomeInner() {
               className="text-lg sm:text-xl tracking-[2px] uppercase"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
             >
-              SLOWED AND REVERBED MACHINE
+              AUTO MASH
             </span>
             <div className="ml-auto relative" style={{ zIndex: 100 }}>
               <button
@@ -1849,7 +1849,7 @@ function SceneMatchBrowser() {
               <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
             </div>
             <span className="text-lg sm:text-xl tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}>
-              SLOWED AND REVERBED MACHINE
+              AUTO MASH
             </span>
           </div>
           <div className="zone-inset boot-stagger boot-delay-2">

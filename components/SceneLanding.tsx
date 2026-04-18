@@ -82,7 +82,7 @@ export default function SceneLanding() {
               className="text-lg sm:text-xl tracking-[2px] uppercase"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
             >
-              SLOWED AND REVERBED MACHINE
+              AUTO MASH
             </span>
           </div>
 
