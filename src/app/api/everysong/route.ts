@@ -48,14 +48,7 @@ export async function GET(request: NextRequest) {
     if (q && !artist && !title) {
       tracks = await search({ q }, apiKey);
     } else if (artist && title) {
-      // Try exact artist+title first, fall back to free-text, then artist-only
       tracks = await search({ artist, title }, apiKey);
-      if (tracks.length === 0) {
-        tracks = await search({ q: `${artist} ${title}` }, apiKey);
-      }
-      if (tracks.length === 0) {
-        tracks = await search({ artist }, apiKey);
-      }
     } else if (artist) {
       tracks = await search({ artist }, apiKey);
     } else if (title) {

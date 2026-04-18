@@ -1231,8 +1231,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const firstDownbeatMs = data.first_downbeat_ms as number;
       const detectedBpm = (data.bpm as number) || 0;
 
-      // BPM: Everysong is authoritative. Only use downbeat-detected BPM as fallback.
-      if (detectedBpm > 0 && !getDeck(get(), id).calculatedBPM) get().setBPM(id, detectedBpm);
+      // BPM comes from Everysong only. Downbeat detection does not set BPM.
 
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
