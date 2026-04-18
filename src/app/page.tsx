@@ -1424,15 +1424,6 @@ function HomeInner() {
     }
   }, [deckA.baseKey, deckA.baseMode, deckB.baseKey, deckB.baseMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-match Deck B region length to Deck A when Deck B loads
-  const setRegionHome = useRemixStore((s) => s.setRegion);
-  useEffect(() => {
-    if (deckA.sourceBuffer && deckB.sourceBuffer) {
-      const aLen = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
-      const bOut = Math.min(aLen, deckB.sourceBuffer.duration);
-      if (bOut > 0) setRegionHome("B", 0, bOut);
-    }
-  }, [deckB.sourceBuffer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
