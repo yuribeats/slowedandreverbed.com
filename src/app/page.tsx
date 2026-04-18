@@ -1412,17 +1412,6 @@ function HomeInner() {
     run();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reactive pitch sync: normalize both keys to their relative major, then compute shift.
-  // This way C Major and A Minor (relatives) produce 0 shift, not -3.
-  useEffect(() => {
-    if (deckA.baseKey !== null && deckB.baseKey !== null) {
-      const aMaj = deckA.baseMode === "minor" ? (deckA.baseKey + 3) % 12 : deckA.baseKey;
-      const bMaj = deckB.baseMode === "minor" ? (deckB.baseKey + 3) % 12 : deckB.baseKey;
-      let diff = ((bMaj - aMaj) % 12 + 12) % 12;
-      if (diff > 6) diff -= 12;
-      setParam("A", "pitch", diff);
-    }
-  }, [deckA.baseKey, deckA.baseMode, deckB.baseKey, deckB.baseMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const [loadModalOpen, setLoadModalOpen] = useState(false);
