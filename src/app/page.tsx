@@ -79,7 +79,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
   const rate = 1.0 + deck.params.speed;
   const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
-  const deckReady = deck.sourceBuffer && !isTrackLoading && deck.stemBuffers && deck.firstDownbeatMs !== null;
+  const deckReady = !!deck.sourceBuffer;
   const loadPct = Math.round(
     ((!deck.isLoading ? 1 : 0) + (!deck.downbeatDetecting ? 1 : 0) + (!deck.isStemLoading ? 1 : 0)) / 3 * 100
   );
@@ -1640,7 +1640,7 @@ function HomeInner() {
                   <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
                   <button
                     onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
-                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer || deckA.isStemLoading || deckB.isStemLoading || deckA.downbeatDetecting || deckB.downbeatDetecting || !deckA.stemBuffers || !deckB.stemBuffers || deckA.firstDownbeatMs === null || deckB.firstDownbeatMs === null}
+                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
                     className="rocker-switch"
                     style={{ width: "90px", height: "60px" }}
                   >
@@ -1651,7 +1651,7 @@ function HomeInner() {
                   <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
                   <button
                     onClick={() => { stopDeck("A"); stopDeck("B"); }}
-                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer || deckA.isStemLoading || deckB.isStemLoading || deckA.downbeatDetecting || deckB.downbeatDetecting || !deckA.stemBuffers || !deckB.stemBuffers || deckA.firstDownbeatMs === null || deckB.firstDownbeatMs === null}
+                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
                     className="rocker-switch"
                     style={{ width: "90px", height: "60px" }}
                   >

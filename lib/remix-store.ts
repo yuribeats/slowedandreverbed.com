@@ -234,7 +234,7 @@ const defaultDeck = (): DeckState => ({
   title: "",
   baseKey: null,
   baseMode: null,
-  params: { ...SIMPLE_DEFAULTS, speed: 0, reverb: 0, tone: 0, saturation: 0, pitch: 0, pitchSpeedLinked: true },
+  params: { ...SIMPLE_DEFAULTS, speed: 0, reverb: 0, tone: 0, saturation: 0, pitch: 0, pitchSpeedLinked: false },
   isLoading: false,
   isPlaying: false,
   error: null,
@@ -964,6 +964,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           regionEnd: 0,
         },
       }));
+      get().separateStems(id);
+      get().detectDownbeat(id);
     } catch (err) {
       set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Failed to fetch YouTube audio" } }));
     }
