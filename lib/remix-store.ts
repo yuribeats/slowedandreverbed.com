@@ -1221,10 +1221,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       if (data.first_downbeat_ms == null) return fail("No downbeat returned from Modal");
 
       const firstDownbeatMs = data.first_downbeat_ms as number;
-      const detectedBpm = (data.bpm as number) || 0;
-
-      // BPM comes from Everysong only. Downbeat detection does not set BPM.
-
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
 
@@ -1232,22 +1228,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const targetDownbeatMs = deck.sourceBuffer
         ? findFirstLoudDownbeat(downbeatsMs, deck.sourceBuffer)
         : firstDownbeatMs;
-
-      // Set speed without affecting pitch (automatic BPM matching is tempo-only)
-      const setSpeedOnly = (deckId: DeckId, speed: number) => {
-        const dkId = deckKey(deckId);
-        set((s) => ({ [dkId]: { ...s[dkId], params: { ...s[dkId].params, speed } } }));
-        const d = getDeck(get(), deckId);
-        if (d.nodes) {
-          const expanded = expandParams(d.params);
-          d.nodes.source.playbackRate.value = expanded.rate;
-          if (d.nodes.pitchShifter) {
-            d.nodes.pitchShifter.port.postMessage(JSON.stringify(["pitch", expanded.pitchFactor / expanded.rate]));
-          }
-        }
-      };
-
-      // No automatic speed/BPM matching between decks.
 
       const inPoint = targetDownbeatMs / 1000;
 
