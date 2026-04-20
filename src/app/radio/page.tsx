@@ -118,15 +118,6 @@ export default function RadioPage() {
     setPlaying(true);
   };
 
-  const fmt = (s: number) => {
-    if (!s || !isFinite(s)) return "0:00";
-    const neg = s < 0;
-    const abs = Math.abs(s);
-    const m = Math.floor(abs / 60);
-    const sec = Math.floor(abs % 60);
-    return `${neg ? "-" : ""}${m}:${sec.toString().padStart(2, "0")}`;
-  };
-
   const pct = duration > 0 ? (progress / duration) * 100 : 0;
 
   if (loading) {
