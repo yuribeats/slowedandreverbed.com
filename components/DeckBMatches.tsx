@@ -377,7 +377,7 @@ export default function DeckBMatches() {
 
         {/* Manual artist/title search — adds to match list */}
         <div className="zone-engraved flex flex-col gap-2">
-          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>SEARCH EVERYSONG</span>
+          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>SEARCH</span>
           <div className="flex gap-2">
             <div className="flex-1 flex flex-col gap-0.5">
               <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>ARTIST</span>

@@ -1504,7 +1504,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (hasA) get().stop("A");
     if (hasB) get().stop("B");
 
-    const ctx = await resumeAudioContext();
+    await resumeAudioContext();
 
     // Start recording if armed
     if (recordArmed && masterStreamDest) {
