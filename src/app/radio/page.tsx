@@ -74,7 +74,7 @@ export default function RadioPage() {
       audioRef.current.currentTime = startPosRef.current;
       startPosRef.current = 0;
     }
-    if (playing) audioRef.current.play().catch(() => {});
+    if (playing) audioRef.current.play().catch((e) => console.error("[radio] play failed:", e));
   }, [track?.id]);
 
   // Play/pause sync
@@ -93,7 +93,7 @@ export default function RadioPage() {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
       artist: track.artist,
-      album: "SLOWED + REVERBED RADIO",
+      album: "AUTO MASH RADIO",
     });
     navigator.mediaSession.setActionHandler("play", () => setPlaying(true));
     navigator.mediaSession.setActionHandler("pause", () => setPlaying(false));
@@ -145,7 +145,7 @@ export default function RadioPage() {
           background: "linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%)", borderRadius: 12, boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
         }}>
           <span style={{ fontFamily: F, fontWeight: 700, fontSize: 11, color: "#555", letterSpacing: "0.15em" }}>
-            SLOWED + REVERBED RADIO
+            AUTO MASH RADIO
           </span>
           <span style={{ fontFamily: F, fontWeight: 700, fontSize: 10, color: "#888", letterSpacing: "0.1em" }}>
             {queue.length} TRACKS
@@ -224,7 +224,7 @@ export default function RadioPage() {
                 {track.artist.toUpperCase()}
               </span>
               <span style={{ fontSize: 9, fontFamily: F, fontWeight: 700, color: "#555", letterSpacing: "0.1em" }}>
-                SLOWED + REVERBED RADIO
+                AUTO MASH RADIO
               </span>
             </div>
 
