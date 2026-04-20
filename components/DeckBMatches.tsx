@@ -238,22 +238,18 @@ export default function DeckBMatches() {
         {/* Controls */}
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-1">
-            <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>SORT:</span>
-            {(["popularity", "bpm", "random"] as SortMode[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => { setSortMode(s); setTimeout(handleRefetch, 0); }}
-                className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border"
-                style={{
-                  fontFamily: "var(--font-tech)",
-                  color: "var(--text-dark)",
-                  background: sortMode === s ? "rgba(255,115,0,0.15)" : "transparent",
-                  borderColor: sortMode === s ? "#333" : "#777",
-                }}
-              >
-                {s === "popularity" ? "POP" : s.toUpperCase()}
-              </button>
-            ))}
+            <button
+              onClick={() => { setSortMode(sortMode === "bpm" ? "popularity" : "bpm"); setTimeout(handleRefetch, 0); }}
+              className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border"
+              style={{
+                fontFamily: "var(--font-tech)",
+                color: "var(--text-dark)",
+                background: sortMode === "bpm" ? "rgba(255,115,0,0.15)" : "transparent",
+                borderColor: sortMode === "bpm" ? "#333" : "#777",
+              }}
+            >
+              SORT: BPM
+            </button>
           </div>
           <div className="flex items-center gap-1">
             <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>BPM ±</span>

@@ -85,20 +85,25 @@ export async function POST(req: NextRequest) {
       fileUrl = await uploadToReplicate(await file.arrayBuffer(), file.name || "audio.mp3");
     }
 
-    const predRes = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${REPLICATE_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        version: DEMUCS_VERSION,
-        input: { audio: fileUrl, model: "htdemucs_ft" },
-      }),
-    });
+    let predRes: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      predRes = await fetch("https://api.replicate.com/v1/predictions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${REPLICATE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          version: DEMUCS_VERSION,
+          input: { audio: fileUrl, model: "htdemucs_ft" },
+        }),
+      });
+      if (predRes.status !== 429) break;
+      await new Promise((r) => setTimeout(r, (attempt + 1) * 5000));
+    }
 
-    if (!predRes.ok) {
-      return NextResponse.json({ error: `Replicate unavailable (HTTP ${predRes.status})` }, { status: 502 });
+    if (!predRes || !predRes.ok) {
+      return NextResponse.json({ error: `Replicate unavailable (HTTP ${predRes?.status ?? "?"})` }, { status: 502 });
     }
 
     let prediction = await predRes.json();

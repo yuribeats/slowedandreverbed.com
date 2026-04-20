@@ -66,9 +66,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [stepMode, setStepMode] = useState(true);
-  const [reverbDetail, setReverbDetail] = useState(false);
-  const [toneDetail, setToneDetail] = useState(false);
-  const [satDetail, setSatDetail] = useState(false);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [deckMenuOpen, setDeckMenuOpen] = useState(false);
   const [showEQ, setShowEQ] = useState(true);
@@ -584,12 +581,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             </span>
           </div>
         )}
-        <div className="grid grid-cols-6 gap-2" style={{ justifyItems: "center" }}>
+        <div className="grid grid-cols-3 gap-4" style={{ justifyItems: "center" }}>
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
               <div className="slider-track h-full" />
               <input
-                type="range" min="-0.5" max="0.5" step={stepMode && linked ? 0.001 : 0.001}
+                type="range" min="-0.5" max="0.5" step={0.001}
                 value={deck.params.speed}
                 onChange={(e) => handleSpeed(parseFloat(e.target.value))}
                 className="absolute h-full"
@@ -672,201 +669,9 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>VOL</div>
             <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.volume * 100)}%</span>
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="relative h-[100px] w-[36px] flex justify-center">
-              <div className="slider-track h-full" />
-              <input
-                type="range" min="0" max="1" step="0.01"
-                value={deck.params.reverb}
-                onChange={(e) => setParam(id, "reverb", parseFloat(e.target.value))}
-                className="absolute h-full"
-                style={{ ...faderStyle, width: "36px" }}
-              />
-            </div>
-            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>REVERB</div>
-            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{reverbPct}%</span>
-            <button onClick={() => setReverbDetail(!reverbDetail)} className={detailBtnClass(reverbDetail)} style={detailBtnStyle}>DETAIL</button>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="relative h-[100px] w-[36px] flex justify-center">
-              <div className="slider-track h-full" />
-              <input
-                type="range" min="-1" max="1" step="0.01"
-                value={deck.params.tone}
-                onChange={(e) => setParam(id, "tone", parseFloat(e.target.value))}
-                className="absolute h-full"
-                style={{ ...faderStyle, width: "36px" }}
-              />
-            </div>
-            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>TONE</div>
-            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{toneLabel}</span>
-            <button onClick={() => setToneDetail(!toneDetail)} className={detailBtnClass(toneDetail)} style={detailBtnStyle}>DETAIL</button>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="relative h-[100px] w-[36px] flex justify-center">
-              <div className="slider-track h-full" />
-              <input
-                type="range" min="0" max="1" step="0.01"
-                value={deck.params.saturation ?? 0}
-                onChange={(e) => setParam(id, "saturation", parseFloat(e.target.value))}
-                className="absolute h-full"
-                style={{ ...faderStyle, width: "36px" }}
-              />
-            </div>
-            <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>SAT</div>
-            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{satPct}%</span>
-            <button onClick={() => setSatDetail(!satDetail)} className={detailBtnClass(satDetail)} style={detailBtnStyle}>DETAIL</button>
-          </div>
         </div>
       </div>
 
-      {/* Reverb Detail */}
-      {reverbDetail && (
-        <div className="zone-engraved">
-          <div className="label" style={{ fontSize: "12px", marginBottom: "8px", marginTop: 0 }}>REVERB DETAIL</div>
-          <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="0" max="1" step="0.01"
-                  value={deck.params.reverbWetOverride ?? expanded.reverbWet}
-                  onChange={(e) => setParam(id, "reverbWetOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>WET/DRY</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.reverbWetOverride ?? expanded.reverbWet) * 100)}%</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="0.5" max="8" step="0.1"
-                  value={deck.params.reverbDurationOverride ?? expanded.reverbDuration}
-                  onChange={(e) => setParam(id, "reverbDurationOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>SIZE</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDurationOverride ?? expanded.reverbDuration).toFixed(1)}S</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="0.5" max="6" step="0.1"
-                  value={deck.params.reverbDecayOverride ?? expanded.reverbDecay}
-                  onChange={(e) => setParam(id, "reverbDecayOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>DECAY</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{(deck.params.reverbDecayOverride ?? expanded.reverbDecay).toFixed(1)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tone Detail — Parametric EQ */}
-      {toneDetail && (
-        <div className="zone-engraved">
-          <div className="label" style={{ fontSize: "12px", marginBottom: "8px", marginTop: 0 }}>PARAMETRIC EQ</div>
-          <div className="grid grid-cols-5 gap-2" style={{ justifyItems: "center" }}>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="-20" max="20" step="0.5"
-                  value={deck.params.eqLowOverride ?? expanded.eqLow}
-                  onChange={(e) => setParam(id, "eqLowOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>LOW</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqLowOverride ?? expanded.eqLow).toFixed(1)}</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="-20" max="20" step="0.5"
-                  value={deck.params.eqMidOverride ?? expanded.eqMid}
-                  onChange={(e) => setParam(id, "eqMidOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>MID</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqMidOverride ?? expanded.eqMid).toFixed(1)}</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="-20" max="20" step="0.5"
-                  value={deck.params.eqHighOverride ?? expanded.eqHigh}
-                  onChange={(e) => setParam(id, "eqHighOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>HIGH</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqHighOverride ?? expanded.eqHigh).toFixed(1)}</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="100" max="10000" step="50"
-                  value={deck.params.eqBumpFreqOverride ?? expanded.eqBumpFreq}
-                  onChange={(e) => setParam(id, "eqBumpFreqOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>FREQ</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.params.eqBumpFreqOverride ?? expanded.eqBumpFreq)}HZ</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="0" max="15" step="0.5"
-                  value={deck.params.eqBumpGainOverride ?? expanded.eqBumpGain}
-                  onChange={(e) => setParam(id, "eqBumpGainOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>PEAK</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{(deck.params.eqBumpGainOverride ?? expanded.eqBumpGain).toFixed(1)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Saturation Detail */}
-      {satDetail && (
-        <div className="zone-engraved">
-          <div className="label" style={{ fontSize: "12px", marginBottom: "8px", marginTop: 0 }}>SATURATION DETAIL</div>
-          <div className="grid grid-cols-3 gap-3" style={{ justifyItems: "center" }}>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="1" max="50" step="0.5"
-                  value={deck.params.satDriveOverride ?? expanded.satDrive}
-                  onChange={(e) => setParam(id, "satDriveOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>DRIVE</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{(deck.params.satDriveOverride ?? expanded.satDrive).toFixed(1)}</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="0" max="1" step="0.01"
-                  value={deck.params.satMixOverride ?? expanded.satMix}
-                  onChange={(e) => setParam(id, "satMixOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>MIX</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satMixOverride ?? expanded.satMix) * 100)}%</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-[80px] w-[36px] flex justify-center">
-                <div className="slider-track h-full" />
-                <input type="range" min="1000" max="20000" step="100"
-                  value={deck.params.satToneOverride ?? expanded.satTone}
-                  onChange={(e) => setParam(id, "satToneOverride", parseFloat(e.target.value))}
-                  className="absolute h-full" style={{ ...faderStyle, width: "36px" }} />
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>TONE</div>
-              <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round((deck.params.satToneOverride ?? expanded.satTone) / 1000)}KHZ</span>
-            </div>
-          </div>
-        </div>
-      )}
       {/* end showEQ */}
       </>}
 
@@ -1656,67 +1461,6 @@ function HomeInner() {
                     style={{ width: "90px", height: "60px" }}
                   >
                     <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                  </button>
-                </div>
-              </div>
-              {/* Secondary: Record, Phase Sync, Match Len — small */}
-              <div className="flex justify-center gap-4">
-                <div className="flex flex-col items-center" data-tooltip="ARMS THE RECORDER. CAPTURES THE MIX WHEN BOTH DECKS PLAY.">
-                  <span className="label" style={{ margin: 0, fontSize: "10px", marginBottom: "2px" }}>REC</span>
-                  <button
-                    onClick={() => armRecord()}
-                    className="rocker-switch"
-                    style={{
-                      width: "40px", height: "30px",
-                      boxShadow: recordArmed ? "inset 0 0 8px rgba(200,40,40,0.4)" : isRecording ? "inset 0 0 12px rgba(200,40,40,0.6)" : undefined,
-                    }}
-                  >
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{
-                        background: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "#555",
-                        animation: isRecording ? "pulse 1s infinite" : undefined,
-                      }}
-                    />
-                  </button>
-                  <span className="text-[10px] mt-0.5" style={{
-                    fontFamily: "var(--font-tech)",
-                    color: isRecording ? "var(--led-red-on, #c82828)" : recordArmed ? "var(--led-red-on, #c82828)" : "var(--text-dark)",
-                    opacity: isRecording || recordArmed ? 1 : 0.4,
-                  }}>
-                    {isRecording ? "STOP" : recordArmed ? "ARMED" : "OFF"}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center" data-tooltip="SNAPS BOTH DECKS' IN POINTS TO THEIR NEAREST BAR BOUNDARY SO THEY START ON A DOWNBEAT.">
-                  <span className="label" style={{ margin: 0, fontSize: "10px", marginBottom: "2px" }}>PHASE</span>
-                  <button
-                    onClick={phaseSync}
-                    disabled={!deckA.gridlockEnabled || !deckB.gridlockEnabled}
-                    className="rocker-switch"
-                    style={{ width: "40px", height: "30px" }}
-                  >
-                    <div className="w-1 h-1 rounded-full border-2 border-[#555]" />
-                  </button>
-                </div>
-                <div className="flex flex-col items-center" data-tooltip="ADJUSTS BOTH DECK SPEEDS SO THEIR REGIONS PLAY IN EQUAL TIME. PITCH PRESERVED.">
-                  <span className="label" style={{ margin: 0, fontSize: "10px", marginBottom: "2px" }}>MATCH LEN</span>
-                  <button
-                    onClick={() => {
-                      if (!deckA.sourceBuffer || !deckB.sourceBuffer) return;
-                      const aLen = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
-                      const bLen = (deckB.regionEnd > 0 ? deckB.regionEnd : deckB.sourceBuffer.duration) - deckB.regionStart;
-                      if (aLen <= 0 || bLen <= 0) return;
-                      const T = Math.sqrt(aLen * bLen);
-                      if (deckA.params.pitchSpeedLinked ?? true) setParam("A", "pitchSpeedLinked", 0);
-                      if (deckB.params.pitchSpeedLinked ?? true) setParam("B", "pitchSpeedLinked", 0);
-                      setParam("A", "speed", aLen / T - 1);
-                      setParam("B", "speed", bLen / T - 1);
-                    }}
-                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
-                    className="rocker-switch"
-                    style={{ width: "40px", height: "30px" }}
-                  >
-                    <div className="w-1 h-1 rounded-full border-2 border-[#555]" />
                   </button>
                 </div>
               </div>
