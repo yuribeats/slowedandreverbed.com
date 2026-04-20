@@ -11,9 +11,15 @@ export function getAudioContext(): AudioContext {
     workletReady = false;
   }
   if (ctx.state === "suspended") {
-    ctx.resume();
+    ctx.resume().catch(() => {});
   }
   return ctx;
+}
+
+export async function resumeAudioContext(): Promise<AudioContext> {
+  const c = getAudioContext();
+  if (c.state === "suspended") await c.resume();
+  return c;
 }
 
 export async function restartAudioContext(): Promise<AudioContext> {

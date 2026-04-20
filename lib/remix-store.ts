@@ -8,7 +8,7 @@ import {
 } from "@yuribeats/audio-utils";
 import { BatchStyle, BATCH_PRESETS } from "./batch-presets";
 import { decodeFile, decodeArrayBuffer } from "./file-decoder";
-import { getAudioContext, ensurePitchWorklet, isPitchWorkletReady } from "./audio-context";
+import { getAudioContext, resumeAudioContext, ensurePitchWorklet, isPitchWorkletReady } from "./audio-context";
 
 /* ─── Saturation curve ─── */
 function makeSaturationCurve(drive: number): Float32Array<ArrayBuffer> {
@@ -1258,8 +1258,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     }
     set((s) => ({ [key]: { ...s[key], isPlaying: false, nodes: null } }));
 
-    const ctx = getAudioContext();
-    if (ctx.state === "suspended") await ctx.resume();
+    const ctx = await resumeAudioContext();
     await ensurePitchWorklet();
 
     // Re-read deck state after async gap
@@ -1505,8 +1504,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (hasA) get().stop("A");
     if (hasB) get().stop("B");
 
-    const ctx = getAudioContext();
-    if (ctx.state === "suspended") await ctx.resume();
+    const ctx = await resumeAudioContext();
 
     // Start recording if armed
     if (recordArmed && masterStreamDest) {
