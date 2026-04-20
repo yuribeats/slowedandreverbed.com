@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>UPDATE TOKEN METADATA</title>
+<title>SIGN TOKEN UPDATES</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Helvetica, Arial, sans-serif; font-weight: 700; background: #fff; color: #000; padding: 40px; }
@@ -17,89 +17,31 @@ button#updateAll:disabled { opacity: 0.3; }
 </style>
 </head>
 <body>
-<h1>UPDATE TOKEN METADATA — AUTO MASH REMIXES</h1>
-<div>CONTRACT: 0x60fc593f063e1be321d305889d2c4119a0cabaa6</div>
-<br>
-<button id="connectBtn">CONNECT WALLET (PHANTOM)</button>
+<h1>SIGN TOKEN UPDATES — AUTO MASH REMIXES</h1>
+<div style="font-size:10px;opacity:0.5;margin-bottom:4px">CONTRACT: 0x60fc593f063e1be321d305889d2c4119a0cabaa6</div>
+<div style="font-size:10px;opacity:0.5;margin-bottom:20px">COVERS EXTRACTED FROM VIDEO FRAMES. METADATA ON ARWEAVE. CONNECT PHANTOM AND SIGN.</div>
+<button id="connectBtn">CONNECT PHANTOM</button>
 <div id="wallet"></div>
 <div id="tokens"></div>
-<button id="updateAll" disabled>UPDATE ALL</button>
-<div id="log" style="margin-top:20px;font-size:10px;opacity:0.6;white-space:pre-wrap"></div>
+<button id="updateAll" disabled>SIGN ALL UPDATES</button>
 
 <script>
 var CONTRACT = "0x60fc593f063e1be321d305889d2c4119a0cabaa6";
-var API_KEY = "msy_tLz15VNgbjUBRctjOJQNXYlnH2P8sl0gI4xp";
-var UPLOAD_URL = "/api/inprocess/upload";
-
-var TOKENS = [
-  { id: 1, artist: "black sabbath x Kendrick Lamar, Lefty Gunplay", title: "war pigs / tv off (feat. lefty gunplay)", video: "ipfs://bafybeieg5jspwdlggyen7igr663f3fhbczohmgjjutas7surn6iusxnkfi" },
-  { id: 2, artist: "fatboy slim x Kendrick Lamar", title: "praise you / Not Like Us", video: "ipfs://bafybeigtjxwa7nkjwvh2w7kaq7dso3s5jdehc6ltblfxh3nthwkjqemfri" },
-  { id: 3, artist: "black angels", title: "young dead men / Ante Up (feat. Busta Rhymes, Teflon & Remi Martin) - Remix", video: "ipfs://bafybeifdjmqtxakr6eaccutqyddseeizghx33kutvuqwuim7tw4pvh3drq" },
-  { id: 4, artist: "rich homie nirvana", title: "type of sleep last night", video: "ipfs://bafybeidk65larlod7xao6iyypimecil2c733sjpttu3mxr3va2fgwsdsna" },
-  { id: 5, artist: "BEBe ficke", title: "3 nights / meant to be", video: "ipfs://bafybeify4u7yzexlkqlaepxs5hsuxuecdqos3enmc4l2cphd7uo6mv4hji" },
-  { id: 6, artist: "COMBSXMOBY", title: "WHAT IT MEANS TO BE LIVING", video: "ipfs://bafybeiaaixj2szde4eldxuv2i63x7skubu6k3q7pkzzrx4aibhdtoxrj4m" },
-  { id: 7, artist: "ROC MARCI", title: "i just called to say i love you", video: "ipfs://bafybeifaaroq5tjx2lyjzpocfrdzsmqiwoqgfgbrqfhjmxnmxhqfvg6s2y" },
-  { id: 8, artist: "xxx malone", title: "moon is the first tv", video: "ipfs://bafybeidqfhkmcw7piegw6m75uw5frob25nwh2kzcxe3j325pibii6oasnm" },
-  { id: 9, artist: "MF DOOM & ACE OF BASE", title: "ALL THAT SHE WANTS IS ANOTHER VILLAIN", video: "ipfs://bafybeic6oiwnlzsfkdpxhxybzrz54v6nrhjwuosxqfmqnivrlhzb4aw2oq" },
-  { id: 10, artist: "radiohead x Evanescence", title: "creep / Bring Me To Life", video: "ipfs://bafybeidpsvjnd7vllvtbxpmnf5tzlvuhr7ynbdz2gqzgvodjqyds52aih4" },
-];
-
 var provider;
 var walletAddress;
 
-function log(msg) {
-  document.getElementById("log").textContent += msg + "\n";
-}
-
-function grabVideoFrame(videoUrl) {
-  return new Promise(function(resolve, reject) {
-    var video = document.createElement("video");
-    video.crossOrigin = "anonymous";
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = "auto";
-
-    video.onloadeddata = function() {
-      // Seek to 1 second in to skip any black frames
-      video.currentTime = 1;
-    };
-
-    video.onseeked = function() {
-      var canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      var ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0);
-      canvas.toBlob(function(blob) {
-        video.src = "";
-        blob ? resolve(blob) : reject(new Error("Frame capture failed"));
-      }, "image/png");
-    };
-
-    video.onerror = function() { reject(new Error("Video load failed")); };
-
-    // Use Pinata gateway URL (IPFS gateway for cross-origin)
-    var cid = videoUrl.replace("ipfs://", "");
-    video.src = "https://gateway.pinata.cloud/ipfs/" + cid;
-  });
-}
-
-async function uploadToArweave(blob, contentType, filename) {
-  var buffer = await blob.arrayBuffer();
-  var bytes = new Uint8Array(buffer);
-  var binary = "";
-  for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  var b64 = btoa(binary);
-
-  var res = await fetch(UPLOAD_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: b64, contentType: contentType, filename: filename, apiKey: API_KEY }),
-  });
-  if (!res.ok) throw new Error("Upload failed: " + res.status);
-  var data = await res.json();
-  return data.uri;
-}
+var TOKENS = [
+  { id: 1, name: "BLACK SABBATH X KENDRICK - WAR PIGS / TV OFF", uri: "ar://TtWm0tcslw_JMcA4jJeFFvULAKRI64Zgwz7FrcM86rA" },
+  { id: 2, name: "BLACK SABBATH X KENDRICK - WAR PIGS / TV OFF (DUP)", uri: "ar://dBmkbtkNy-hq9PTo7q7g-XBgndMCscfHVjxMnZ4WdkM" },
+  { id: 3, name: "FATBOY SLIM X KENDRICK - PRAISE YOU / NOT LIKE US", uri: "ar://4hBoxAxpEXlOEuzmvmDtrU-S3XBAtuPa0781XFAbJ_s" },
+  { id: 4, name: "BLACK ANGELS - YOUNG DEAD MEN / ANTE UP", uri: "ar://DzClgrmhqRQ2f--RLef-is9NFvDpyapptU5cKZnMFGw" },
+  { id: 5, name: "RICH HOMIE NIRVANA - TYPE OF SLEEP LAST NIGHT", uri: "ar://tY3q6iiUvN0LGonv7dSY5Cd5UaAr1Nxgshn1cJr65gA" },
+  { id: 6, name: "BEBE FICKE - 3 NIGHTS / MEANT TO BE", uri: "ar://Sp9NrbVrp0vMk_7brwYeVJLNaN0eUOYlMQXAynp7kF8" },
+  { id: 7, name: "COMBSXMOBY - WHAT IT MEANS TO BE LIVING", uri: "ar://EEiH2oEenUMjYhanCnl0ZfXcJZf4DPuQdraQFYOBKO8" },
+  { id: 8, name: "ROC MARCI - I JUST CALLED TO SAY I LOVE YOU", uri: "ar://AriEBP9Tl1E5RpS94BInG4fRqymdSyWzyLlt8WTYRKY" },
+  { id: 9, name: "XXX MALONE - MOON IS THE FIRST TV", uri: "ar://3PyekDbrzrrUMHZp1-u-73tGvfGXpkDNeYtozxLBxuM" },
+  { id: 10, name: "RADIOHEAD X EVANESCENCE - CREEP / BRING ME TO LIFE", uri: "ar://JZvu9HA7-Z0B3yzN-4mm9eQwixdo3Ra6KTf8XFL73fI" },
+];
 
 function encodeUpdateTokenURI(tokenId, newURI) {
   var selector = "18e97fd1";
@@ -119,24 +61,24 @@ function renderTokens() {
   TOKENS.forEach(function(t) {
     var div = document.createElement("div");
     div.className = "token";
-    div.id = "token-" + t.id;
 
     var idSpan = document.createElement("span");
     idSpan.textContent = "#" + t.id;
     idSpan.style.cssText = "font-size:12px;min-width:30px";
 
     var nameSpan = document.createElement("span");
-    nameSpan.textContent = (t.artist + " - " + t.title).toUpperCase();
+    nameSpan.textContent = t.name;
     nameSpan.style.cssText = "font-size:10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
 
     var btn = document.createElement("button");
-    btn.textContent = "UPDATE";
+    btn.textContent = "SIGN";
+    btn.id = "btn-" + t.id;
     btn.style.cssText = "font-family:inherit;font-weight:700;font-size:10px;letter-spacing:1px;border:2px solid #000;background:transparent;padding:6px 16px";
-    btn.onclick = function() { updateOne(t.id); };
+    btn.onclick = function() { signUpdate(t.id); };
 
     var status = document.createElement("span");
     status.id = "status-" + t.id;
-    status.style.cssText = "font-size:10px;min-width:120px;text-align:right";
+    status.style.cssText = "font-size:10px;min-width:100px;text-align:right";
 
     div.appendChild(idSpan);
     div.appendChild(nameSpan);
@@ -165,46 +107,20 @@ document.getElementById("connectBtn").onclick = async function() {
   }
 };
 
-async function updateOne(tokenId) {
+async function signUpdate(tokenId) {
   var token = TOKENS.find(function(t) { return t.id === tokenId; });
-  if (!token) return;
+  if (!token || !provider) { alert("CONNECT WALLET FIRST"); return; }
   var statusEl = document.getElementById("status-" + tokenId);
-  statusEl.className = "";
 
   try {
-    // Step 1: Grab frame from video
-    statusEl.textContent = "GRABBING FRAME...";
-    log("#" + tokenId + ": loading video frame from " + token.video);
-    var coverBlob = await grabVideoFrame(token.video);
-
-    // Step 2: Upload cover to Arweave
-    statusEl.textContent = "UPLOADING COVER...";
-    log("#" + tokenId + ": uploading cover (" + Math.round(coverBlob.size/1024) + "KB)");
-    var imageUri = await uploadToArweave(coverBlob, "image/png", "cover-" + tokenId + ".png");
-    log("#" + tokenId + ": cover → " + imageUri);
-
-    // Step 3: Build and upload metadata
-    statusEl.textContent = "UPLOADING METADATA...";
-    var metadata = JSON.stringify({
-      name: token.artist + " - " + token.title,
-      description: "Made with automash.xyz",
-      image: imageUri,
-      animation_url: token.video,
-      content: { mime: "video/mp4", uri: token.video },
-    });
-    var metaBlob = new Blob([metadata], { type: "application/json" });
-    var metaUri = await uploadToArweave(metaBlob, "application/json", "metadata-" + tokenId + ".json");
-    log("#" + tokenId + ": metadata → " + metaUri);
-
-    // Step 4: Update on-chain
     statusEl.textContent = "SIGN TX...";
-    var data = encodeUpdateTokenURI(tokenId, metaUri);
+    statusEl.className = "";
+    var data = encodeUpdateTokenURI(tokenId, token.uri);
     var txHash = await provider.request({
       method: "eth_sendTransaction",
       params: [{ from: walletAddress, to: CONTRACT, data: data }],
     });
     statusEl.textContent = "CONFIRMING...";
-    log("#" + tokenId + ": tx " + txHash);
 
     for (var i = 0; i < 30; i++) {
       await new Promise(function(r) { setTimeout(r, 2000); });
@@ -213,11 +129,9 @@ async function updateOne(tokenId) {
         if (receipt.status === "0x1") {
           statusEl.textContent = "DONE";
           statusEl.className = "ok";
-          log("#" + tokenId + ": CONFIRMED");
         } else {
           statusEl.textContent = "REVERTED";
           statusEl.className = "err";
-          log("#" + tokenId + ": REVERTED");
         }
         return;
       }
@@ -227,14 +141,13 @@ async function updateOne(tokenId) {
   } catch (e) {
     statusEl.textContent = (e.message || "FAILED").slice(0, 40);
     statusEl.className = "err";
-    log("#" + tokenId + ": ERROR: " + e.message);
   }
 }
 
 document.getElementById("updateAll").onclick = async function() {
   for (var i = 0; i < TOKENS.length; i++) {
-    await updateOne(TOKENS[i].id);
-    await new Promise(function(r) { setTimeout(r, 2000); });
+    await signUpdate(TOKENS[i].id);
+    await new Promise(function(r) { setTimeout(r, 3000); });
   }
 };
 
