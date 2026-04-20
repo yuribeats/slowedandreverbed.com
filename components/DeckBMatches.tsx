@@ -168,6 +168,29 @@ export default function DeckBMatches() {
     setDeckBLoading(false);
   }, [selectedIdx, tracks, loadDeck]);
 
+  const handleManualSearch = useCallback(async () => {
+    if (!manualArtist && !manualTitle) return;
+    setLoading(true);
+    setError("");
+    try {
+      const q = [manualArtist.trim(), manualTitle.trim()].filter(Boolean).join(" ");
+      const res = await fetch(`/api/everysong/search?q=${encodeURIComponent(q)}&limit=50`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const newTracks = ((data.results ?? []) as MatchTrack[]);
+      if (newTracks.length === 0) {
+        setError("NO RESULTS");
+        setTimeout(() => setError(""), 3000);
+      } else {
+        setTracks(newTracks);
+        setSelectedIdx(null);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "SEARCH FAILED");
+    }
+    setLoading(false);
+  }, [manualArtist, manualTitle]);
+
   const selectedTrack = selectedIdx !== null ? tracks[selectedIdx] : null;
 
   return (
@@ -352,25 +375,16 @@ export default function DeckBMatches() {
           </span>
         )}
 
-        {/* Manual artist/title load */}
+        {/* Manual artist/title search — adds to match list */}
         <div className="zone-engraved flex flex-col gap-2">
-          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>OR LOAD MANUALLY</span>
+          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>SEARCH EVERYSONG</span>
           <div className="flex gap-2">
             <div className="flex-1 flex flex-col gap-0.5">
               <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>ARTIST</span>
               <input
                 value={manualArtist}
                 onChange={(e) => setManualArtist(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (manualArtist || manualTitle)) {
-                    getAudioContext();
-                    setDeckBLoading(true);
-                    setDeckBError("");
-                    loadDeck("B", manualArtist.trim(), manualTitle.trim())
-                      .catch((err) => { setDeckBError(err instanceof Error ? err.message : "LOAD FAILED"); setTimeout(() => setDeckBError(""), 4000); })
-                      .finally(() => setDeckBLoading(false));
-                  }
-                }}
+                onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}
                 className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
                 style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
               />
@@ -380,36 +394,19 @@ export default function DeckBMatches() {
               <input
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (manualArtist || manualTitle)) {
-                    getAudioContext();
-                    setDeckBLoading(true);
-                    setDeckBError("");
-                    loadDeck("B", manualArtist.trim(), manualTitle.trim())
-                      .catch((err) => { setDeckBError(err instanceof Error ? err.message : "LOAD FAILED"); setTimeout(() => setDeckBError(""), 4000); })
-                      .finally(() => setDeckBLoading(false));
-                  }
-                }}
+                onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}
                 className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
                 style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
               />
             </div>
             <div className="flex flex-col justify-end">
               <button
-                onClick={() => {
-                  if (!manualArtist && !manualTitle) return;
-                  getAudioContext();
-                  setDeckBLoading(true);
-                  setDeckBError("");
-                  loadDeck("B", manualArtist.trim(), manualTitle.trim())
-                    .catch((err) => { setDeckBError(err instanceof Error ? err.message : "LOAD FAILED"); setTimeout(() => setDeckBError(""), 4000); })
-                    .finally(() => setDeckBLoading(false));
-                }}
-                disabled={deckBLoading || (!manualArtist && !manualTitle)}
+                onClick={handleManualSearch}
+                disabled={loading || (!manualArtist && !manualTitle)}
                 className="tactical-button"
                 style={{ opacity: (!manualArtist && !manualTitle) ? 0.3 : 1 }}
               >
-                {deckBLoading ? "..." : "LOAD"}
+                {loading ? "..." : "SEARCH"}
               </button>
             </div>
           </div>
