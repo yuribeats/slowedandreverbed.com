@@ -2,7 +2,6 @@
 
 import { useRef, useCallback, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { expandParams } from "@yuribeats/audio-utils";
 import { useRemixStore, getMasterAnalyser } from "../../lib/remix-store";
 import type { MasterBusParams } from "../../lib/remix-store";
 import { getAudioContext } from "../../lib/audio-context";
@@ -1176,10 +1175,7 @@ function HomeInner() {
   const setParam = useRemixStore((s) => s.setParam);
   const deckA = useRemixStore((s) => s.deckA);
   const deckB = useRemixStore((s) => s.deckB);
-  const recordArmed = useRemixStore((s) => s.recordArmed);
-  const isRecording = useRemixStore((s) => s.isRecording);
   const isConvertingWav = useRemixStore((s) => s.isConvertingWav);
-  const armRecord = useRemixStore((s) => s.armRecord);
   const pendingRecording = useRemixStore((s) => s.pendingRecording);
   const clearPendingRecording = useRemixStore((s) => s.clearPendingRecording);
   const downloadRecordingWAV = useRemixStore((s) => s.downloadRecordingWAV);
@@ -1405,17 +1401,6 @@ function HomeInner() {
                   >
                     GALLERY
                     <span data-tooltip-right="BROWSE EXPORTED MIXES" className="ml-3 text-[10px]">?</span>
-                  </a>
-                  <a
-                    href="https://everysong.site"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
-                  >
-                    EVERY SONG
-                    <span data-tooltip-right="BROWSE EVERY SONG ON EVERYSONG.SITE" className="ml-3 text-[10px]">?</span>
                   </a>
                 </div>
               )}
