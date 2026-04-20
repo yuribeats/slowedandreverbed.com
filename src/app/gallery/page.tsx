@@ -154,22 +154,24 @@ function GalleryContent() {
   // Sync mint flags from on-chain data
   useEffect(() => {
     if (items.length === 0) return;
-    const existing = ipMintResult;
-    if (Object.keys(existing).length > 0) return; // already have flags
     fetch("/api/inprocess/minted-items?collection=0x60fc593f063e1be321d305889d2c4119a0cabaa6")
       .then((r) => r.json())
       .then((data) => {
         if (!data.names || data.names.length === 0) return;
-        const mintedNames = (data.names as string[]).map((n: string) => n.toLowerCase());
-        const flags: Record<string, string> = {};
-        items.forEach((item) => {
-          const combined = `${item.artist} - ${item.title}`.toLowerCase();
-          if (mintedNames.includes(combined)) flags[item.id] = "MINTED";
+        const mintedNames = new Set((data.names as string[]).map((n) => n.toLowerCase().trim()));
+        setIpMintResult((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          items.forEach((item) => {
+            const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
+            if (mintedNames.has(combined) && next[item.id] !== "MINTED") {
+              next[item.id] = "MINTED";
+              changed = true;
+            }
+          });
+          if (changed) localStorage.setItem("automash_mints", JSON.stringify(next));
+          return changed ? next : prev;
         });
-        if (Object.keys(flags).length > 0) {
-          setIpMintResult(flags);
-          localStorage.setItem("automash_mints", JSON.stringify(flags));
-        }
       })
       .catch(() => {});
   }, [items.length]); // eslint-disable-line react-hooks/exhaustive-deps
