@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { generateCover } from "../../lib/cover-generator";
 
 interface GalleryItem {
   id: string;
@@ -214,16 +215,36 @@ function GalleryContent() {
     if (!ipSession || !ipSelectedCollection) return;
     const id = item.id;
 
-    // Step 1: Use IPFS URI directly (video is already on Pinata)
-    setIpMintState((p) => ({ ...p, [id]: "UPLOADING METADATA" }));
+    setIpMintState((p) => ({ ...p, [id]: "GENERATING COVER" }));
     try {
       const mediaUri = `ipfs://${item.cid}`;
 
-      // Step 2: Build + upload metadata to Arweave (small JSON payload)
+      // Step 1: Generate cover art and upload to Arweave
+      const coverBlob = await generateCover(item.artist, item.title);
+      const coverBuffer = await coverBlob.arrayBuffer();
+      const coverBase64 = btoa(String.fromCharCode(...new Uint8Array(coverBuffer)));
+      const coverRes = await fetch("/api/inprocess/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: coverBase64,
+          contentType: "image/png",
+          filename: "cover.png",
+          apiKey: ipSession.token,
+        }),
+      });
+      let imageUri = "";
+      if (coverRes.ok) {
+        const coverData = await coverRes.json();
+        imageUri = coverData.uri;
+      }
+
+      // Step 2: Build + upload metadata to Arweave
+      setIpMintState((p) => ({ ...p, [id]: "UPLOADING METADATA" }));
       const metadata = {
         name: `${item.artist} - ${item.title}`,
         description: "Made with automash.xyz",
-        image: mediaUri,
+        image: imageUri || mediaUri,
         animation_url: mediaUri,
         content: { mime: "video/mp4", uri: mediaUri },
       };
@@ -746,7 +767,7 @@ function GalleryContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.slice(0, visibleCount).map((item) => (
                 <div key={item.id} data-item-id={item.id} className="flex flex-col gap-2 border-2 border-black p-2 relative">
-                  {editMode && (
+                  {isAdmin && (
                     <button
                       onClick={() => handleDelete(item.id)}
                       disabled={deleting === item.id}
@@ -761,42 +782,24 @@ function GalleryContent() {
                     onError={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
                   />
                   <div className="flex flex-col gap-0.5">
-                    <span
-                      className="text-[13px] uppercase tracking-wider truncate"
-                      style={textStyle}
-                    >
+                    <span className="text-[13px] uppercase tracking-wider truncate" style={textStyle}>
                       {item.artist}
                     </span>
-                    <span
-                      className="text-[11px] uppercase tracking-wider truncate"
-                      style={{ ...textStyle, opacity: 0.7 }}
-                    >
+                    <span className="text-[11px] uppercase tracking-wider truncate" style={{ ...textStyle, opacity: 0.7 }}>
                       {item.title}
                     </span>
-                    <span
-                      className="text-[9px] uppercase tracking-wider"
-                      style={{ ...textStyle, opacity: 0.4 }}
-                    >
+                    <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, opacity: 0.4 }}>
                       {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
                     </span>
                   </div>
                   {isAdmin && (
-                    <div className="mt-1 flex gap-2 flex-wrap">
+                    <div className="mt-1 flex gap-2 flex-wrap items-center">
+                      {/* YouTube */}
                       {uploadResult[item.id] ? (
                         uploadResult[item.id].startsWith("http") ? (
-                          <a
-                            href={uploadResult[item.id]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[9px] uppercase tracking-wider"
-                            style={{ ...textStyle, fontSize: "9px", color: "#228B22" }}
-                          >
-                            YOUTUBE OK
-                          </a>
+                          <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#228B22" }}>YT</span>
                         ) : (
-                          <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>
-                            {uploadResult[item.id]}
-                          </span>
+                          <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>{uploadResult[item.id]}</span>
                         )
                       ) : (
                         <button
@@ -805,32 +808,13 @@ function GalleryContent() {
                           className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
                           style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: uploading === item.id ? 0.4 : 1 }}
                         >
-                          {uploading === item.id ? "UPLOADING..." : "YOUTUBE"}
+                          {uploading === item.id ? "..." : "YOUTUBE"}
                         </button>
                       )}
-                      {tiktokResult[item.id] ? (
-                        <span
-                          className="text-[9px] uppercase tracking-wider"
-                          style={{ ...textStyle, fontSize: "9px", color: tiktokResult[item.id] === "SENT TO TIKTOK" ? "#228B22" : "#c82828" }}
-                        >
-                          {tiktokResult[item.id]}
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleTikTokUpload(item)}
-                          disabled={tiktokUploading === item.id}
-                          className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
-                          style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: tiktokUploading === item.id ? 0.4 : 1 }}
-                        >
-                          {tiktokUploading === item.id ? "UPLOADING..." : "TIKTOK"}
-                        </button>
-                      )}
+                      {/* Mint */}
                       {ipSession && ipSelectedCollection && (
                         ipMintResult[item.id] ? (
-                          <span
-                            className="text-[9px] uppercase tracking-wider"
-                            style={{ ...textStyle, fontSize: "9px", color: ipMintResult[item.id] === "MINTED" ? "#228B22" : "#c82828" }}
-                          >
+                          <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: ipMintResult[item.id] === "MINTED" ? "#228B22" : "#c82828" }}>
                             {ipMintResult[item.id]}
                           </span>
                         ) : (
