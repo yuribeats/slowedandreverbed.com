@@ -214,27 +214,12 @@ function GalleryContent() {
     if (!ipSession || !ipSelectedCollection) return;
     const id = item.id;
 
-    // Step 1: Upload video to Arweave
-    setIpMintState((p) => ({ ...p, [id]: "UPLOADING VIDEO" }));
+    // Step 1: Use IPFS URI directly (video is already on Pinata)
+    setIpMintState((p) => ({ ...p, [id]: "UPLOADING METADATA" }));
     try {
-      const uploadRes = await fetch("/api/inprocess/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          videoUrl: item.url,
-          contentType: "video/mp4",
-          filename: `${item.artist}-${item.title}.mp4`.replace(/[^a-zA-Z0-9.-]/g, "_"),
-          apiKey: ipSession.token,
-        }),
-      });
-      if (!uploadRes.ok) {
-        const errData = await uploadRes.json().catch(() => ({}));
-        throw new Error(errData.error || `VIDEO UPLOAD FAILED (${uploadRes.status})`);
-      }
-      const { uri: mediaUri } = await uploadRes.json();
+      const mediaUri = `ipfs://${item.cid}`;
 
-      // Step 2: Build + upload metadata
-      setIpMintState((p) => ({ ...p, [id]: "UPLOADING METADATA" }));
+      // Step 2: Build + upload metadata to Arweave (small JSON payload)
       const metadata = {
         name: `${item.artist} - ${item.title}`,
         description: "Made with automash.xyz",
