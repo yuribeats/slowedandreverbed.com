@@ -189,72 +189,40 @@ export default function RadioPage() {
       borderRadius: 12,
       boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
     }}>
-      <audio
-        ref={audioRef}
-        onTimeUpdate={() => setProgress(audioRef.current?.currentTime ?? 0)}
-        onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
-        onEnded={nextTrack}
-      />
-
-      {/* Screen */}
+      {/* Screen — video fills it */}
       <div style={{
         margin: "12px 12px 0 12px",
-        background: "linear-gradient(180deg, #b8cfe0 0%, #96b4c8 50%, #7da0b8 100%)",
         border: "2px solid #555",
-        padding: "8px 10px",
-        flex: "0 0 auto",
+        overflow: "hidden",
+        position: "relative",
+        background: "#000",
       }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, borderBottom: "1px solid rgba(0,0,0,0.15)", paddingBottom: 4 }}>
-          <span style={{ fontSize: 9, fontFamily: F, fontWeight: 700, color: "#222" }}>
-            {playing ? "NOW PLAYING" : "PAUSED"}
-          </span>
-          <span style={{ fontSize: 8, fontFamily: F, fontWeight: 700, color: "#444" }}>
-            {queue.length > 0 ? `${idx + 1} OF ${queue.length}` : "EMPTY"}
-          </span>
-        </div>
-
-        {track ? (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 8 }}>
-              <span style={{ fontSize: 14, fontFamily: F, fontWeight: 700, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {track.title.toUpperCase()}
-              </span>
-              <span style={{ fontSize: 11, fontFamily: F, fontWeight: 700, color: "#333", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {track.artist.toUpperCase()}
-              </span>
-              <span style={{ fontSize: 9, fontFamily: F, fontWeight: 700, color: "#555", letterSpacing: "0.1em" }}>
-                AUTO MASH RADIO
-              </span>
-            </div>
-
-            {/* Progress bar */}
-            <div
-              style={{ height: 8, background: "rgba(0,0,0,0.12)", marginBottom: 4 }}
-              onClick={(e) => {
-                if (!audioRef.current || !duration) return;
-                const rect = e.currentTarget.getBoundingClientRect();
-                audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
-              }}
-            >
-              <div style={{
-                width: `${pct}%`,
-                height: "100%",
-                background: "linear-gradient(90deg, #3a7bd5, #5a9be5)",
-              }} />
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 10, fontFamily: F, fontWeight: 700, color: "#333" }}>
-                {fmt(progress)}
-              </span>
-              <span style={{ fontSize: 10, fontFamily: F, fontWeight: 700, color: "#333" }}>
-                {fmt(progress - duration)}
-              </span>
-            </div>
-          </>
-        ) : (
-          <span style={{ fontSize: 11, fontFamily: F, fontWeight: 700, color: "#555" }}>NO TRACKS</span>
+        <video
+          ref={audioRef as React.RefObject<HTMLVideoElement>}
+          playsInline
+          preload="auto"
+          style={{ width: "100%", height: 180, objectFit: "cover", display: "block" }}
+          onTimeUpdate={() => setProgress(audioRef.current?.currentTime ?? 0)}
+          onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
+          onEnded={nextTrack}
+        />
+        {/* Progress bar overlay at bottom */}
+        {track && duration > 0 && (
+          <div
+            style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: "rgba(0,0,0,0.4)" }}
+            onClick={(e) => {
+              if (!audioRef.current || !duration) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
+            }}
+          >
+            <div style={{ width: `${pct}%`, height: "100%", background: "#fff" }} />
+          </div>
+        )}
+        {!track && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 11, fontFamily: F, fontWeight: 700, color: "#555" }}>NO TRACKS</span>
+          </div>
         )}
       </div>
 
@@ -305,7 +273,7 @@ export default function RadioPage() {
               letterSpacing: "0.1em",
             }}
           >
-            MENU
+            ESC
           </button>
 
           {/* Prev - left */}
@@ -332,16 +300,6 @@ export default function RadioPage() {
             &gt;|
           </button>
 
-          {/* Shuffle - bottom */}
-          <span
-            style={{
-              position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)",
-              fontSize: 9, fontFamily: F, fontWeight: 700, color: "#555",
-              letterSpacing: "0.1em",
-            }}
-          >
-            SHUFFLE
-          </span>
         </div>
       </div>
     </div>
