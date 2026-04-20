@@ -286,6 +286,24 @@ function GalleryContent() {
         const errData = await mintRes.json().catch(() => ({}));
         throw new Error(errData.error || `MINT FAILED (${mintRes.status})`);
       }
+      const mintData = await mintRes.json().catch(() => ({}));
+
+      // Airdrop to cxy.eth
+      if (mintData.tokenId || mintData.token_id) {
+        setIpMintState((p) => ({ ...p, [id]: "AIRDROPPING" }));
+        const tokenId = mintData.tokenId || mintData.token_id;
+        await fetch("/api/inprocess/airdrop", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            collectionAddress: ipSelectedCollection.address,
+            tokenId,
+            recipients: ["0x7b753919b953b1021a33f55671716dc13c1eae08"],
+            account: ipSession.wallet,
+            apiKey: ipSession.token,
+          }),
+        }).catch(() => {});
+      }
 
       setIpMintState((p) => ({ ...p, [id]: "done" }));
       setIpMintResult((p) => {
