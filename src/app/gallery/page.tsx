@@ -84,8 +84,6 @@ function GalleryContent() {
   const [editMode, setEditMode] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadResult, setUploadResult] = useState<Record<string, string>>({});
-  const [tiktokUploading, setTiktokUploading] = useState<string | null>(null);
-  const [tiktokResult, setTiktokResult] = useState<Record<string, string>>({});
 
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [playlistTracks, setPlaylistTracks] = useState<PlaylistTrack[]>([]);
@@ -346,23 +344,6 @@ function GalleryContent() {
       setUploadResult((prev) => ({ ...prev, [item.id]: e instanceof Error ? e.message : "FAILED" }));
     }
     setUploading(null);
-  }
-
-  async function handleTikTokUpload(item: GalleryItem) {
-    setTiktokUploading(item.id);
-    try {
-      const res = await fetch("/api/tiktok/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: item.url, artist: item.artist, title: item.title }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "UPLOAD FAILED");
-      setTiktokResult((prev) => ({ ...prev, [item.id]: "SENT TO TIKTOK" }));
-    } catch (e) {
-      setTiktokResult((prev) => ({ ...prev, [item.id]: e instanceof Error ? e.message : "FAILED" }));
-    }
-    setTiktokUploading(null);
   }
 
   async function handleDelete(id: string) {
