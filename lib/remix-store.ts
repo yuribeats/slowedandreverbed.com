@@ -1139,14 +1139,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       if (data.found) {
         if (data.noteIndex !== null && data.noteIndex !== undefined) {
           get().setDeckMeta(id, { baseKey: data.noteIndex, baseMode: data.mode ?? null });
-          // Auto-match A's pitch to B's key whenever both keys are known
-          const a = getDeck(get(), "A");
-          const b = getDeck(get(), "B");
-          if (a.baseKey !== null && b.baseKey !== null) {
-            let diff = ((b.baseKey - a.baseKey) % 12 + 12) % 12;
-            if (diff > 6) diff -= 12;
-            get().setParam("A", "pitch", diff);
-          }
         }
         if (data.bpm) {
           get().setBPM(id, data.bpm);
