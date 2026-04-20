@@ -3,7 +3,31 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { generateCover } from "../../../lib/cover-generator";
+
+async function extractVideoFrame(url: string): Promise<Blob> {
+  const video = document.createElement("video");
+  video.crossOrigin = "anonymous";
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "auto";
+  video.src = url;
+  await new Promise<void>((resolve, reject) => {
+    video.addEventListener("loadeddata", () => resolve(), { once: true });
+    video.addEventListener("error", () => reject(new Error("VIDEO LOAD FAILED")), { once: true });
+  });
+  video.currentTime = 0.1;
+  await new Promise<void>((resolve) => {
+    video.addEventListener("seeked", () => resolve(), { once: true });
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(video, 0, 0);
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("FRAME EXTRACT FAILED"))), "image/png");
+  });
+}
 
 interface GalleryItem {
   id: string;
@@ -274,12 +298,12 @@ function GalleryContent() {
     if (!ipSession || !ipSelectedCollection) return;
     const id = item.id;
 
-    setIpMintState((p) => ({ ...p, [id]: "GENERATING COVER" }));
+    setIpMintState((p) => ({ ...p, [id]: "EXTRACTING FRAME" }));
     try {
       const mediaUri = `ipfs://${item.cid}`;
 
-      // Step 1: Generate cover art and upload to Arweave
-      const coverBlob = await generateCover(item.artist, item.title);
+      // Step 1: Extract first frame of video as cover art and upload to Arweave
+      const coverBlob = await extractVideoFrame(item.url);
       const coverBuffer = await coverBlob.arrayBuffer();
       const coverBytes = new Uint8Array(coverBuffer);
       let coverBinary = "";
