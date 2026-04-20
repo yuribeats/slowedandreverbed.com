@@ -98,6 +98,183 @@ function GalleryContent() {
   const [allFiles, setAllFiles] = useState<PinataFile[]>([]);
   const [allFilesLoading, setAllFilesLoading] = useState(false);
   const [showAllFiles, setShowAllFiles] = useState(false);
+
+  // inprocess.world minting state
+  interface InprocessSession { token: string; wallet: string; username: string; email: string; ts: number }
+  interface InprocessCollection { name: string; address: string }
+  const [ipSession, setIpSession] = useState<InprocessSession | null>(null);
+  const [ipEmail, setIpEmail] = useState("");
+  const [ipCode, setIpCode] = useState("");
+  const [ipAuthStep, setIpAuthStep] = useState<"email" | "code" | "done">("email");
+  const [ipAuthLoading, setIpAuthLoading] = useState(false);
+  const [ipAuthError, setIpAuthError] = useState("");
+  const [ipCollections, setIpCollections] = useState<InprocessCollection[]>([]);
+  const [ipSelectedCollection, setIpSelectedCollection] = useState<InprocessCollection | null>(null);
+  const [ipMintState, setIpMintState] = useState<Record<string, string>>({});
+  const [ipMintResult, setIpMintResult] = useState<Record<string, string>>({});
+  const [showInprocess, setShowInprocess] = useState(false);
+  const SESSION_KEY = "automash_inprocess_session";
+  const SESSION_TTL = 55 * 60 * 1000;
+
+  // Restore session on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) {
+        const s = JSON.parse(raw) as InprocessSession;
+        if (Date.now() - s.ts < SESSION_TTL) {
+          setIpSession(s);
+          setIpAuthStep("done");
+        } else {
+          localStorage.removeItem(SESSION_KEY);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Fetch collections when session is available
+  useEffect(() => {
+    if (!ipSession) return;
+    fetch(`/api/inprocess/collections?wallet=${encodeURIComponent(ipSession.wallet)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const cols = data.collections ?? [];
+        setIpCollections(cols);
+        if (cols.length > 0) setIpSelectedCollection(cols[0]);
+      })
+      .catch(() => {});
+  }, [ipSession]);
+
+  async function ipSendCode() {
+    if (!ipEmail.trim()) return;
+    setIpAuthLoading(true);
+    setIpAuthError("");
+    try {
+      const res = await fetch("/api/inprocess/auth/code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: ipEmail.trim() }),
+      });
+      if (!res.ok) throw new Error("FAILED TO SEND CODE");
+      setIpAuthStep("code");
+    } catch (e) {
+      setIpAuthError(e instanceof Error ? e.message : "ERROR");
+    }
+    setIpAuthLoading(false);
+  }
+
+  async function ipVerifyCode() {
+    if (!ipCode.trim()) return;
+    setIpAuthLoading(true);
+    setIpAuthError("");
+    try {
+      const res = await fetch("/api/inprocess/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: ipEmail.trim(), code: ipCode.trim() }),
+      });
+      if (!res.ok) throw new Error("INVALID CODE");
+      const data = await res.json();
+      const token = data.token || data.apiKey || data.access_token;
+      if (!token) throw new Error("NO TOKEN RETURNED");
+
+      // Get profile
+      const profileRes = await fetch("/api/inprocess/auth/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!profileRes.ok) throw new Error("PROFILE FETCH FAILED");
+      const profile = await profileRes.json();
+
+      const session: InprocessSession = {
+        token,
+        wallet: profile.artistAddress || profile.wallet || "",
+        username: profile.profile?.username || ipEmail.split("@")[0],
+        email: ipEmail.trim(),
+        ts: Date.now(),
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      setIpSession(session);
+      setIpAuthStep("done");
+    } catch (e) {
+      setIpAuthError(e instanceof Error ? e.message : "LOGIN FAILED");
+    }
+    setIpAuthLoading(false);
+  }
+
+  function ipLogout() {
+    localStorage.removeItem(SESSION_KEY);
+    setIpSession(null);
+    setIpAuthStep("email");
+    setIpCode("");
+    setIpCollections([]);
+    setIpSelectedCollection(null);
+  }
+
+  async function handleMint(item: GalleryItem) {
+    if (!ipSession || !ipSelectedCollection) return;
+    const id = item.id;
+
+    // Step 1: Upload video to Arweave
+    setIpMintState((p) => ({ ...p, [id]: "UPLOADING VIDEO" }));
+    try {
+      const uploadRes = await fetch("/api/inprocess/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoUrl: item.url,
+          contentType: "video/mp4",
+          filename: `${item.artist}-${item.title}.mp4`.replace(/[^a-zA-Z0-9.-]/g, "_"),
+          apiKey: ipSession.token,
+        }),
+      });
+      if (!uploadRes.ok) throw new Error("VIDEO UPLOAD FAILED");
+      const { uri: mediaUri } = await uploadRes.json();
+
+      // Step 2: Build + upload metadata
+      setIpMintState((p) => ({ ...p, [id]: "UPLOADING METADATA" }));
+      const metadata = {
+        name: `${item.artist} - ${item.title}`,
+        description: "Made with automash.xyz",
+        image: mediaUri,
+        animation_url: mediaUri,
+        content: { mime: "video/mp4", uri: mediaUri },
+      };
+      const metaBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(metadata))));
+      const metaRes = await fetch("/api/inprocess/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: metaBase64,
+          contentType: "application/json",
+          filename: "metadata.json",
+          apiKey: ipSession.token,
+        }),
+      });
+      if (!metaRes.ok) throw new Error("METADATA UPLOAD FAILED");
+      const { uri: momentUri } = await metaRes.json();
+
+      // Step 3: Mint
+      setIpMintState((p) => ({ ...p, [id]: "MINTING" }));
+      const mintRes = await fetch("/api/inprocess/mint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          momentUri,
+          collectionAddress: ipSelectedCollection.address,
+          account: ipSession.wallet,
+          recipientCount: 1,
+          apiKey: ipSession.token,
+        }),
+      });
+      if (!mintRes.ok) throw new Error("MINT FAILED");
+
+      setIpMintState((p) => ({ ...p, [id]: "done" }));
+      setIpMintResult((p) => ({ ...p, [id]: "MINTED" }));
+    } catch (e) {
+      setIpMintState((p) => ({ ...p, [id]: "error" }));
+      setIpMintResult((p) => ({ ...p, [id]: e instanceof Error ? e.message : "MINT FAILED" }));
+    }
+  }
   const openRadio = () => {
     // Find currently playing video and pause it
     const videos = document.querySelectorAll("video");
@@ -303,6 +480,116 @@ function GalleryContent() {
               </Link>
             </div>
           </div>
+
+          {/* inprocess.world minting (admin only) */}
+          {isAdmin && (
+            <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>INPROCESS</span>
+                <button
+                  onClick={() => setShowInprocess(!showInprocess)}
+                  className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black ml-auto"
+                  style={{ ...textStyle, fontSize: "10px", background: showInprocess ? "#000" : "transparent", color: showInprocess ? "#fff" : "#000" }}
+                >
+                  {showInprocess ? "HIDE" : "SHOW"}
+                </button>
+              </div>
+              {showInprocess && (
+                <div className="flex flex-col gap-3">
+                  {ipAuthStep === "done" && ipSession ? (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", color: "#228B22" }}>
+                          LOGGED IN AS {ipSession.username}
+                        </span>
+                        <button
+                          onClick={ipLogout}
+                          className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                          style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
+                        >
+                          LOGOUT
+                        </button>
+                      </div>
+                      {/* Collection picker */}
+                      {ipCollections.length === 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>NO COLLECTIONS</span>
+                          <a href="https://www.inprocess.world" target="_blank" rel="noopener noreferrer" className="text-[9px] uppercase tracking-wider border border-black px-2 py-1" style={{ ...textStyle, fontSize: "9px", background: "transparent" }}>
+                            CREATE AT INPROCESS.WORLD
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>COLLECTION:</span>
+                          {ipCollections.map((c) => (
+                            <button
+                              key={c.address}
+                              onClick={() => setIpSelectedCollection(c)}
+                              className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                              style={{
+                                ...textStyle, fontSize: "9px",
+                                background: ipSelectedCollection?.address === c.address ? "#000" : "transparent",
+                                color: ipSelectedCollection?.address === c.address ? "#fff" : "#000",
+                              }}
+                            >
+                              {c.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {ipAuthStep === "email" && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={ipEmail}
+                            onChange={(e) => setIpEmail(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && ipSendCode()}
+                            placeholder="EMAIL"
+                            className="border-2 border-black px-3 py-1 text-[10px] uppercase tracking-wider flex-1"
+                            style={{ ...textStyle, fontSize: "10px", background: "transparent", outline: "none" }}
+                          />
+                          <button
+                            onClick={ipSendCode}
+                            disabled={ipAuthLoading}
+                            className="text-[9px] uppercase tracking-wider border-2 border-black px-3 py-1"
+                            style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: ipAuthLoading ? 0.4 : 1 }}
+                          >
+                            {ipAuthLoading ? "..." : "SEND CODE"}
+                          </button>
+                        </div>
+                      )}
+                      {ipAuthStep === "code" && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>CODE SENT TO {ipEmail}</span>
+                          <input
+                            value={ipCode}
+                            onChange={(e) => setIpCode(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && ipVerifyCode()}
+                            placeholder="CODE"
+                            className="border-2 border-black px-3 py-1 text-[10px] uppercase tracking-wider w-[100px]"
+                            style={{ ...textStyle, fontSize: "10px", background: "transparent", outline: "none" }}
+                          />
+                          <button
+                            onClick={ipVerifyCode}
+                            disabled={ipAuthLoading}
+                            className="text-[9px] uppercase tracking-wider border-2 border-black px-3 py-1"
+                            style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: ipAuthLoading ? 0.4 : 1 }}
+                          >
+                            {ipAuthLoading ? "..." : "VERIFY"}
+                          </button>
+                        </div>
+                      )}
+                      {ipAuthError && (
+                        <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>{ipAuthError}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* All Pinata Files (admin only) */}
           {isAdmin && (
@@ -543,6 +830,27 @@ function GalleryContent() {
                         >
                           {tiktokUploading === item.id ? "UPLOADING..." : "TIKTOK"}
                         </button>
+                      )}
+                      {ipSession && ipSelectedCollection && (
+                        ipMintResult[item.id] ? (
+                          <span
+                            className="text-[9px] uppercase tracking-wider"
+                            style={{ ...textStyle, fontSize: "9px", color: ipMintResult[item.id] === "MINTED" ? "#228B22" : "#c82828" }}
+                          >
+                            {ipMintResult[item.id]}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleMint(item)}
+                            disabled={!!ipMintState[item.id] && ipMintState[item.id] !== "error"}
+                            className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                            style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: (ipMintState[item.id] && ipMintState[item.id] !== "error") ? 0.4 : 1 }}
+                          >
+                            {ipMintState[item.id] && ipMintState[item.id] !== "error" && ipMintState[item.id] !== "done"
+                              ? ipMintState[item.id]
+                              : "MINT"}
+                          </button>
+                        )
                       )}
                     </div>
                   )}

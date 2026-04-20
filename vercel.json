@@ -7,6 +7,9 @@
     },
     "src/app/api/downbeat/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/inprocess/upload/route.ts": {
+      "maxDuration": 300
     }
   }
 }
