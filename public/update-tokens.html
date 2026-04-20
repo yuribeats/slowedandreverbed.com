@@ -51,71 +51,36 @@ function log(msg) {
   document.getElementById("log").textContent += msg + "\n";
 }
 
-function loadImage(src) {
+function grabVideoFrame(videoUrl) {
   return new Promise(function(resolve, reject) {
-    var img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = function() { resolve(img); };
-    img.onerror = function() { reject(new Error("Image load failed")); };
-    img.src = src;
-  });
-}
+    var video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
 
-async function generateCover(artist, title) {
-  var SIZE = 1080, PADDING = 60, TEXT_HEIGHT = 80, GAP = 30;
-  var canvas = document.createElement("canvas");
-  canvas.width = SIZE; canvas.height = SIZE;
-  var ctx = canvas.getContext("2d");
+    video.onloadeddata = function() {
+      // Seek to 1 second in to skip any black frames
+      video.currentTime = 1;
+    };
 
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, SIZE, SIZE);
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(PADDING - 20, PADDING - 20, SIZE - (PADDING - 20) * 2, SIZE - (PADDING - 20) * 2);
+    video.onseeked = function() {
+      var canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob(function(blob) {
+        video.src = "";
+        blob ? resolve(blob) : reject(new Error("Frame capture failed"));
+      }, "image/png");
+    };
 
-  var textWidth = SIZE - PADDING * 2;
-  var artistY = PADDING;
+    video.onerror = function() { reject(new Error("Video load failed")); };
 
-  ctx.fillStyle = "#000000";
-  ctx.font = "900 " + TEXT_HEIGHT + "px Arial Black, Arial, sans-serif";
-  ctx.textBaseline = "top";
-
-  ctx.save();
-  var am = ctx.measureText(artist.toUpperCase());
-  ctx.translate(PADDING, artistY);
-  ctx.scale(textWidth / am.width, 1);
-  ctx.fillText(artist.toUpperCase(), 0, 0);
-  ctx.restore();
-
-  var imageY = artistY + TEXT_HEIGHT + GAP;
-  var imageHeight = SIZE - PADDING * 2 - TEXT_HEIGHT * 2 - GAP * 2;
-
-  try {
-    var img = await loadImage("/api/random-image?t=" + Date.now() + Math.random());
-    var imgAspect = img.width / img.height;
-    var boxAspect = textWidth / imageHeight;
-    var sx = 0, sy = 0, sw = img.width, sh = img.height;
-    if (imgAspect > boxAspect) { sw = img.height * boxAspect; sx = (img.width - sw) / 2; }
-    else { sh = img.width / boxAspect; sy = (img.height - sh) / 2; }
-    ctx.drawImage(img, sx, sy, sw, sh, PADDING, imageY, textWidth, imageHeight);
-  } catch (e) {
-    ctx.fillStyle = "#cccccc";
-    ctx.fillRect(PADDING, imageY, textWidth, imageHeight);
-  }
-
-  var titleY = imageY + imageHeight + GAP;
-  ctx.fillStyle = "#000000";
-  ctx.font = "900 " + TEXT_HEIGHT + "px Arial Black, Arial, sans-serif";
-  ctx.textBaseline = "top";
-  ctx.save();
-  var tm = ctx.measureText(title.toUpperCase());
-  ctx.translate(PADDING, titleY);
-  ctx.scale(textWidth / tm.width, 1);
-  ctx.fillText(title.toUpperCase(), 0, 0);
-  ctx.restore();
-
-  return new Promise(function(resolve, reject) {
-    canvas.toBlob(function(blob) { blob ? resolve(blob) : reject(new Error("toBlob failed")); }, "image/png");
+    // Use Pinata gateway URL (IPFS gateway for cross-origin)
+    var cid = videoUrl.replace("ipfs://", "");
+    video.src = "https://gateway.pinata.cloud/ipfs/" + cid;
   });
 }
 
@@ -207,10 +172,10 @@ async function updateOne(tokenId) {
   statusEl.className = "";
 
   try {
-    // Step 1: Generate cover PNG
-    statusEl.textContent = "GENERATING COVER...";
-    log("#" + tokenId + ": generating cover");
-    var coverBlob = await generateCover(token.artist, token.title);
+    // Step 1: Grab frame from video
+    statusEl.textContent = "GRABBING FRAME...";
+    log("#" + tokenId + ": loading video frame from " + token.video);
+    var coverBlob = await grabVideoFrame(token.video);
 
     // Step 2: Upload cover to Arweave
     statusEl.textContent = "UPLOADING COVER...";
