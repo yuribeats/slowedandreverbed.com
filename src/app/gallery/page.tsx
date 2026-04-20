@@ -82,7 +82,9 @@ function GalleryContent() {
   const isAdmin = searchParams.get("admin") === "1";
   const [deleting, setDeleting] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
-  const [uploadResult, setUploadResult] = useState<Record<string, string>>({});
+  const [uploadResult, setUploadResult] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("automash_yt_uploads") || "{}"); } catch { return {}; }
+  });
 
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [playlistTracks, setPlaylistTracks] = useState<PlaylistTrack[]>([]);
@@ -109,7 +111,9 @@ function GalleryContent() {
   const [ipCollections, setIpCollections] = useState<InprocessCollection[]>([]);
   const [ipSelectedCollection, setIpSelectedCollection] = useState<InprocessCollection | null>(null);
   const [ipMintState, setIpMintState] = useState<Record<string, string>>({});
-  const [ipMintResult, setIpMintResult] = useState<Record<string, string>>({});
+  const [ipMintResult, setIpMintResult] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("automash_mints") || "{}"); } catch { return {}; }
+  });
   const [showInprocess, setShowInprocess] = useState(false);
   const SESSION_KEY = "automash_inprocess_session";
   const SESSION_TTL = 55 * 60 * 1000;
@@ -284,7 +288,11 @@ function GalleryContent() {
       }
 
       setIpMintState((p) => ({ ...p, [id]: "done" }));
-      setIpMintResult((p) => ({ ...p, [id]: "MINTED" }));
+      setIpMintResult((p) => {
+        const next = { ...p, [id]: "MINTED" };
+        localStorage.setItem("automash_mints", JSON.stringify(next));
+        return next;
+      });
     } catch (e) {
       setIpMintState((p) => ({ ...p, [id]: "error" }));
       setIpMintResult((p) => ({ ...p, [id]: e instanceof Error ? e.message : "MINT FAILED" }));
@@ -341,7 +349,11 @@ function GalleryContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "UPLOAD FAILED");
-      setUploadResult((prev) => ({ ...prev, [item.id]: data.youtubeUrl }));
+      setUploadResult((prev) => {
+        const next = { ...prev, [item.id]: data.youtubeUrl };
+        localStorage.setItem("automash_yt_uploads", JSON.stringify(next));
+        return next;
+      });
     } catch (e) {
       setUploadResult((prev) => ({ ...prev, [item.id]: e instanceof Error ? e.message : "FAILED" }));
     }
