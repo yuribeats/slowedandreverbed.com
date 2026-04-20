@@ -227,7 +227,10 @@ function GalleryContent() {
           apiKey: ipSession.token,
         }),
       });
-      if (!uploadRes.ok) throw new Error("VIDEO UPLOAD FAILED");
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => ({}));
+        throw new Error(errData.error || `VIDEO UPLOAD FAILED (${uploadRes.status})`);
+      }
       const { uri: mediaUri } = await uploadRes.json();
 
       // Step 2: Build + upload metadata
@@ -250,7 +253,10 @@ function GalleryContent() {
           apiKey: ipSession.token,
         }),
       });
-      if (!metaRes.ok) throw new Error("METADATA UPLOAD FAILED");
+      if (!metaRes.ok) {
+        const errData = await metaRes.json().catch(() => ({}));
+        throw new Error(errData.error || `METADATA UPLOAD FAILED (${metaRes.status})`);
+      }
       const { uri: momentUri } = await metaRes.json();
 
       // Step 3: Mint
@@ -266,7 +272,10 @@ function GalleryContent() {
           apiKey: ipSession.token,
         }),
       });
-      if (!mintRes.ok) throw new Error("MINT FAILED");
+      if (!mintRes.ok) {
+        const errData = await mintRes.json().catch(() => ({}));
+        throw new Error(errData.error || `MINT FAILED (${mintRes.status})`);
+      }
 
       setIpMintState((p) => ({ ...p, [id]: "done" }));
       setIpMintResult((p) => ({ ...p, [id]: "MINTED" }));
