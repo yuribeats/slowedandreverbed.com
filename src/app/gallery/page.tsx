@@ -98,6 +98,39 @@ function GalleryContent() {
   const [allFiles, setAllFiles] = useState<PinataFile[]>([]);
   const [allFilesLoading, setAllFilesLoading] = useState(false);
   const [showAllFiles, setShowAllFiles] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
+  const LAST_DL_KEY = "automash_last_download";
+
+  async function downloadFiles(files: PinataFile[]) {
+    setDownloading(true);
+    setDownloadProgress({ current: 0, total: files.length });
+    for (let i = 0; i < files.length; i++) {
+      setDownloadProgress({ current: i + 1, total: files.length });
+      try {
+        const res = await fetch(files[i].url);
+        const blob = await res.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        const ext = files[i].mimeType?.includes("video") ? ".mp4" : files[i].mimeType?.includes("audio") ? ".mp3" : "";
+        a.download = (files[i].name || files[i].cid) + ext;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        await new Promise((r) => setTimeout(r, 500));
+      } catch {}
+    }
+    localStorage.setItem(LAST_DL_KEY, new Date().toISOString());
+    setDownloading(false);
+  }
+
+  function getNewFiles(): PinataFile[] {
+    const last = localStorage.getItem(LAST_DL_KEY);
+    if (!last) return allFiles;
+    const lastDate = new Date(last).getTime();
+    return allFiles.filter((f) => new Date(f.createdAt).getTime() > lastDate);
+  }
 
   // inprocess.world minting state
   interface InprocessSession { token: string; wallet: string; username: string; email: string; ts: number }
@@ -648,14 +681,32 @@ function GalleryContent() {
                   {showAllFiles ? "HIDE" : "SHOW"}
                 </button>
                 {showAllFiles && (
-                  <button
-                    onClick={loadAllFiles}
-                    disabled={allFilesLoading}
-                    className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
-                    style={{ ...textStyle, fontSize: "10px", background: "transparent", opacity: allFilesLoading ? 0.4 : 1 }}
-                  >
-                    {allFilesLoading ? "..." : "REFRESH"}
-                  </button>
+                  <>
+                    <button
+                      onClick={loadAllFiles}
+                      disabled={allFilesLoading}
+                      className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
+                      style={{ ...textStyle, fontSize: "10px", background: "transparent", opacity: allFilesLoading ? 0.4 : 1 }}
+                    >
+                      {allFilesLoading ? "..." : "REFRESH"}
+                    </button>
+                    <button
+                      onClick={() => downloadFiles(allFiles)}
+                      disabled={downloading || allFiles.length === 0}
+                      className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
+                      style={{ ...textStyle, fontSize: "10px", background: "transparent", opacity: (downloading || allFiles.length === 0) ? 0.4 : 1 }}
+                    >
+                      {downloading ? `${downloadProgress.current}/${downloadProgress.total}` : "DOWNLOAD ALL"}
+                    </button>
+                    <button
+                      onClick={() => { const nf = getNewFiles(); if (nf.length > 0) downloadFiles(nf); }}
+                      disabled={downloading || allFiles.length === 0}
+                      className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
+                      style={{ ...textStyle, fontSize: "10px", background: "transparent", opacity: (downloading || allFiles.length === 0) ? 0.4 : 1 }}
+                    >
+                      {`NEW (${getNewFiles().length})`}
+                    </button>
+                  </>
                 )}
               </div>
               {showAllFiles && (
