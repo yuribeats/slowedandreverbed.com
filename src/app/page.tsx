@@ -418,7 +418,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 onClick={() => setEditingBPM(true)}
               >
                 {deck.calculatedBPM
-                  ? `BPM: ${deck.calculatedBPM.toFixed(1)}`
+                  ? `BPM: ${deck.calculatedBPM.toFixed(3)}`
                   : "SET BPM"
                 }
               </span>
