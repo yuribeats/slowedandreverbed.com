@@ -644,7 +644,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               <div className="slider-track h-full" />
               <input
                 type="range" min="-12" max="12" step={stepMode ? 1 : 0.1}
-                value={linked ? speedSemitones : pitchSemitones}
+                value={pitchSemitones}
                 onChange={(e) => handlePitch(parseFloat(e.target.value))}
                 className="absolute h-full"
                 style={{ ...faderStyle, width: "36px" }}
