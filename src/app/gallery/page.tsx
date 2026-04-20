@@ -220,7 +220,10 @@ function GalleryContent() {
       // Step 1: Generate cover art and upload to Arweave
       const coverBlob = await generateCover(item.artist, item.title);
       const coverBuffer = await coverBlob.arrayBuffer();
-      const coverBase64 = btoa(String.fromCharCode(...new Uint8Array(coverBuffer)));
+      const coverBytes = new Uint8Array(coverBuffer);
+      let coverBinary = "";
+      for (let i = 0; i < coverBytes.length; i++) coverBinary += String.fromCharCode(coverBytes[i]);
+      const coverBase64 = btoa(coverBinary);
       const coverRes = await fetch("/api/inprocess/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
