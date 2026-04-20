@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { generateCover } from "../../lib/cover-generator";
+import { generateCover } from "../../../lib/cover-generator";
 
 interface GalleryItem {
   id: string;
