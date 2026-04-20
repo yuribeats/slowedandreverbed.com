@@ -81,7 +81,6 @@ function GalleryContent() {
   const searchParams = useSearchParams();
   const isAdmin = searchParams.get("admin") === "1";
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadResult, setUploadResult] = useState<Record<string, string>>({});
 
@@ -461,15 +460,6 @@ function GalleryContent() {
               RADIO
             </button>
             <div className="ml-auto flex gap-2">
-              {isAdmin && (
-                <button
-                  onClick={() => setEditMode(!editMode)}
-                  className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
-                  style={{ ...textStyle, fontSize: "10px", background: editMode ? "#000" : "transparent", color: editMode ? "#fff" : "#000" }}
-                >
-                  {editMode ? "DONE" : "EDIT"}
-                </button>
-              )}
               <Link
                 href="/"
                 className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"

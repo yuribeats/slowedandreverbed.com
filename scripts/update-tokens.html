@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>UPDATE TOKEN METADATA</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Helvetica, Arial, sans-serif; font-weight: 700; background: #fff; color: #000; padding: 40px; }
+h1 { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+.token { border: 2px solid #000; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+button#connectBtn { font-family: inherit; font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; border: 2px solid #000; background: transparent; padding: 10px 24px; margin-bottom: 20px; }
+#wallet { font-size: 10px; opacity: 0.5; margin-bottom: 20px; }
+button#updateAll { font-family: inherit; font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; border: 2px solid #000; background: #000; color: #fff; padding: 10px 24px; margin-top: 12px; }
+button#updateAll:disabled { opacity: 0.3; }
+.ok { color: #228B22; }
+.err { color: #c82828; }
+</style>
+</head>
+<body>
+<h1>UPDATE TOKEN METADATA — AUTO MASH REMIXES</h1>
+<div>CONTRACT: 0x60fc593f063e1be321d305889d2c4119a0cabaa6</div>
+<br>
+<button id="connectBtn">CONNECT WALLET</button>
+<div id="wallet"></div>
+<div id="tokens"></div>
+<button id="updateAll" disabled>UPDATE ALL</button>
+
+<script>
+const CONTRACT = "0x60fc593f063e1be321d305889d2c4119a0cabaa6";
+const TOKENS = [
+  { id: 2, name: "black sabbath x kendrick", uri: "ar://WNG_Our5CNIiVoMfSpPQwYgaAKVmerOQrnj04GEMUWo" },
+  { id: 3, name: "fatboy slim x kendrick", uri: "ar://gR8oGz3n0CzPoIM3dpcc7-Yc6KURgoQ6CqiWVXS2jjs" },
+  { id: 4, name: "black angels - ante up", uri: "ar://IlSESYLAr0rWnSpu3Bov5roymBysCpb4QWWGGvOrd8s" },
+  { id: 5, name: "rich homie nirvana", uri: "ar://Pv0YQfLnjtYQXyQl2sLB9dLuUsHJviKrPVwgJZ8V5cw" },
+  { id: 6, name: "bebe ficke", uri: "ar://cGf2yfw0RpeX9541uUBUhevNh3RcSc-fD60rPJxrFKM" },
+  { id: 7, name: "combsxmoby", uri: "ar://p0j3njJs9CwTDutQdF26YSpMsYbEooDJpr1A2qtT5_w" },
+  { id: 8, name: "roc marci", uri: "ar://3-VZ__IGFYrjczm61n_sRCm4Rec9LpfVG0D-sN-9beo" },
+  { id: 9, name: "xxx malone", uri: "ar://pmoo0fpNzaHwmOmfIfnC21bW7kQOqVJtGe46N1oXeWg" },
+];
+
+let walletAddress;
+
+function renderTokens() {
+  const container = document.getElementById("tokens");
+  while (container.firstChild) container.removeChild(container.firstChild);
+  TOKENS.forEach(function(t) {
+    const div = document.createElement("div");
+    div.className = "token";
+    div.id = "token-" + t.id;
+
+    const idSpan = document.createElement("span");
+    idSpan.textContent = "#" + t.id;
+    idSpan.style.cssText = "font-size:12px;min-width:30px";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = t.name.toUpperCase();
+    nameSpan.style.cssText = "font-size:11px;flex:1;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+
+    const uriSpan = document.createElement("span");
+    uriSpan.textContent = t.uri;
+    uriSpan.style.cssText = "font-size:9px;opacity:0.4;max-width:200px;overflow:hidden;text-overflow:ellipsis";
+
+    const btn = document.createElement("button");
+    btn.textContent = "UPDATE";
+    btn.style.cssText = "font-family:inherit;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;border:2px solid #000;background:transparent;padding:6px 16px";
+    btn.onclick = function() { updateOne(t.id); };
+
+    const status = document.createElement("span");
+    status.id = "status-" + t.id;
+    status.style.cssText = "font-size:10px;min-width:80px;text-align:right";
+
+    div.appendChild(idSpan);
+    div.appendChild(nameSpan);
+    div.appendChild(uriSpan);
+    div.appendChild(btn);
+    div.appendChild(status);
+    container.appendChild(div);
+  });
+}
+
+document.getElementById("connectBtn").onclick = async function() {
+  if (!window.ethereum) { alert("INSTALL METAMASK"); return; }
+  var accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+  walletAddress = accounts[0];
+  document.getElementById("wallet").textContent = "CONNECTED: " + walletAddress;
+  document.getElementById("updateAll").disabled = false;
+  try {
+    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x2105" }] });
+  } catch (e) {
+    if (e.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{ chainId: "0x2105", chainName: "Base", rpcUrls: ["https://mainnet.base.org"], nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 }, blockExplorerUrls: ["https://basescan.org"] }],
+      });
+    }
+  }
+};
+
+function encodeUpdateTokenURI(tokenId, newURI) {
+  var selector = "a2bc23de";
+  var tokenIdHex = tokenId.toString(16).padStart(64, "0");
+  var offset = "0000000000000000000000000000000000000000000000000000000000000040";
+  var uriBytes = new TextEncoder().encode(newURI);
+  var length = uriBytes.length.toString(16).padStart(64, "0");
+  var dataHex = "";
+  for (var i = 0; i < uriBytes.length; i++) dataHex += uriBytes[i].toString(16).padStart(2, "0");
+  while (dataHex.length % 64 !== 0) dataHex += "0";
+  return "0x" + selector + tokenIdHex + offset + length + dataHex;
+}
+
+async function updateOne(tokenId) {
+  var token = TOKENS.find(function(t) { return t.id === tokenId; });
+  if (!token) return;
+  var statusEl = document.getElementById("status-" + tokenId);
+  statusEl.className = "";
+  statusEl.textContent = "SENDING...";
+
+  try {
+    var data = encodeUpdateTokenURI(tokenId, token.uri);
+    var txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [{ from: walletAddress, to: CONTRACT, data: data }],
+    });
+    statusEl.textContent = "CONFIRMING...";
+    for (var i = 0; i < 30; i++) {
+      await new Promise(function(r) { setTimeout(r, 2000); });
+      var receipt = await window.ethereum.request({ method: "eth_getTransactionReceipt", params: [txHash] });
+      if (receipt) {
+        if (receipt.status === "0x1") { statusEl.textContent = "DONE"; statusEl.className = "ok"; }
+        else { statusEl.textContent = "REVERTED"; statusEl.className = "err"; }
+        return;
+      }
+    }
+    statusEl.textContent = "TIMEOUT";
+    statusEl.className = "err";
+  } catch (e) {
+    statusEl.textContent = (e.message || "FAILED").slice(0, 30);
+    statusEl.className = "err";
+  }
+}
+
+document.getElementById("updateAll").onclick = async function() {
+  for (var i = 0; i < TOKENS.length; i++) {
+    await updateOne(TOKENS[i].id);
+    await new Promise(function(r) { setTimeout(r, 3000); });
+  }
+};
+
+renderTokens();
+</script>
+</body>
+</html>
