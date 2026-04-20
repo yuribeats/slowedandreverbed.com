@@ -1188,7 +1188,6 @@ function HomeInner() {
   // Auto-load decks from URL params (from Everysong match page)
   const searchParams = useSearchParams();
   const loadDeckHome = useRemixStore((s) => s.loadDeck);
-  const phaseSync = useRemixStore((s) => s.phaseSync);
   const skipPitchSync = useRef(false);
   useEffect(() => {
     const run = async () => {
