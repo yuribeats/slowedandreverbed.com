@@ -1153,28 +1153,56 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     console.log(`[loadDeck:${id}] starting — searching YouTube for "${searchQuery}"`);
 
     const searchQ = encodeURIComponent(searchQuery);
-    let url: string;
+    let candidates: { url: string; title: string }[] = [];
     try {
       const res = await fetch(`/api/youtube/search?q=${searchQ}`);
       if (!res.ok) throw new Error(`YouTube search HTTP ${res.status}`);
       const data = await res.json();
-      if (data.error || !data.url) throw new Error(data.error || "No YouTube results");
-      url = data.url;
-      console.log(`[loadDeck:${id}] found URL: ${url}`);
+      if (data.error) throw new Error(data.error);
+      candidates = Array.isArray(data.candidates) && data.candidates.length > 0
+        ? data.candidates
+        : data.url ? [{ url: data.url, title: data.title || "" }] : [];
+      if (candidates.length === 0) throw new Error("No YouTube results");
+      console.log(`[loadDeck:${id}] ${candidates.length} candidate(s), first: ${candidates[0].url}`);
     } catch (e) {
       console.error(`[loadDeck:${id}] YouTube search failed:`, e);
       throw e;
     }
 
+    let lastErr: unknown = null;
+    let loaded = false;
+    for (let i = 0; i < candidates.length; i++) {
+      const { url } = candidates[i];
+      try {
+        console.log(`[loadDeck:${id}] trying candidate ${i + 1}/${candidates.length}: ${url}`);
+        await get().loadFromYouTube(id, url);
+        const dk = deckKey(id);
+        const state = get() as unknown as Record<string, { sourceBuffer?: unknown; error?: string | null }>;
+        const deckState = state[dk];
+        if (deckState?.sourceBuffer && !deckState?.error) {
+          console.log(`[loadDeck:${id}] audio loaded from candidate ${i + 1}`);
+          loaded = true;
+          break;
+        }
+        lastErr = new Error(deckState?.error || "extraction returned no buffer");
+        console.warn(`[loadDeck:${id}] candidate ${i + 1} failed: ${deckState?.error}`);
+      } catch (e) {
+        lastErr = e;
+        console.warn(`[loadDeck:${id}] candidate ${i + 1} threw:`, e);
+      }
+    }
+
+    if (!loaded) {
+      const msg = lastErr instanceof Error ? lastErr.message : "all candidates failed";
+      console.error(`[loadDeck:${id}] all ${candidates.length} candidates failed`);
+      throw new Error(msg);
+    }
+
     try {
-      console.log(`[loadDeck:${id}] loading audio`);
-      await get().loadFromYouTube(id, url);
-      console.log(`[loadDeck:${id}] audio loaded, looking up key`);
       await get().lookupEverysong(id, artist, title);
       console.log(`[loadDeck:${id}] metadata loaded`);
     } catch (e) {
-      console.error(`[loadDeck:${id}] load failed:`, e);
-      throw e;
+      console.error(`[loadDeck:${id}] metadata lookup failed:`, e);
     }
 
     console.log(`[loadDeck:${id}] complete`);
