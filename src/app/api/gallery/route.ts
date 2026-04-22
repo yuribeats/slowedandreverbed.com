@@ -59,6 +59,7 @@ export async function GET(request: Request) {
       artist: f.keyvalues?.artist || "UNKNOWN",
       title: f.keyvalues?.title || "UNTITLED",
       createdAt: f.keyvalues?.createdAt || f.created_at,
+      youtubeUrl: f.keyvalues?.youtubeUrl || null,
     }));
 
     return NextResponse.json({ items });

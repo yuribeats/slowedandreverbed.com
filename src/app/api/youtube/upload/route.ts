@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { Readable } from "stream";
+import { PinataSDK } from "pinata";
 
 export const maxDuration = 300;
 
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { url, artist, title } = await request.json();
+    const { url, artist, title, fileId } = await request.json();
     if (!url) {
       return NextResponse.json({ error: "Missing video URL" }, { status: 400 });
     }
@@ -61,11 +62,21 @@ export async function POST(request: NextRequest) {
     });
 
     const videoId = response.data.id;
-    return NextResponse.json({
-      success: true,
-      videoId,
-      youtubeUrl: `https://youtube.com/watch?v=${videoId}`,
-    });
+    const youtubeUrl = `https://youtube.com/watch?v=${videoId}`;
+
+    if (fileId && process.env.PINATA_JWT && process.env.PINATA_GATEWAY) {
+      try {
+        const pinata = new PinataSDK({
+          pinataJwt: process.env.PINATA_JWT,
+          pinataGateway: process.env.PINATA_GATEWAY,
+        });
+        await pinata.files.public.update({ id: fileId, keyvalues: { youtubeUrl } });
+      } catch (e) {
+        console.error("pinata keyvalues update failed:", e);
+      }
+    }
+
+    return NextResponse.json({ success: true, videoId, youtubeUrl });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Upload failed";
     console.error("youtube upload error:", msg);

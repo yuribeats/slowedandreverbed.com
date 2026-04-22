@@ -36,6 +36,7 @@ interface GalleryItem {
   artist: string;
   title: string;
   createdAt: string;
+  youtubeUrl?: string | null;
 }
 
 interface PinataFile {
@@ -423,7 +424,20 @@ function GalleryContent() {
     fetch("/api/gallery")
       .then((r) => r.json())
       .then((data) => {
-        setItems(data.items || []);
+        const fetchedItems: GalleryItem[] = data.items || [];
+        setItems(fetchedItems);
+        setUploadResult((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          for (const it of fetchedItems) {
+            if (it.youtubeUrl && next[it.id] !== it.youtubeUrl) {
+              next[it.id] = it.youtubeUrl;
+              changed = true;
+            }
+          }
+          if (changed) localStorage.setItem("automash_yt_uploads", JSON.stringify(next));
+          return changed ? next : prev;
+        });
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -445,7 +459,7 @@ function GalleryContent() {
       const res = await fetch("/api/youtube/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: item.url, artist: item.artist, title: item.title }),
+        body: JSON.stringify({ url: item.url, artist: item.artist, title: item.title, fileId: item.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "UPLOAD FAILED");
