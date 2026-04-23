@@ -970,7 +970,39 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const safeArtist = (deck.artist || "").replace(/[^\w\s-]/g, "").trim();
       const safeTitle = (deck.title || deck.sourceFilename || `deck-${id.toLowerCase()}`).replace(/[^\w\s-]/g, "").trim();
       const base = [safeArtist, safeTitle].filter(Boolean).join(" - ") || `deck-${id.toLowerCase()}`;
-      const mp3Blob = encodeMP3(deck.sourceBuffer, 192);
+
+      const sourceForRender = deck.mixedStemBuffer
+        || (deck.activeStem && deck.stemBuffers?.[deck.activeStem])
+        || deck.sourceBuffer;
+      const rStart = deck.regionStart;
+      const rEnd = deck.regionEnd > 0 ? deck.regionEnd : sourceForRender.duration;
+      const region = extractRegion(sourceForRender, rStart, rEnd);
+      const expanded = expandParams(deck.params);
+      const result = await renderOffline({ ...region, params: expanded });
+
+      const ctx = getAudioContext();
+      const rendered = ctx.createBuffer(result.numberOfChannels, result.channelData[0].length, result.sampleRate);
+      for (let c = 0; c < result.numberOfChannels; c++) {
+        rendered.getChannelData(c).set(result.channelData[c]);
+      }
+
+      let peak = 0;
+      for (let c = 0; c < rendered.numberOfChannels; c++) {
+        const ch = rendered.getChannelData(c);
+        for (let i = 0; i < ch.length; i++) {
+          const abs = Math.abs(ch[i]);
+          if (abs > peak) peak = abs;
+        }
+      }
+      if (peak > 1) {
+        const scale = 0.99 / peak;
+        for (let c = 0; c < rendered.numberOfChannels; c++) {
+          const ch = rendered.getChannelData(c);
+          for (let i = 0; i < ch.length; i++) ch[i] *= scale;
+        }
+      }
+
+      const mp3Blob = encodeMP3(rendered, 192);
       const url = URL.createObjectURL(mp3Blob);
       const anchor = document.createElement("a");
       anchor.href = url;
