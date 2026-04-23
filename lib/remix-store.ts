@@ -1502,8 +1502,20 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     // Schedule the "other" deck to fade out when whichever deck ends first, so the mix ends together
     const otherId: DeckId = id === "A" ? "B" : "A";
     const otherDeck = getDeck(get(), otherId);
-    if (otherDeck.isPlaying && otherDeck.nodes) {
+    if (otherDeck.isPlaying && otherDeck.nodes && nodes.wallEndTime !== undefined && otherDeck.nodes.wallEndTime !== undefined) {
       scheduleCrossDeckFade(ctx, nodes, otherDeck.nodes);
+      // Stop the later-ending deck shortly after the earlier one ends — no need to keep playing silent audio
+      const thisEnd = nodes.wallEndTime;
+      const otherEnd = otherDeck.nodes.wallEndTime;
+      const earlierEnd = Math.min(thisEnd, otherEnd);
+      const laterId: DeckId = thisEnd > otherEnd ? id : otherId;
+      const laterGen = deckGeneration[laterId] || 0;
+      const delayMs = (earlierEnd - ctx.currentTime) * 1000 + 150;
+      if (delayMs > 0) {
+        setTimeout(() => {
+          if (deckGeneration[laterId] === laterGen) get().stop(laterId);
+        }, delayMs);
+      }
     }
   },
 
