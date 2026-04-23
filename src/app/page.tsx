@@ -59,7 +59,7 @@ const deckActionBtnStyle: React.CSSProperties = {
   color: "var(--crt-bright)",
   background: "var(--crt-bg)",
   border: "1px solid var(--crt-dim)",
-  borderRadius: "10px",
+  borderRadius: "20px",
   display: "inline-flex",
   alignItems: "center",
   lineHeight: 1,
@@ -413,10 +413,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {/* Deck action zone — two fixed rows: stems line, then snap/key/download line */}
       <div className="flex flex-col gap-2 px-1">
         {/* Row 1: stem checkboxes — always on one line */}
-        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "auto repeat(5, minmax(0, 1fr))" }}>
-          <span className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", opacity: 0.6 }}>
-            STEMS{deck.isStemLoading ? " (SEP…)" : ""}
-          </span>
+        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
           {([
             ["vocals", "VOCALS"],
             ["drums", "DRUMS"],
@@ -439,20 +436,20 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             );
           })}
         </div>
-        {/* Row 2: snap + key finder + download — always on one line */}
-        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+        {/* Row 2: snap + key finder + download — always on one line, equal sizes */}
+        <div className="grid items-stretch gap-2" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
           <button
             onClick={() => snapToDownbeat(id)}
             disabled={!deck.sourceBuffer || deck.downbeatDetecting}
             className="deck-action-btn w-full justify-center"
-            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
+            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
           >
             {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
           </button>
           <button
             onClick={() => setShowKeyFinder((v) => !v)}
             className="deck-action-btn w-full justify-center"
-            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", background: showKeyFinder ? "var(--crt-bright)" : "var(--crt-bg)", color: showKeyFinder ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: showKeyFinder ? "var(--crt-bright)" : "var(--crt-dim)" }}
+            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", background: showKeyFinder ? "var(--crt-bright)" : "var(--crt-bg)", color: showKeyFinder ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: showKeyFinder ? "var(--crt-bright)" : "var(--crt-dim)" }}
           >
             KEY FINDER
           </button>
@@ -460,7 +457,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onClick={() => downloadDeckMP3(id)}
             disabled={!deck.sourceBuffer || deckIsConvertingMp3}
             className="deck-action-btn w-full justify-center"
-            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
+            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
           >
             {deckIsConvertingMp3 ? "CONVERTING…" : "DOWNLOAD MP3"}
           </button>
