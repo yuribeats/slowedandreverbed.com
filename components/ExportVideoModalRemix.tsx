@@ -58,9 +58,11 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
     try {
       // Step 0: encode audio to MP3 and generate cover in parallel
       setStep(0);
+      const artistUpper = artist.trim().toUpperCase();
+      const titleUpper = title.trim().toUpperCase();
       const [mp3Blob, coverBlob] = await Promise.all([
         blobToMP3(audioBlob),
-        generateCover(artist.trim(), title.trim(), customImage || undefined),
+        generateCover(artistUpper, titleUpper, customImage || undefined),
       ]);
 
       // Step 1: Generate video (audio goes directly in the request — no Pinata round-trip)
@@ -68,8 +70,8 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
       const formData = new FormData();
       formData.append("audio", mp3Blob, "audio.mp3");
       formData.append("image", coverBlob, "cover.png");
-      formData.append("artist", artist.trim());
-      formData.append("title", title.trim());
+      formData.append("artist", artistUpper);
+      formData.append("title", titleUpper);
       formData.append("watermark", "true");
 
       const res = await fetch("/api/generate-video", {
@@ -93,7 +95,7 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
       const url = URL.createObjectURL(videoBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${defaultFilename}.mp4`;
+      a.download = `${defaultFilename.toUpperCase()}.mp4`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

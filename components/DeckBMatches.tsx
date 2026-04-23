@@ -369,54 +369,62 @@ export default function DeckBMatches() {
           </button>
         </div>
 
-        {/* Track list */}
+        {/* Track list — CRT styled */}
         <div
-          className="flex flex-col overflow-y-auto"
-          style={{
-            maxHeight: "400px",
-            background: "rgba(0,0,0,0.05)",
-            borderRadius: "4px",
-            border: "1px solid rgba(0,0,0,0.15)",
-          }}
+          className="display-bezel p-0 overflow-hidden"
+          style={{ padding: "6px" }}
         >
-          {/* Header row */}
-          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[rgba(0,0,0,0.2)]" style={{ background: "rgba(0,0,0,0.05)" }}>
-            <span className="flex-1 text-[10px] uppercase tracking-[0.1em]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>ARTIST / TITLE</span>
-            <span className="text-[10px] uppercase tracking-[0.1em] w-[40px] text-right" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>BPM</span>
-            <span className="text-[10px] uppercase tracking-[0.1em] w-[70px] text-right" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>KEY</span>
-            <span className="text-[10px] uppercase tracking-[0.1em] w-[90px] text-right hidden sm:block" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>MATCH</span>
-          </div>
+          <div
+            className="flex flex-col overflow-y-auto"
+            style={{
+              maxHeight: "400px",
+              background: "var(--crt-bg)",
+              borderRadius: "6px",
+              boxShadow: "inset 0 2px 10px rgba(0,0,0,0.7)",
+            }}
+          >
+            {/* Header row */}
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 border-b border-[rgba(117,204,70,0.18)] sticky top-0 z-10"
+              style={{ background: "var(--crt-bg)", fontFamily: "var(--font-crt)" }}
+            >
+              <span className="flex-1 text-[11px] uppercase tracking-[0.1em]" style={{ color: "var(--crt-dim)", opacity: 0.7 }}>ARTIST / TITLE</span>
+              <span className="text-[11px] uppercase tracking-[0.1em] w-[40px] text-right" style={{ color: "var(--crt-dim)", opacity: 0.7 }}>BPM</span>
+              <span className="text-[11px] uppercase tracking-[0.1em] w-[70px] text-right" style={{ color: "var(--crt-dim)", opacity: 0.7 }}>KEY</span>
+              <span className="text-[11px] uppercase tracking-[0.1em] w-[90px] text-right hidden sm:block" style={{ color: "var(--crt-dim)", opacity: 0.7 }}>MATCH</span>
+            </div>
 
-          {loading && tracks.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <span className="text-[12px] tracking-[2px] uppercase" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", animation: "pulse 1.5s infinite" }}>
-                SEARCHING MATCHES...
-              </span>
-            </div>
-          ) : tracks.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>
-                NO MATCHES FOUND
-              </span>
-            </div>
-          ) : (
-            <>
-              {tracks.map((t, i) => (
-                <MatchRow
-                  key={`${t.artist}-${t.title}-${i}`}
-                  track={t}
-                  sourceKey={sourceKey ?? ""}
-                  selected={selectedIdx === i}
-                  onClick={() => setSelectedIdx(i)}
-                />
-              ))}
-              {exhausting && (
-                <div className="py-2 text-center text-[10px] uppercase tracking-[1px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.45 }}>
-                  LOADING MORE…
-                </div>
-              )}
-            </>
-          )}
+            {loading && tracks.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <span className="text-[12px] tracking-[2px] uppercase crt-text" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}>
+                  SEARCHING MATCHES...
+                </span>
+              </div>
+            ) : tracks.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", opacity: 0.6 }}>
+                  NO MATCHES FOUND
+                </span>
+              </div>
+            ) : (
+              <>
+                {tracks.map((t, i) => (
+                  <MatchRow
+                    key={`${t.artist}-${t.title}-${i}`}
+                    track={t}
+                    sourceKey={sourceKey ?? ""}
+                    selected={selectedIdx === i}
+                    onClick={() => setSelectedIdx(i)}
+                  />
+                ))}
+                {exhausting && (
+                  <div className="py-2 text-center text-[11px] uppercase tracking-[1px]" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", opacity: 0.6 }}>
+                    LOADING MORE…
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {error && (

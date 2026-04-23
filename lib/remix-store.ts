@@ -951,7 +951,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const url = URL.createObjectURL(mp3Blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = "driftwave-mix.mp3";
+      anchor.download = "DRIFTWAVE-MIX.mp3";
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
@@ -969,9 +969,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     if (!deck.sourceBuffer) return;
     set({ isConvertingMp3: true });
     try {
-      const safeArtist = (deck.artist || "").replace(/[^\w\s-]/g, "").trim();
-      const safeTitle = (deck.title || deck.sourceFilename || `deck-${id.toLowerCase()}`).replace(/[^\w\s-]/g, "").trim();
-      const base = [safeArtist, safeTitle].filter(Boolean).join(" - ") || `deck-${id.toLowerCase()}`;
+      const safeArtist = (deck.artist || "").replace(/[^\w\s-]/g, "").trim().toUpperCase();
+      const safeTitle = (deck.title || deck.sourceFilename || `deck-${id.toLowerCase()}`).replace(/[^\w\s-]/g, "").trim().toUpperCase();
+      const base = [safeArtist, safeTitle].filter(Boolean).join(" - ") || `DECK-${id}`;
 
       const sourceForRender = deck.mixedStemBuffer
         || (deck.activeStem && deck.stemBuffers?.[deck.activeStem])
