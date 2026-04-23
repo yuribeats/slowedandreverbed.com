@@ -1499,22 +1499,25 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       },
     }));
 
-    // Schedule the "other" deck to fade out when whichever deck ends first, so the mix ends together
+    // Schedule the "other" deck to fade out when whichever deck ends first, so the mix ends together.
     const otherId: DeckId = id === "A" ? "B" : "A";
     const otherDeck = getDeck(get(), otherId);
     if (otherDeck.isPlaying && otherDeck.nodes && nodes.wallEndTime !== undefined && otherDeck.nodes.wallEndTime !== undefined) {
       scheduleCrossDeckFade(ctx, nodes, otherDeck.nodes);
-      // Stop the later-ending deck shortly after the earlier one ends — no need to keep playing silent audio
-      const thisEnd = nodes.wallEndTime;
-      const otherEnd = otherDeck.nodes.wallEndTime;
-      const earlierEnd = Math.min(thisEnd, otherEnd);
-      const laterId: DeckId = thisEnd > otherEnd ? id : otherId;
-      const laterGen = deckGeneration[laterId] || 0;
-      const delayMs = (earlierEnd - ctx.currentTime) * 1000 + 150;
-      if (delayMs > 0) {
-        setTimeout(() => {
-          if (deckGeneration[laterId] === laterGen) get().stop(laterId);
-        }, delayMs);
+      // Stop the later-ending deck shortly after the earlier one ends — no need to keep playing silent audio.
+      // Skip the auto-stop during export: exportMP4 manages deck stops + recorder stop on its own timer.
+      if (!get().isExporting) {
+        const thisEnd = nodes.wallEndTime;
+        const otherEnd = otherDeck.nodes.wallEndTime;
+        const earlierEnd = Math.min(thisEnd, otherEnd);
+        const laterId: DeckId = thisEnd > otherEnd ? id : otherId;
+        const laterGen = deckGeneration[laterId] || 0;
+        const delayMs = (earlierEnd - ctx.currentTime) * 1000 + 150;
+        if (delayMs > 0) {
+          setTimeout(() => {
+            if (deckGeneration[laterId] === laterGen) get().stop(laterId);
+          }, delayMs);
+        }
       }
     }
   },
@@ -2187,7 +2190,12 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         const exp = expandParams(deck.params);
         return (rEnd - deck.regionStart) / exp.rate + exp.reverbDuration;
       };
-      const totalMs = Math.max(wallSec(deckA), wallSec(deckB)) * 1000;
+      // Both decks loaded → mix ends when the EARLIER one ends (cross-deck fade brings the other to silence).
+      // Only one deck loaded → that deck's duration.
+      const aSec = wallSec(deckA);
+      const bSec = wallSec(deckB);
+      const mixSec = aSec > 0 && bSec > 0 ? Math.min(aSec, bSec) : Math.max(aSec, bSec);
+      const totalMs = mixSec * 1000;
 
       // Stop both decks — resets pauseOffset to regionStart
       get().stop("A");
