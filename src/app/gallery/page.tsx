@@ -174,7 +174,9 @@ function GalleryContent() {
   });
   const [showInprocess, setShowInprocess] = useState(false);
   const SESSION_KEY = "automash_inprocess_session";
-  const SESSION_TTL = 55 * 60 * 1000;
+  // Keep the session as long as possible on the client — the server token decides actual validity.
+  // If a request later 401s we clear the session and re-prompt. 365 days covers the realistic upper bound.
+  const SESSION_TTL = 365 * 24 * 60 * 60 * 1000;
 
   // Sync mint flags from on-chain data
   useEffect(() => {
@@ -221,14 +223,23 @@ function GalleryContent() {
   useEffect(() => {
     if (!ipSession) return;
     fetch(`/api/inprocess/collections?wallet=${encodeURIComponent(ipSession.wallet)}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (r.status === 401) {
+          try { localStorage.removeItem(SESSION_KEY); } catch {}
+          setIpSession(null);
+          setIpAuthStep("idle");
+          return null;
+        }
+        return r.json();
+      })
       .then((data) => {
+        if (!data) return;
         const cols = data.collections ?? [];
         setIpCollections(cols);
         if (cols.length > 0) setIpSelectedCollection(cols[0]);
       })
       .catch(() => {});
-  }, [ipSession]);
+  }, [ipSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function ipSendCode() {
     if (!ipEmail.trim()) return;
@@ -295,6 +306,12 @@ function GalleryContent() {
     setIpSelectedCollection(null);
   }
 
+  const clearIpSession = () => {
+    try { localStorage.removeItem(SESSION_KEY); } catch {}
+    setIpSession(null);
+    setIpAuthStep("idle");
+  };
+
   async function handleMint(item: GalleryItem) {
     if (!ipSession || !ipSelectedCollection) return;
     const id = item.id;
@@ -348,6 +365,7 @@ function GalleryContent() {
       });
       if (!metaRes.ok) {
         const errData = await metaRes.json().catch(() => ({}));
+        if (metaRes.status === 401) clearIpSession();
         throw new Error(errData.error || `METADATA UPLOAD FAILED (${metaRes.status})`);
       }
       const { uri: momentUri } = await metaRes.json();
@@ -367,6 +385,7 @@ function GalleryContent() {
       });
       if (!mintRes.ok) {
         const errData = await mintRes.json().catch(() => ({}));
+        if (mintRes.status === 401) clearIpSession();
         throw new Error(errData.error || `MINT FAILED (${mintRes.status})`);
       }
       const mintData = await mintRes.json().catch(() => ({}));
