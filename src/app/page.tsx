@@ -48,21 +48,24 @@ const detailBtnClass = (active: boolean) =>
 
 const detailBtnStyle: React.CSSProperties = { fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" };
 
-// Green-on-black CRT-style deck action button — shared by stems/snap/key-finder/download-mp3.
+// Rocker-switch-style deck action button — shared by stems/snap/key-finder/download-mp3.
+// Glossy dark face with green CRT lettering.
 const deckActionBtnStyle: React.CSSProperties = {
   fontFamily: "var(--font-tech)",
   fontSize: "11px",
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  padding: "8px 12px",
-  minHeight: "32px",
+  padding: "10px 14px",
+  minHeight: "36px",
   color: "var(--crt-bright)",
-  background: "var(--crt-bg)",
-  border: "1px solid var(--crt-dim)",
-  borderRadius: "20px",
+  background: "var(--control-base)",
+  border: "2px solid #1a1a1a",
+  borderRadius: "10px",
+  boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -10px 10px rgba(0,0,0,0.45)",
   display: "inline-flex",
   alignItems: "center",
   lineHeight: 1,
+  transition: "transform 0.06s ease, box-shadow 0.06s ease",
 };
 
 function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
@@ -428,7 +431,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 onClick={() => toggleStem(id, stem)}
                 disabled={deck.isStemLoading}
                 className="deck-action-btn w-full justify-center"
-                style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", background: active ? "var(--crt-bright)" : "var(--crt-bg)", color: active ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: active ? "var(--crt-bright)" : "var(--crt-dim)", opacity: deck.isStemLoading ? 0.45 : 1 }}
+                style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", background: active ? "var(--crt-bright)" : "var(--control-base)", color: active ? "#0a1a05" : "var(--crt-bright)", borderColor: active ? "#2a5e12" : "#1a1a1a", opacity: deck.isStemLoading ? 0.45 : 1 }}
               >
                 <span style={{ marginRight: 6, fontSize: 11, lineHeight: 1 }}>{active ? "✓" : "-"}</span>
                 {label}
@@ -449,7 +452,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           <button
             onClick={() => setShowKeyFinder((v) => !v)}
             className="deck-action-btn w-full justify-center"
-            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", background: showKeyFinder ? "var(--crt-bright)" : "var(--crt-bg)", color: showKeyFinder ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: showKeyFinder ? "var(--crt-bright)" : "var(--crt-dim)" }}
+            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", background: showKeyFinder ? "var(--crt-bright)" : "var(--control-base)", color: showKeyFinder ? "#0a1a05" : "var(--crt-bright)", borderColor: showKeyFinder ? "#2a5e12" : "#1a1a1a" }}
           >
             KEY FINDER
           </button>

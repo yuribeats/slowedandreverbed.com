@@ -18,6 +18,7 @@ const ALL_KEYS = [
 export default function DeckBMatches() {
   const deckA = useRemixStore((s) => s.deckA);
   const loadDeck = useRemixStore((s) => s.loadDeck);
+  const loadFromYouTube = useRemixStore((s) => s.loadFromYouTube);
   const loadFile = useRemixStore((s) => s.loadFile);
 
   const [tracks, setTracks] = useState<MatchTrack[]>([]);
@@ -32,6 +33,7 @@ export default function DeckBMatches() {
   const [deckBError, setDeckBError] = useState("");
   const [manualArtist, setManualArtist] = useState("");
   const [manualTitle, setManualTitle] = useState("");
+  const [ytUrl, setYtUrl] = useState("");
   const [manualLoadError, setManualLoadError] = useState("");
   const [pitchMatch, setPitchMatch] = useState(false);
   const fetchedRef = useRef(false);
@@ -219,6 +221,21 @@ export default function DeckBMatches() {
     setLoading(false);
   }, [manualArtist, manualTitle]);
 
+  const handleYTLoad = useCallback(async () => {
+    const url = ytUrl.trim();
+    if (!url) return;
+    setDeckBLoading(true);
+    setManualLoadError("");
+    try {
+      getAudioContext();
+      await loadFromYouTube("B", url);
+    } catch (e) {
+      setManualLoadError(e instanceof Error ? e.message : "LOAD FAILED");
+      setTimeout(() => setManualLoadError(""), 4000);
+    }
+    setDeckBLoading(false);
+  }, [ytUrl, loadFromYouTube]);
+
   const handleLocalFile = useCallback(async (file: File | null | undefined) => {
     if (!file) return;
     setDeckBLoading(true);
@@ -247,6 +264,46 @@ export default function DeckBMatches() {
             {resultLabel}
           </span>
         </div>
+
+        {/* CRT selected-match readout — parity with deck displays */}
+        <div className="display-bezel flex items-center gap-3 p-3">
+          <div
+            className="flex-1 text-[12px] truncate crt-text"
+            style={{ color: selectedTrack ? "var(--crt-bright)" : "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "12px" }}
+          >
+            {selectedTrack ? (
+              <>
+                <span style={{ opacity: 0.7 }}>{selectedTrack.artist.toUpperCase()}</span>
+                {" — "}
+                {selectedTrack.title.toUpperCase()}
+              </>
+            ) : (
+              "NO MATCH SELECTED"
+            )}
+          </div>
+          <button
+            onClick={handleLoadDeckB}
+            disabled={selectedIdx === null || deckBLoading}
+            className="shrink-0 text-[12px] tracking-[1px] uppercase crt-text"
+            style={{
+              fontFamily: "var(--font-crt)",
+              color: selectedIdx === null ? "var(--crt-dim)" : "var(--crt-bright)",
+              background: "var(--crt-bg)",
+              border: "1px solid var(--crt-dim)",
+              padding: "4px 10px",
+              borderRadius: "4px",
+              opacity: selectedIdx === null ? 0.5 : 1,
+            }}
+          >
+            {deckBLoading ? "LOADING..." : "LOAD → DECK B"}
+          </button>
+        </div>
+
+        {deckBError && (
+          <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--led-red-on, #c82828)", fontFamily: "var(--font-tech)" }}>
+            {deckBError}
+          </span>
+        )}
 
         {/* Key (+ ± semitone window) and BPM (+ ± window) grouped together */}
         <div className="flex items-center gap-4 flex-wrap">
@@ -368,36 +425,9 @@ export default function DeckBMatches() {
           </span>
         )}
 
-        {/* Load to Deck B */}
-        <div className="flex items-center justify-between">
-          {selectedTrack ? (
-            <span className="text-[12px] tracking-[0.5px] uppercase truncate flex-1 mr-3" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-              <span style={{ opacity: 0.6 }}>{selectedTrack.artist}</span> {selectedTrack.title}
-            </span>
-          ) : (
-            <span className="text-[12px] tracking-[0.5px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.4 }}>
-              SELECT A TRACK ABOVE
-            </span>
-          )}
-          <button
-            onClick={handleLoadDeckB}
-            disabled={selectedIdx === null || deckBLoading}
-            className="tactical-button shrink-0"
-            style={{ opacity: selectedIdx === null ? 0.3 : 1 }}
-          >
-            {deckBLoading ? "LOADING..." : "LOAD → DECK B"}
-          </button>
-        </div>
-
-        {deckBError && (
-          <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--led-red-on, #c82828)", fontFamily: "var(--font-tech)" }}>
-            {deckBError}
-          </span>
-        )}
-
         {/* Manual artist/title search — adds to match list */}
         <div className="zone-engraved flex flex-col gap-2">
-          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>SEARCH</span>
+          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>SEARCH BY ARTIST / TITLE</span>
           <div className="flex gap-2">
             <div className="flex-1 flex flex-col gap-0.5">
               <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>ARTIST</span>
@@ -432,10 +462,38 @@ export default function DeckBMatches() {
           </div>
         </div>
 
-        {/* Manual deck-B load — local file (skips the match list) */}
+        {/* YouTube URL — direct deck B load */}
         <div className="zone-engraved flex flex-col gap-2">
           <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>
-            LOAD DECK B DIRECTLY
+            YOUTUBE URL → DECK B
+          </span>
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 flex flex-col gap-0.5">
+              <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>URL</span>
+              <input
+                value={ytUrl}
+                onChange={(e) => setYtUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleYTLoad()}
+                placeholder="https://www.youtube.com/watch?v=…"
+                className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+              />
+            </div>
+            <button
+              onClick={handleYTLoad}
+              disabled={!ytUrl.trim() || deckBLoading}
+              className="tactical-button"
+              style={{ opacity: (!ytUrl.trim() || deckBLoading) ? 0.3 : 1 }}
+            >
+              {deckBLoading ? "…" : "LOAD"}
+            </button>
+          </div>
+        </div>
+
+        {/* Local file — direct deck B load */}
+        <div className="zone-engraved flex flex-col gap-2">
+          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>
+            LOCAL FILE → DECK B
           </span>
           <div className="flex gap-2 flex-wrap items-end">
             <input
@@ -451,7 +509,7 @@ export default function DeckBMatches() {
               className="tactical-button"
               style={{ opacity: deckBLoading ? 0.3 : 1 }}
             >
-              LOCAL FILE → DECK B
+              CHOOSE FILE
             </button>
           </div>
           {manualLoadError && (

@@ -561,17 +561,17 @@ export default function WaveformDisplay({
             {rightControls}
             <button
               onClick={zoomToRegion}
-              className="border"
               style={{
                 fontFamily: "var(--font-tech)",
                 fontSize: "15px",
                 letterSpacing: "0.08em",
                 color: "var(--crt-bright)",
-                background: "var(--crt-bg)",
-                borderColor: "var(--crt-dim)",
+                background: "var(--control-base)",
+                border: "2px solid #1a1a1a",
                 borderRadius: "10px",
+                boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -10px 10px rgba(0,0,0,0.45)",
                 padding: "6px 14px",
-                minHeight: "34px",
+                minHeight: "36px",
                 lineHeight: 1,
               }}
             >
@@ -580,16 +580,16 @@ export default function WaveformDisplay({
             <button
               onClick={zoomOut}
               disabled={zoom <= 1}
-              className="border"
               style={{
                 fontFamily: "var(--font-tech)",
                 fontSize: "18px",
                 color: "var(--crt-bright)",
-                background: "var(--crt-bg)",
-                borderColor: "var(--crt-dim)",
+                background: "var(--control-base)",
+                border: "2px solid #1a1a1a",
                 borderRadius: "10px",
+                boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -10px 10px rgba(0,0,0,0.45)",
                 padding: "2px 14px",
-                minHeight: "34px",
+                minHeight: "36px",
                 minWidth: "36px",
                 lineHeight: 1,
                 opacity: zoom <= 1 ? 0.4 : 1,
@@ -602,16 +602,16 @@ export default function WaveformDisplay({
             </span>
             <button
               onClick={zoomIn}
-              className="border"
               style={{
                 fontFamily: "var(--font-tech)",
                 fontSize: "18px",
                 color: "var(--crt-bright)",
-                background: "var(--crt-bg)",
-                borderColor: "var(--crt-dim)",
+                background: "var(--control-base)",
+                border: "2px solid #1a1a1a",
                 borderRadius: "10px",
+                boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -10px 10px rgba(0,0,0,0.45)",
                 padding: "2px 14px",
-                minHeight: "34px",
+                minHeight: "36px",
                 minWidth: "36px",
                 lineHeight: 1,
               }}
