@@ -76,6 +76,7 @@ const selectedTextGlow: React.CSSProperties = {
 
 function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const deck = useRemixStore((s) => (id === "A" ? s.deckA : s.deckB));
+  const otherDeckLoaded = useRemixStore((s) => (id === "A" ? !!s.deckB.sourceBuffer : !!s.deckA.sourceBuffer));
   const loadFile = useRemixStore((s) => s.loadFile);
   const play = useRemixStore((s) => s.play);
   const stop = useRemixStore((s) => s.stop);
@@ -419,6 +420,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       </div>
 
+      {(id !== "A" || otherDeckLoaded) && <>
       {/* Deck action zone — two fixed rows: stems line, then snap/key/download line */}
       <div className="flex flex-col gap-2 px-1">
         {/* Row 1: stem checkboxes — always on one line */}
@@ -646,6 +648,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       </div>
 
       {/* end showEQ */}
+      </>}
       </>}
 
 
