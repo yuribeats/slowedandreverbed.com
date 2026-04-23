@@ -95,6 +95,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const setDeckMeta = useRemixStore((s) => s.setDeckMeta);
   const detectDownbeat = useRemixStore((s) => s.detectDownbeat);
   const toggleStem = useRemixStore((s) => s.toggleStem);
+  const downloadDeckMP3 = useRemixStore((s) => s.downloadDeckMP3);
+  const deckIsConvertingMp3 = useRemixStore((s) => s.isConvertingMp3);
   const loadDeck = useRemixStore((s) => s.loadDeck);
   const lookupEverysong = useRemixStore((s) => s.lookupEverysong);
   const recordArmed = useRemixStore((s) => s.recordArmed);
@@ -713,10 +715,18 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             </button>
             <button
               onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
-              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
+              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between border-b border-[#333]"
               style={{ fontFamily: "var(--font-tech)", color: showKeyFinder ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
             >
               KEY FINDER
+            </button>
+            <button
+              onClick={() => { downloadDeckMP3(id); setDeckMenuOpen(false); }}
+              disabled={!deck.sourceBuffer || deckIsConvertingMp3}
+              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
+              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.5 : 1 }}
+            >
+              {deckIsConvertingMp3 ? "CONVERTING..." : "DOWNLOAD MP3"}
             </button>
           </div>
         </>
@@ -1179,7 +1189,9 @@ function HomeInner() {
   const pendingRecording = useRemixStore((s) => s.pendingRecording);
   const clearPendingRecording = useRemixStore((s) => s.clearPendingRecording);
   const downloadRecordingWAV = useRemixStore((s) => s.downloadRecordingWAV);
+  const downloadRecordingMP3 = useRemixStore((s) => s.downloadRecordingMP3);
   const exportRecordingMP4 = useRemixStore((s) => s.exportRecordingMP4);
+  const isConvertingMp3 = useRemixStore((s) => s.isConvertingMp3);
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const masterBus = useRemixStore((s) => s.masterBus);
@@ -1495,6 +1507,14 @@ function HomeInner() {
                   style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
                 >
                   {isConvertingWav ? "CONVERTING..." : "DOWNLOAD WAV"}
+                </button>
+                <button
+                  onClick={downloadRecordingMP3}
+                  disabled={isConvertingMp3}
+                  className="border border-[var(--accent-gold)] px-4 py-2 text-[12px] uppercase tracking-wider disabled:opacity-50"
+                  style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+                >
+                  {isConvertingMp3 ? "CONVERTING..." : "DOWNLOAD MP3"}
                 </button>
                 <button
                   onClick={exportRecordingMP4}

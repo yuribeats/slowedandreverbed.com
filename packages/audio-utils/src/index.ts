@@ -1,4 +1,5 @@
 export { encodeWAV } from "./wav-encoder";
+export { encodeMP3 } from "./mp3-encoder";
 export { renderOffline } from "./offline-renderer";
 export type { RenderInput } from "./offline-renderer";
 export { generateImpulseResponse } from "./impulse-response";

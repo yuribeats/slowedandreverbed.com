@@ -5,6 +5,7 @@ import {
   expandParams,
   renderOffline,
   encodeWAV,
+  encodeMP3,
 } from "@yuribeats/audio-utils";
 import { BatchStyle, BATCH_PRESETS } from "./batch-presets";
 import { decodeFile, decodeArrayBuffer } from "./file-decoder";
@@ -329,11 +330,14 @@ interface RemixStore {
   recordArmed: boolean;
   isRecording: boolean;
   isConvertingWav: boolean;
+  isConvertingMp3: boolean;
   pendingRecording: Blob | null;
   pendingVideoExport: Blob | null;
   clearPendingRecording: () => void;
   clearPendingExport: () => void;
   downloadRecordingWAV: () => Promise<void>;
+  downloadRecordingMP3: () => Promise<void>;
+  downloadDeckMP3: (deck: DeckId) => Promise<void>;
   exportRecordingMP4: () => void;
 
   // Sequencer
@@ -866,6 +870,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   recordArmed: false,
   isRecording: false,
   isConvertingWav: false,
+  isConvertingMp3: false,
   pendingRecording: null,
   pendingVideoExport: null,
   clearPendingRecording: () => set({ pendingRecording: null }),
@@ -915,6 +920,70 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     const { pendingRecording } = get();
     if (!pendingRecording) return;
     set({ pendingVideoExport: pendingRecording, pendingRecording: null });
+  },
+
+  downloadRecordingMP3: async () => {
+    const { pendingRecording } = get();
+    if (!pendingRecording) return;
+    set({ isConvertingMp3: true });
+    try {
+      const arrayBuf = await pendingRecording.arrayBuffer();
+      const ctx = getAudioContext();
+      const decoded = await ctx.decodeAudioData(arrayBuf);
+      let peak = 0;
+      for (let c = 0; c < decoded.numberOfChannels; c++) {
+        const ch = decoded.getChannelData(c);
+        for (let i = 0; i < ch.length; i++) {
+          const abs = Math.abs(ch[i]);
+          if (abs > peak) peak = abs;
+        }
+      }
+      if (peak > 1) {
+        const scale = 0.99 / peak;
+        for (let c = 0; c < decoded.numberOfChannels; c++) {
+          const ch = decoded.getChannelData(c);
+          for (let i = 0; i < ch.length; i++) ch[i] *= scale;
+        }
+      }
+      const mp3Blob = encodeMP3(decoded, 192);
+      const url = URL.createObjectURL(mp3Blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "driftwave-mix.mp3";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("MP3 conversion failed:", e);
+    } finally {
+      set({ isConvertingMp3: false });
+    }
+  },
+
+  downloadDeckMP3: async (id) => {
+    const dk = deckKey(id);
+    const deck = get()[dk];
+    if (!deck.sourceBuffer) return;
+    set({ isConvertingMp3: true });
+    try {
+      const safeArtist = (deck.artist || "").replace(/[^\w\s-]/g, "").trim();
+      const safeTitle = (deck.title || deck.sourceFilename || `deck-${id.toLowerCase()}`).replace(/[^\w\s-]/g, "").trim();
+      const base = [safeArtist, safeTitle].filter(Boolean).join(" - ") || `deck-${id.toLowerCase()}`;
+      const mp3Blob = encodeMP3(deck.sourceBuffer, 192);
+      const url = URL.createObjectURL(mp3Blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${base}.mp3`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Deck MP3 conversion failed:", e);
+    } finally {
+      set({ isConvertingMp3: false });
+    }
   },
   sequencerOpen: false,
   sequencerTracksA: [],
