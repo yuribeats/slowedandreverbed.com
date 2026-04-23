@@ -1266,7 +1266,55 @@ function HomeInner() {
             >
               AUTO MASH
             </span>
-            <div className="ml-auto relative" style={{ zIndex: 100 }}>
+            {(() => {
+              const bothLoaded = !!deckA.sourceBuffer && !!deckB.sourceBuffer;
+              const bothDownbeat = deckA.firstDownbeatMs !== null && deckB.firstDownbeatMs !== null;
+              const bothStems = !!deckA.stemBuffers && !!deckB.stemBuffers;
+              const anyPlaying = deckA.isPlaying || deckB.isPlaying;
+              const armed = bothLoaded && bothDownbeat && bothStems && !anyPlaying;
+              if (!showDeckB) return null;
+              const headerBtn: React.CSSProperties = {
+                fontFamily: "var(--font-tech)",
+                fontWeight: 700,
+                background: "var(--control-base)",
+                borderColor: "#1a1a1a",
+                borderRadius: "4px",
+                boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
+              };
+              return (
+                <div className="ml-auto flex items-center gap-2">
+                  <button
+                    data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY."
+                    onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
+                    disabled={!bothLoaded}
+                    className="text-[12px] uppercase tracking-[0.15em] px-3 py-1 border-2"
+                    style={{
+                      ...headerBtn,
+                      color: armed ? "var(--led-red-on, #c82828)" : "var(--panel-light)",
+                      textShadow: armed ? "0 0 4px var(--led-red-on, #c82828), 0 0 10px rgba(200,40,40,0.6)" : "none",
+                      opacity: !bothLoaded ? 0.4 : 1,
+                    }}
+                  >
+                    SYNC START
+                  </button>
+                  <button
+                    data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY."
+                    onClick={() => { stopDeck("A"); stopDeck("B"); }}
+                    disabled={!bothLoaded}
+                    className="text-[12px] uppercase tracking-[0.15em] px-3 py-1 border-2"
+                    style={{
+                      ...headerBtn,
+                      color: anyPlaying ? "var(--crt-bright)" : "var(--panel-light)",
+                      textShadow: anyPlaying ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none",
+                      opacity: !bothLoaded ? 0.4 : 1,
+                    }}
+                  >
+                    SYNC STOP
+                  </button>
+                </div>
+              );
+            })()}
+            <div className={showDeckB ? "relative" : "ml-auto relative"} style={{ zIndex: 100 }}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="text-[12px] uppercase tracking-[0.15em] px-3 py-1 border-2"
@@ -1370,50 +1418,6 @@ function HomeInner() {
             </div>
           </div>
 
-          {/* Sync controls — own bordered zone, above the decks */}
-          {showDeckB && (() => {
-            const bothLoaded = !!deckA.sourceBuffer && !!deckB.sourceBuffer;
-            const bothDownbeat = deckA.firstDownbeatMs !== null && deckB.firstDownbeatMs !== null;
-            const bothStems = !!deckA.stemBuffers && !!deckB.stemBuffers;
-            const anyPlaying = deckA.isPlaying || deckB.isPlaying;
-            const armed = bothLoaded && bothDownbeat && bothStems && !anyPlaying;
-            return (
-              <div className="zone-inset boot-stagger boot-delay-3">
-                <div className="flex items-center justify-center gap-10 py-2">
-                  <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
-                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
-                    <button
-                      onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
-                      disabled={!bothLoaded}
-                      className="rocker-switch"
-                      style={{ width: "90px", height: "60px" }}
-                    >
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{
-                          border: armed ? "none" : "2px solid #555",
-                          background: armed ? "var(--led-red-on, #c82828)" : undefined,
-                          boxShadow: armed ? "0 0 10px 2px var(--led-red-on, #c82828)" : undefined,
-                          transition: "box-shadow 120ms ease-out, background 120ms ease-out",
-                        }}
-                      />
-                    </button>
-                  </div>
-                  <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
-                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
-                    <button
-                      onClick={() => { stopDeck("A"); stopDeck("B"); }}
-                      disabled={!bothLoaded}
-                      className="rocker-switch"
-                      style={{ width: "90px", height: "60px" }}
-                    >
-                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Decks */}
           <div className="grid gap-5 boot-stagger boot-delay-3 grid-cols-1 sm:grid-cols-2">
