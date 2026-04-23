@@ -113,8 +113,8 @@ export async function POST(request: NextRequest) {
     waitUntil(
       pinata.upload.public
         .file(videoFile)
-        .name(`driftwave-export-${id}.mp4`)
-        .keyvalues({ type: "driftwave-video", artist, title, createdAt: new Date().toISOString() })
+        .name(`automash-export-${id}.mp4`)
+        .keyvalues({ type: "automash-video", artist, title, createdAt: new Date().toISOString() })
         .then((upload) => {
           console.log("Pinata upload complete:", `https://${gateway}/files/${upload.cid}`);
         })

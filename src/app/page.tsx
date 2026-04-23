@@ -1494,7 +1494,7 @@ function HomeInner() {
       {pendingVideoExport && (
         <ExportVideoModalRemix
           audioBlob={pendingVideoExport}
-          defaultFilename={`${deckA.sourceFilename || "deck-a"}${deckB.sourceBuffer ? `-x-${deckB.sourceFilename || "deck-b"}` : ""}-driftwave`}
+          defaultFilename={`${deckA.sourceFilename || "deck-a"}${deckB.sourceBuffer ? `-x-${deckB.sourceFilename || "deck-b"}` : ""}`}
           initialArtist={[deckA.artist, deckB.artist].filter(Boolean).join(" x ")}
           initialTitle={[deckA.title, deckB.title].filter(Boolean).join(" / ")}
           onClose={clearPendingExport}

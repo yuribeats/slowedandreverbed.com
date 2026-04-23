@@ -118,8 +118,8 @@ export default function ExportVideoModal({ onClose }: { onClose: () => void }) {
       const a = document.createElement("a");
       a.href = data.url;
       a.download = sourceFilename
-        ? `${sourceFilename.toUpperCase()}-DRIFTWAVE.mp4`
-        : "DRIFTWAVE-EXPORT.mp4";
+        ? `${sourceFilename.toUpperCase()}.mp4`
+        : "AUTOMASH.mp4";
       a.target = "_blank";
       document.body.appendChild(a);
       a.click();

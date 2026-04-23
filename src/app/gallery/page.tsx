@@ -183,14 +183,18 @@ function GalleryContent() {
       const res = await fetch("/api/inprocess/minted-items?collection=0x60fc593f063e1be321d305889d2c4119a0cabaa6");
       const data = await res.json();
       const mintedNames = new Set<string>((data.names ?? []).map((n: string) => n.toLowerCase().trim()));
-      if (mintedNames.size === 0) return mintedNames;
       setIpMintResult((prev) => {
         const next = { ...prev };
         let changed = false;
         items.forEach((item) => {
           const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
-          if (mintedNames.has(combined) && next[item.id] !== "MINTED") {
-            next[item.id] = "MINTED";
+          const current = next[item.id];
+          if (mintedNames.has(combined)) {
+            if (current !== "MINTED") { next[item.id] = "MINTED"; changed = true; }
+          } else if (current && /setupnewtoken|userophash/i.test(current)) {
+            // Stuck parse-error string from a previous run — on-chain says not minted, so clear it
+            // and let the MINT button show again.
+            delete next[item.id];
             changed = true;
           }
         });
@@ -421,10 +425,10 @@ function GalleryContent() {
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "MINT FAILED";
-      // "SetupNewToken event not found in transaction logs" = server couldn't parse the mint tx,
-      // but the on-chain mint usually succeeded. Verify against the on-chain list and flip to MINTED
-      // if we find it; otherwise surface the original error.
-      if (/setupnewtoken/i.test(msg)) {
+      // Both "SetupNewToken event not found" and the "userOpHash regex" error mean the inprocess
+      // server failed to parse the tx, but the on-chain mint usually succeeded. Verify against the
+      // on-chain list and flip to MINTED if we find it; otherwise reset so the user can retry.
+      if (/setupnewtoken/i.test(msg) || /userophash/i.test(msg)) {
         setIpMintState((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
         setIpMintResult((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
         const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
