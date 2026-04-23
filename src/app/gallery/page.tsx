@@ -996,6 +996,20 @@ function GalleryContent() {
                           </button>
                         )
                       )}
+                      {/* Tweet (web intent — no API needed) */}
+                      <button
+                        onClick={() => {
+                          const yt = uploadResult[item.id] && uploadResult[item.id].startsWith("http") ? uploadResult[item.id] : "";
+                          const link = yt || item.url || "https://automash.xyz";
+                          const text = `${item.artist} — ${item.title}\n\nmade with automash.xyz`;
+                          const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+                          window.open(intent, "_blank", "noopener,noreferrer");
+                        }}
+                        className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                        style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
+                      >
+                        TWEET
+                      </button>
                     </div>
                   )}
                 </div>
