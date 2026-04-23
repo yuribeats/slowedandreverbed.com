@@ -426,10 +426,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             <div
               style={{
                 position: "absolute",
-                inset: 0,
+                left: 0,
+                right: 0,
+                bottom: "50%",
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "center",
+                paddingBottom: "12px",
                 pointerEvents: "none",
                 zIndex: 5,
               }}
