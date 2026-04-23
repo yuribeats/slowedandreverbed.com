@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useRemixStore, getMasterAnalyser } from "../../lib/remix-store";
 import type { MasterBusParams } from "../../lib/remix-store";
 import { getAudioContext } from "../../lib/audio-context";
@@ -1554,26 +1554,33 @@ function SceneMatchBrowser() {
 }
 
 function SceneRouter() {
+  const router = useRouter();
+  const pathname = usePathname();
   const deckA = useRemixStore((s) => s.deckA);
   const deckB = useRemixStore((s) => s.deckB);
   const searchParams = useSearchParams();
 
-  // If URL has deck params, go straight to dual-deck (Scene 3)
-  const hasUrlParams = searchParams.get("a_artist") || searchParams.get("s");
+  const hasUrlParams = !!(searchParams.get("a_artist") || searchParams.get("s"));
+  const deckAReady = !!deckA.sourceBuffer && (deckA.baseKey !== null || deckA.calculatedBPM !== null);
+  const deckBReady = !!deckB.sourceBuffer;
 
-  // Scene 1: no Deck A loaded
-  const deckAReady = deckA.sourceBuffer && (deckA.baseKey !== null || deckA.calculatedBPM !== null);
-  // Scene 3: both decks loaded
-  const deckBReady = deckB.sourceBuffer;
+  const targetPath = hasUrlParams || (deckAReady && deckBReady)
+    ? "/mix"
+    : deckAReady
+    ? "/match"
+    : "/";
 
-  if (hasUrlParams || (deckAReady && deckBReady)) {
-    return <HomeInner />;
-  }
+  useEffect(() => {
+    if (pathname !== targetPath) {
+      const query = typeof window !== "undefined" ? window.location.search : "";
+      router.replace(targetPath + (targetPath === "/mix" ? query : ""));
+    }
+  }, [pathname, targetPath, router]);
 
-  if (deckAReady) {
-    return <SceneMatchBrowser />;
-  }
+  if (pathname !== targetPath) return null;
 
+  if (targetPath === "/mix") return <HomeInner />;
+  if (targetPath === "/match") return <SceneMatchBrowser />;
   return <SceneLanding />;
 }
 
