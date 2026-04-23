@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -178,30 +178,36 @@ function GalleryContent() {
   // If a request later 401s we clear the session and re-prompt. 365 days covers the realistic upper bound.
   const SESSION_TTL = 365 * 24 * 60 * 60 * 1000;
 
+  const syncOnChainMints = useCallback(async (): Promise<Set<string>> => {
+    try {
+      const res = await fetch("/api/inprocess/minted-items?collection=0x60fc593f063e1be321d305889d2c4119a0cabaa6");
+      const data = await res.json();
+      const mintedNames = new Set<string>((data.names ?? []).map((n: string) => n.toLowerCase().trim()));
+      if (mintedNames.size === 0) return mintedNames;
+      setIpMintResult((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        items.forEach((item) => {
+          const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
+          if (mintedNames.has(combined) && next[item.id] !== "MINTED") {
+            next[item.id] = "MINTED";
+            changed = true;
+          }
+        });
+        if (changed) localStorage.setItem("automash_mints", JSON.stringify(next));
+        return changed ? next : prev;
+      });
+      return mintedNames;
+    } catch {
+      return new Set();
+    }
+  }, [items]);
+
   // Sync mint flags from on-chain data
   useEffect(() => {
     if (items.length === 0) return;
-    fetch("/api/inprocess/minted-items?collection=0x60fc593f063e1be321d305889d2c4119a0cabaa6")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.names || data.names.length === 0) return;
-        const mintedNames = new Set((data.names as string[]).map((n) => n.toLowerCase().trim()));
-        setIpMintResult((prev) => {
-          const next = { ...prev };
-          let changed = false;
-          items.forEach((item) => {
-            const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
-            if (mintedNames.has(combined) && next[item.id] !== "MINTED") {
-              next[item.id] = "MINTED";
-              changed = true;
-            }
-          });
-          if (changed) localStorage.setItem("automash_mints", JSON.stringify(next));
-          return changed ? next : prev;
-        });
-      })
-      .catch(() => {});
-  }, [items.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    syncOnChainMints();
+  }, [items.length, syncOnChainMints]);
 
   // Restore session on mount
   useEffect(() => {
@@ -414,8 +420,31 @@ function GalleryContent() {
         return next;
       });
     } catch (e) {
+      const msg = e instanceof Error ? e.message : "MINT FAILED";
+      // "SetupNewToken event not found in transaction logs" = server couldn't parse the mint tx,
+      // but the on-chain mint usually succeeded. Verify against the on-chain list and flip to MINTED
+      // if we find it; otherwise surface the original error.
+      if (/setupnewtoken/i.test(msg)) {
+        setIpMintState((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
+        setIpMintResult((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
+        const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
+        let mintedNames = await syncOnChainMints();
+        if (!mintedNames.has(combined)) {
+          await new Promise((r) => setTimeout(r, 8000));
+          mintedNames = await syncOnChainMints();
+        }
+        if (mintedNames.has(combined)) {
+          setIpMintState((p) => ({ ...p, [id]: "done" }));
+          setIpMintResult((p) => {
+            const next = { ...p, [id]: "MINTED" };
+            localStorage.setItem("automash_mints", JSON.stringify(next));
+            return next;
+          });
+          return;
+        }
+      }
       setIpMintState((p) => ({ ...p, [id]: "error" }));
-      setIpMintResult((p) => ({ ...p, [id]: e instanceof Error ? e.message : "MINT FAILED" }));
+      setIpMintResult((p) => ({ ...p, [id]: msg }));
     }
   }
   const openRadio = () => {
