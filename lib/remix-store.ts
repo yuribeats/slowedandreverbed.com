@@ -221,6 +221,7 @@ interface DeckState {
   downbeatGrid: number[] | null;  // detected downbeat positions in seconds
   downbeatDetecting: boolean;
   downbeatError: string | null;
+  manualUpload: boolean;           // true for local file / YouTube URL / session restore, false for match-list picks
 }
 
 type DeckId = "A" | "B";
@@ -267,6 +268,7 @@ const defaultDeck = (): DeckState => ({
   downbeatGrid: null,
   downbeatDetecting: false,
   downbeatError: null,
+  manualUpload: false,
 });
 
 export interface MasterBusParams {
@@ -1047,7 +1049,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFile: async (id, file) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceFile: file, sourceUrl: null, sourceAudioBytes: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceFile: file, sourceUrl: null, sourceAudioBytes: null, manualUpload: true } }));
     try {
       const audioBuffer = await decodeFile(file);
       set((s) => ({
@@ -1068,7 +1070,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFromYouTube: async (id, url) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, baseKey: null, baseMode: null, artist: "", title: "", activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceCdnUrl: null } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, error: null, pauseOffset: 0, calculatedBPM: null, baseKey: null, baseMode: null, artist: "", title: "", activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceCdnUrl: null, manualUpload: true } }));
     try {
       const { fetchYouTubeAudio } = await import("./rapid");
       const { buffer, title, cdnUrl } = await fetchYouTubeAudio(url);
@@ -1321,6 +1323,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       throw new Error(msg);
     }
 
+    // Match-list picks override the manualUpload flag that loadFromYouTube set, so auto-BPM-match runs
+    set((s) => ({ [deckKey(id)]: { ...s[deckKey(id)], manualUpload: false } }));
+
     try {
       await get().lookupEverysong(id, artist, title);
       console.log(`[loadDeck:${id}] metadata loaded`);
@@ -1418,6 +1423,8 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     const { deckA, deckB } = get();
     if (!deckA.sourceBuffer || !deckB.sourceBuffer) return;
     if (!deckA.calculatedBPM || !deckB.calculatedBPM) return;
+    // Skip auto BPM match when either deck was loaded manually (local file / YouTube URL)
+    if (deckA.manualUpload || deckB.manualUpload) return;
     const rateA = 1.0 + deckA.params.speed;
     const targetRateB = (deckA.calculatedBPM * rateA) / deckB.calculatedBPM;
     const newSpeed = Math.max(-0.5, Math.min(0.5, targetRateB - 1.0));

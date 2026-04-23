@@ -23,9 +23,14 @@ export async function GET(request: NextRequest) {
   if (!q) return NextResponse.json({ error: "Missing q" }, { status: 400 });
 
   const apiKey = process.env.EVERYSONG_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "EVERYSONG_API_KEY not configured" }, { status: 500 });
-
-  const url = `https://everysong.site/api/search?q=${encodeURIComponent(q)}&limit=${limit}&sort=popularity&dir=desc&api_key=${apiKey}`;
+  const params = new URLSearchParams({
+    q,
+    limit: String(limit),
+    sort: "popularity",
+    dir: "desc",
+  });
+  if (apiKey) params.set("api_key", apiKey);
+  const url = `https://everysong.site/api/search?${params}`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
