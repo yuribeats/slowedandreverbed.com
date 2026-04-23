@@ -48,24 +48,30 @@ const detailBtnClass = (active: boolean) =>
 
 const detailBtnStyle: React.CSSProperties = { fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" };
 
-// Rocker-switch-style deck action button — shared by stems/snap/key-finder/download-mp3.
-// Glossy dark face with green CRT lettering.
+// Deck action button — tactical-button base, text glows green when selected.
 const deckActionBtnStyle: React.CSSProperties = {
   fontFamily: "var(--font-tech)",
   fontSize: "11px",
   letterSpacing: "0.12em",
   textTransform: "uppercase",
+  fontWeight: 700,
   padding: "10px 14px",
   minHeight: "36px",
-  color: "var(--crt-bright)",
+  color: "var(--panel-light)",
   background: "var(--control-base)",
   border: "2px solid #1a1a1a",
   borderRadius: "10px",
-  boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -10px 10px rgba(0,0,0,0.45)",
+  boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
   display: "inline-flex",
   alignItems: "center",
+  justifyContent: "center",
   lineHeight: 1,
-  transition: "transform 0.06s ease, box-shadow 0.06s ease",
+  transition: "color 0.12s ease, text-shadow 0.12s ease",
+};
+
+const selectedTextGlow: React.CSSProperties = {
+  color: "var(--crt-bright)",
+  textShadow: "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)",
 };
 
 function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
@@ -430,8 +436,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                 key={stem}
                 onClick={() => toggleStem(id, stem)}
                 disabled={deck.isStemLoading}
-                className="deck-action-btn w-full justify-center"
-                style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", background: active ? "var(--crt-bright)" : "var(--control-base)", color: active ? "#0a1a05" : "var(--crt-bright)", borderColor: active ? "#2a5e12" : "#1a1a1a", opacity: deck.isStemLoading ? 0.45 : 1 }}
+                className="deck-action-btn w-full"
+                style={{ ...deckActionBtnStyle, ...(active ? selectedTextGlow : null), width: "100%", opacity: deck.isStemLoading ? 0.45 : 1 }}
               >
                 <span style={{ marginRight: 6, fontSize: 11, lineHeight: 1 }}>{active ? "✓" : "-"}</span>
                 {label}
@@ -444,23 +450,23 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           <button
             onClick={() => snapToDownbeat(id)}
             disabled={!deck.sourceBuffer || deck.downbeatDetecting}
-            className="deck-action-btn w-full justify-center"
-            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
+            className="deck-action-btn w-full"
+            style={{ ...deckActionBtnStyle, ...(deck.downbeatDetecting ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
           >
             {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
           </button>
           <button
             onClick={() => setShowKeyFinder((v) => !v)}
-            className="deck-action-btn w-full justify-center"
-            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", background: showKeyFinder ? "var(--crt-bright)" : "var(--control-base)", color: showKeyFinder ? "#0a1a05" : "var(--crt-bright)", borderColor: showKeyFinder ? "#2a5e12" : "#1a1a1a" }}
+            className="deck-action-btn w-full"
+            style={{ ...deckActionBtnStyle, ...(showKeyFinder ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap" }}
           >
             KEY FINDER
           </button>
           <button
             onClick={() => downloadDeckMP3(id)}
             disabled={!deck.sourceBuffer || deckIsConvertingMp3}
-            className="deck-action-btn w-full justify-center"
-            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
+            className="deck-action-btn w-full"
+            style={{ ...deckActionBtnStyle, ...(deckIsConvertingMp3 ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
           >
             {deckIsConvertingMp3 ? "CONVERTING…" : "DOWNLOAD MP3"}
           </button>
@@ -1256,56 +1262,60 @@ function HomeInner() {
             <div className="ml-auto relative" style={{ zIndex: 100 }}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="text-[12px] uppercase tracking-[0.15em] px-3 py-1 border"
+                className="text-[12px] uppercase tracking-[0.15em] px-3 py-1 border-2"
                 style={{
                   fontFamily: "var(--font-tech)",
-                  color: "var(--crt-bright)",
-                  background: "var(--crt-bg)",
-                  borderColor: menuOpen ? "var(--crt-bright)" : "var(--crt-dim)",
-                  borderRadius: "10px",
+                  fontWeight: 700,
+                  color: menuOpen ? "var(--crt-bright)" : "var(--panel-light)",
+                  textShadow: menuOpen ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none",
+                  background: "var(--control-base)",
+                  borderColor: "#1a1a1a",
+                  borderRadius: "4px",
+                  boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
                 }}
               >
                 MENU
               </button>
               {menuOpen && (
                 <div
-                  className="absolute right-0 top-full mt-1 border flex flex-col overflow-hidden"
+                  className="absolute right-0 top-full mt-1 border-2 flex flex-col overflow-hidden"
                   style={{
                     minWidth: "220px",
                     zIndex: 100,
-                    backgroundColor: "var(--crt-bg)",
-                    borderColor: "var(--crt-dim)",
-                    borderRadius: "12px",
+                    backgroundColor: "var(--control-base)",
+                    borderColor: "#1a1a1a",
+                    borderRadius: "4px",
+                    boxShadow: "0 6px 12px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.08)",
                   }}
                 >
                   <button
                     onClick={() => { saveSession(); setMenuOpen(false); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
                   >
                     {saveStatus || "SAVE SESSION"}
                     <span data-tooltip-right="SAVE CURRENT SESSION TO THIS BROWSER" className="ml-3 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={() => { setLoadModalOpen(true); setMenuOpen(false); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
                   >
                     LOAD SESSION
                     <span data-tooltip-right="RESTORE A PREVIOUSLY SAVED SESSION" className="ml-3 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={() => { if (typeof window !== "undefined") window.location.reload(); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
                   >
                     RESTART
                     <span data-tooltip-right="RELOAD THE APP FROM SCRATCH" className="ml-3 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={() => { setManualOpen(true); setMenuOpen(false); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
                   >
                     MANUAL
                     <span data-tooltip-right="VIEW THE FULL USER MANUAL" className="ml-3 text-[10px]">?</span>
@@ -1313,8 +1323,8 @@ function HomeInner() {
                   <button
                     onClick={() => { exportMP4(); setMenuOpen(false); }}
                     disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: isExporting ? "var(--crt-bright)" : "var(--panel-light)", textShadow: isExporting ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none", background: "transparent", borderColor: "rgba(0,0,0,0.4)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
                   >
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
                     <span data-tooltip-right="RENDER YOUR MIX AS A VIDEO FILE" className="ml-3 text-[10px]">?</span>
@@ -1322,8 +1332,8 @@ function HomeInner() {
                   <button
                     onClick={handleShare}
                     disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || shareLoading}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: shareLoading ? "var(--crt-bright)" : "var(--panel-light)", textShadow: shareLoading ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none", background: "transparent", borderColor: "rgba(0,0,0,0.4)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
                   >
                     {shareLoading ? "UPLOADING..." : shareStatus || "SHARE SESSION"}
                     <span data-tooltip-right="UPLOAD AND SHARE A LINK TO THIS SESSION" className="ml-3 text-[10px]">?</span>
@@ -1333,8 +1343,8 @@ function HomeInner() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
                   >
                     YOUTUBE
                     <span data-tooltip-right="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL" className="ml-3 text-[10px]">?</span>
@@ -1342,8 +1352,8 @@ function HomeInner() {
                   <a
                     href="/gallery"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent" }}
+                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent" }}
                   >
                     GALLERY
                     <span data-tooltip-right="BROWSE EXPORTED MIXES" className="ml-3 text-[10px]">?</span>

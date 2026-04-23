@@ -36,6 +36,7 @@ export default function DeckBMatches() {
   const [ytUrl, setYtUrl] = useState("");
   const [manualLoadError, setManualLoadError] = useState("");
   const [pitchMatch, setPitchMatch] = useState(false);
+  const [manualLoadOpen, setManualLoadOpen] = useState(false);
   const fetchedRef = useRef(false);
   const exhaustTokenRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -433,6 +434,20 @@ export default function DeckBMatches() {
           </span>
         )}
 
+        {/* Manual load toggle */}
+        <button
+          onClick={() => setManualLoadOpen((v) => !v)}
+          className="tactical-button self-start"
+          style={{
+            color: manualLoadOpen ? "var(--crt-bright)" : "var(--panel-light)",
+            textShadow: manualLoadOpen ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none",
+          }}
+        >
+          {manualLoadOpen ? "▾ MANUALLY LOAD TRACK B" : "▸ MANUALLY LOAD TRACK B"}
+        </button>
+
+        {manualLoadOpen && (
+          <>
         {/* Manual artist/title search — adds to match list */}
         <div className="zone-engraved flex flex-col gap-2">
           <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>SEARCH BY ARTIST / TITLE</span>
@@ -526,6 +541,8 @@ export default function DeckBMatches() {
             </span>
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   );
