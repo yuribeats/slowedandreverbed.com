@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { generateCover } from "../lib/cover-generator";
+import { encodeMP3 } from "@yuribeats/audio-utils";
+import { getAudioContext } from "../lib/audio-context";
 
 interface Props {
   audioBlob: Blob;
@@ -12,29 +14,17 @@ interface Props {
 }
 
 const STEPS = [
-  "UPLOADING AUDIO...",
-  "GENERATING COVER...",
+  "PREPARING AUDIO...",
   "GENERATING VIDEO...",
   "DOWNLOADING...",
   "DONE",
 ] as const;
 
-async function uploadToPinata(blob: Blob, filename: string): Promise<string> {
-  const urlRes = await fetch("/api/pinata-upload-url", { method: "POST" });
-  if (!urlRes.ok) throw new Error("Failed to get upload URL");
-  const { url } = await urlRes.json();
-
-  const formData = new FormData();
-  formData.append("file", blob, filename);
-
-  const uploadRes = await fetch(url, { method: "POST", body: formData });
-  if (!uploadRes.ok) {
-    const text = await uploadRes.text();
-    throw new Error(`Upload failed: ${uploadRes.status} ${text.substring(0, 100)}`);
-  }
-
-  const data = await uploadRes.json();
-  return data.data?.cid || data.cid;
+async function blobToMP3(blob: Blob): Promise<Blob> {
+  const arrayBuf = await blob.arrayBuffer();
+  const ctx = getAudioContext();
+  const decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
+  return encodeMP3(decoded, 128);
 }
 
 export default function ExportVideoModalRemix({ audioBlob, defaultFilename, initialArtist = "", initialTitle = "", onClose }: Props) {
@@ -66,18 +56,17 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
     setError("");
 
     try {
-      // Step 0: Upload audio to Pinata
+      // Step 0: encode audio to MP3 and generate cover in parallel
       setStep(0);
-      const audioCid = await uploadToPinata(audioBlob, "audio.webm");
+      const [mp3Blob, coverBlob] = await Promise.all([
+        blobToMP3(audioBlob),
+        generateCover(artist.trim(), title.trim(), customImage || undefined),
+      ]);
 
-      // Step 1: Generate cover
+      // Step 1: Generate video (audio goes directly in the request — no Pinata round-trip)
       setStep(1);
-      const coverBlob = await generateCover(artist.trim(), title.trim(), customImage || undefined);
-
-      // Step 2: Generate video
-      setStep(2);
       const formData = new FormData();
-      formData.append("audioCid", audioCid);
+      formData.append("audio", mp3Blob, "audio.mp3");
       formData.append("image", coverBlob, "cover.png");
       formData.append("artist", artist.trim());
       formData.append("title", title.trim());
@@ -88,30 +77,31 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
         body: formData,
       });
 
-      const text = await res.text();
-      let data: { url?: string; error?: string };
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(text.substring(0, 100) || `SERVER ${res.status}`);
-      }
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || `SERVER ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = text;
+        try {
+          const json = JSON.parse(text);
+          msg = json.error || text;
+        } catch {}
+        throw new Error(msg.substring(0, 200) || `SERVER ${res.status}`);
       }
 
-      // Step 3: Download
-      setStep(3);
+      // Step 2: save the video bytes returned in the response
+      setStep(2);
+      const videoBlob = await res.blob();
+      const url = URL.createObjectURL(videoBlob);
       const a = document.createElement("a");
-      a.href = data.url;
+      a.href = url;
       a.download = `${defaultFilename}.mp4`;
-      a.target = "_blank";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
 
-      // Step 4: Done
-      setStep(4);
-      setTimeout(() => onClose(), 2000);
+      // Step 3: Done
+      setStep(3);
+      setTimeout(() => onClose(), 1500);
     } catch (e) {
       console.error("[EXPORT] Error:", e);
       setError(e instanceof Error ? e.message : "FAILED");
