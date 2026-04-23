@@ -409,7 +409,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
       {/* Waveform */}
       <div ref={waveformWrapRef} style={{ display: "flex", flexDirection: "column" }}>
-        <div>
+        <div style={{ position: "relative" }}>
           <WaveformDisplay
             audioBuffer={deck.mixedStemBuffer || (deck.activeStem && deck.stemBuffers?.[deck.activeStem] ? deck.stemBuffers[deck.activeStem]! : deck.sourceBuffer)}
             isPlaying={deck.isPlaying}
@@ -422,6 +422,33 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onSeek={(pos) => seek(id, pos)}
             onScrub={(pos) => scrub(id, pos)}
           />
+          {isTrackLoading && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+                zIndex: 5,
+              }}
+            >
+              <span
+                className="crt-text"
+                style={{
+                  fontFamily: "var(--font-crt)",
+                  fontSize: "28px",
+                  letterSpacing: "6px",
+                  color: "var(--crt-bright)",
+                  textShadow: "0 0 6px var(--crt-bright), 0 0 18px var(--crt-dim)",
+                  opacity: 0.65,
+                }}
+              >
+                LOADING {loadPct}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -549,18 +576,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
       {/* All controls: Speed/Pitch/Vol on top, Reverb/Tone/Sat below */}
       {showEQ && <><div className="zone-engraved" style={{ position: "relative" }}>
-        {isTrackLoading && (
-          <div style={{
-            position: "absolute", inset: 0, zIndex: 10,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(196,184,154,0.92)",
-            pointerEvents: "all",
-          }}>
-            <span style={{ fontFamily: "var(--font-tech)", fontSize: "13px", letterSpacing: "3px", fontWeight: "bold", color: "#000" }}>
-              LOADING {loadPct}%
-            </span>
-          </div>
-        )}
         <div className="grid grid-cols-3 gap-4" style={{ justifyItems: "center" }}>
           <div className="flex flex-col items-center gap-1">
             <div className="relative h-[100px] w-[36px] flex justify-center">
