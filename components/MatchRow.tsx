@@ -10,6 +10,7 @@ export interface MatchTrack {
   noteIndex: number | null;
   mode: "major" | "minor" | null;
   popularity: number;
+  shift?: number;
 }
 
 interface Props {

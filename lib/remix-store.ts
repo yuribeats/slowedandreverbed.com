@@ -356,7 +356,7 @@ interface RemixStore {
   restoreSession: (sessionId: string) => Promise<void>;
   restoreSessionFromData: (session: Record<string, unknown>) => Promise<void>;
   lookupEverysong: (deck: DeckId, artist: string, title: string) => Promise<void>;
-  loadDeck: (deck: DeckId, artist: string, title: string, opts?: { autoStem?: boolean }) => Promise<void>;
+  loadDeck: (deck: DeckId, artist: string, title: string, opts?: { autoStem?: boolean; pitchShift?: number }) => Promise<void>;
   detectDownbeat: (deck: DeckId) => Promise<void>;
   snapToDownbeat: (deck: DeckId) => Promise<void>;
   autoMatchDeckBSpeed: () => void;
@@ -1273,7 +1273,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     get().setDeckMeta(id, { artist, title });
   },
 
-  loadDeck: async (id, artist, title) => {
+  loadDeck: async (id, artist, title, opts) => {
     const searchQuery = `${artist} ${title}`;
     console.log(`[loadDeck:${id}] starting — searching YouTube for "${searchQuery}"`);
 
@@ -1331,6 +1331,17 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       console.log(`[loadDeck:${id}] metadata loaded`);
     } catch (e) {
       console.error(`[loadDeck:${id}] metadata lookup failed:`, e);
+    }
+
+    // Pitch-matched picks come with a non-zero `pitchShift` (semitones). Apply it FIRST with
+    // speed+pitch linked so the track lands at the compatible key (and its speed shifts with
+    // pitch naturally). Then unlink so the following BPM match only moves speed and leaves
+    // pitch at the compatible key.
+    if (opts?.pitchShift && opts.pitchShift !== 0) {
+      const shift = opts.pitchShift;
+      get().setParam(id, "pitchSpeedLinked", true);
+      get().setParam(id, "speed", Math.pow(2, shift / 12) - 1);
+      get().setParam(id, "pitchSpeedLinked", false);
     }
 
     // Once both decks have a BPM, nudge deck B's speed so it matches deck A's effective BPM.

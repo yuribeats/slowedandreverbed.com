@@ -191,7 +191,7 @@ export default function DeckBMatches() {
     setDeckBError("");
     try {
       getAudioContext();
-      await loadDeck("B", track.artist, track.title);
+      await loadDeck("B", track.artist, track.title, { pitchShift: track.shift ?? 0 });
     } catch (e) {
       setDeckBError(e instanceof Error ? e.message : "LOAD FAILED");
       setTimeout(() => setDeckBError(""), 4000);
