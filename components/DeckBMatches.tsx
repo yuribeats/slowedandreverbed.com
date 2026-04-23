@@ -26,7 +26,7 @@ export default function DeckBMatches() {
   const [exhausting, setExhausting] = useState(false);
   const [error, setError] = useState("");
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [sortMode, setSortMode] = useState<SortMode>("popularity");
+  const [sortMode] = useState<SortMode>("popularity");
   const [bpmWindow, setBpmWindow] = useState(10);
   const [semitoneWindow, setSemitoneWindow] = useState(3);
   const [deckBLoading, setDeckBLoading] = useState(false);
@@ -265,57 +265,9 @@ export default function DeckBMatches() {
           </span>
         </div>
 
-        {/* Manual deck-B load — YouTube URL + local file (skips the match list) */}
-        <div className="zone-engraved flex flex-col gap-2">
-          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>
-            LOAD DECK B DIRECTLY
-          </span>
-          <div className="flex gap-2 flex-wrap items-end">
-            <div className="flex-1 min-w-[220px] flex flex-col gap-0.5">
-              <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>YOUTUBE URL</span>
-              <input
-                value={ytUrl}
-                onChange={(e) => setYtUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleYTLoad()}
-                placeholder="https://www.youtube.com/watch?v=…"
-                className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
-                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
-              />
-            </div>
-            <button
-              onClick={handleYTLoad}
-              disabled={!ytUrl.trim() || deckBLoading}
-              className="tactical-button"
-              style={{ opacity: (!ytUrl.trim() || deckBLoading) ? 0.3 : 1 }}
-            >
-              {deckBLoading ? "…" : "YOUTUBE → DECK B"}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*"
-              className="hidden"
-              onChange={(e) => handleLocalFile(e.target.files?.[0])}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={deckBLoading}
-              className="tactical-button"
-              style={{ opacity: deckBLoading ? 0.3 : 1 }}
-            >
-              LOCAL FILE → DECK B
-            </button>
-          </div>
-          {manualLoadError && (
-            <span className="text-[11px] tracking-[1px] uppercase" style={{ color: "var(--led-red-on, #c82828)", fontFamily: "var(--font-tech)" }}>
-              {manualLoadError}
-            </span>
-          )}
-        </div>
-
-        {/* Key + BPM fields */}
+        {/* Key (+ ± semitone window) and BPM (+ ± window) grouped together */}
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-[10px] tracking-[1px] uppercase shrink-0" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>KEY</span>
             <select
               value={searchKey}
@@ -328,51 +280,7 @@ export default function DeckBMatches() {
                 <option key={k} value={k}>{k.toUpperCase()}</option>
               ))}
             </select>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] tracking-[1px] uppercase shrink-0" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>BPM</span>
-            <input
-              type="number"
-              value={searchBPM}
-              onChange={(e) => setSearchBPM(e.target.value)}
-              onBlur={handleRefetch}
-              onKeyDown={(e) => e.key === "Enter" && handleRefetch()}
-              className="tactical-input w-[65px] text-center"
-              style={{ fontSize: "11px", padding: "3px 6px" }}
-            />
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => { setSortMode(sortMode === "bpm" ? "popularity" : "bpm"); setTimeout(handleRefetch, 0); }}
-              className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border"
-              style={{
-                fontFamily: "var(--font-tech)",
-                color: "var(--text-dark)",
-                background: sortMode === "bpm" ? "rgba(255,115,0,0.15)" : "transparent",
-                borderColor: sortMode === "bpm" ? "#333" : "#777",
-              }}
-            >
-              SORT: BPM
-            </button>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>BPM ±</span>
-            <input
-              type="number"
-              value={bpmWindow}
-              onChange={(e) => setBpmWindow(Math.max(1, Math.min(30, parseInt(e.target.value) || 8)))}
-              onBlur={handleRefetch}
-              onKeyDown={(e) => e.key === "Enter" && handleRefetch()}
-              className="tactical-input w-[50px] text-center"
-              style={{ fontSize: "12px", padding: "4px" }}
-            />
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>KEY ±</span>
+            <span className="text-[10px] tracking-[1px] uppercase ml-1" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>KEY ±</span>
             <input
               type="number"
               value={semitoneWindow}
@@ -384,6 +292,28 @@ export default function DeckBMatches() {
               title="Semitone range for PITCH MATCH"
             />
             <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.45 }}>ST</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] tracking-[1px] uppercase shrink-0" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>BPM</span>
+            <input
+              type="number"
+              value={searchBPM}
+              onChange={(e) => setSearchBPM(e.target.value)}
+              onBlur={handleRefetch}
+              onKeyDown={(e) => e.key === "Enter" && handleRefetch()}
+              className="tactical-input w-[65px] text-center"
+              style={{ fontSize: "11px", padding: "3px 6px" }}
+            />
+            <span className="text-[10px] tracking-[1px] uppercase ml-1" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>BPM ±</span>
+            <input
+              type="number"
+              value={bpmWindow}
+              onChange={(e) => setBpmWindow(Math.max(1, Math.min(30, parseInt(e.target.value) || 8)))}
+              onBlur={handleRefetch}
+              onKeyDown={(e) => e.key === "Enter" && handleRefetch()}
+              className="tactical-input w-[50px] text-center"
+              style={{ fontSize: "12px", padding: "4px" }}
+            />
           </div>
           <button
             onClick={() => { setPitchMatch(!pitchMatch); setTimeout(handleRefetch, 0); }}
@@ -517,6 +447,54 @@ export default function DeckBMatches() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Manual deck-B load — YouTube URL + local file (skips the match list) */}
+        <div className="zone-engraved flex flex-col gap-2">
+          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>
+            LOAD DECK B DIRECTLY
+          </span>
+          <div className="flex gap-2 flex-wrap items-end">
+            <div className="flex-1 min-w-[220px] flex flex-col gap-0.5">
+              <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>YOUTUBE URL</span>
+              <input
+                value={ytUrl}
+                onChange={(e) => setYtUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleYTLoad()}
+                placeholder="https://www.youtube.com/watch?v=…"
+                className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+              />
+            </div>
+            <button
+              onClick={handleYTLoad}
+              disabled={!ytUrl.trim() || deckBLoading}
+              className="tactical-button"
+              style={{ opacity: (!ytUrl.trim() || deckBLoading) ? 0.3 : 1 }}
+            >
+              {deckBLoading ? "…" : "YOUTUBE → DECK B"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={(e) => handleLocalFile(e.target.files?.[0])}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={deckBLoading}
+              className="tactical-button"
+              style={{ opacity: deckBLoading ? 0.3 : 1 }}
+            >
+              LOCAL FILE → DECK B
+            </button>
+          </div>
+          {manualLoadError && (
+            <span className="text-[11px] tracking-[1px] uppercase" style={{ color: "var(--led-red-on, #c82828)", fontFamily: "var(--font-tech)" }}>
+              {manualLoadError}
+            </span>
+          )}
         </div>
       </div>
     </div>

@@ -557,30 +557,61 @@ export default function WaveformDisplay({
               {zoom > 1 ? "SHIFT+DRAG TO PAN" : ""}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {rightControls}
             <button
               onClick={zoomToRegion}
-              className="text-[12px] px-1.5 py-0 border border-[#555]"
-              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
+              className="border"
+              style={{
+                fontFamily: "var(--font-tech)",
+                fontSize: "15px",
+                letterSpacing: "0.08em",
+                color: "var(--crt-bright)",
+                background: "var(--crt-bg)",
+                borderColor: "var(--crt-dim)",
+                padding: "6px 14px",
+                minHeight: "34px",
+                lineHeight: 1,
+              }}
             >
               FIT
             </button>
             <button
               onClick={zoomOut}
               disabled={zoom <= 1}
-              className="text-[12px] px-1.5 py-0 border border-[#555]"
-              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
+              className="border"
+              style={{
+                fontFamily: "var(--font-tech)",
+                fontSize: "18px",
+                color: "var(--crt-bright)",
+                background: "var(--crt-bg)",
+                borderColor: "var(--crt-dim)",
+                padding: "2px 14px",
+                minHeight: "34px",
+                minWidth: "36px",
+                lineHeight: 1,
+                opacity: zoom <= 1 ? 0.4 : 1,
+              }}
             >
               −
             </button>
-            <span className="text-[11px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
+            <span className="text-[14px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", minWidth: "32px", textAlign: "center" }}>
               {zoom > 1 ? `${zoom.toFixed(1)}X` : "1X"}
             </span>
             <button
               onClick={zoomIn}
-              className="text-[12px] px-1.5 py-0 border border-[#555]"
-              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
+              className="border"
+              style={{
+                fontFamily: "var(--font-tech)",
+                fontSize: "18px",
+                color: "var(--crt-bright)",
+                background: "var(--crt-bg)",
+                borderColor: "var(--crt-dim)",
+                padding: "2px 14px",
+                minHeight: "34px",
+                minWidth: "36px",
+                lineHeight: 1,
+              }}
             >
               +
             </button>

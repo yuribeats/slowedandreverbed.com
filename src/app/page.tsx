@@ -472,55 +472,61 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       </div>
 
-      {/* Deck action zone — inline stems + per-deck buttons */}
-      <div className="flex flex-wrap items-center gap-2 justify-center px-1">
-        <span className="text-[11px] uppercase tracking-[0.18em] mr-1" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", opacity: 0.6 }}>
-          STEMS{deck.isStemLoading ? " (SEPARATING…)" : ""}
-        </span>
-        {([
-          ["vocals", "VOCALS"],
-          ["drums", "DRUMS"],
-          ["bass", "BASS"],
-          ["other", "OTHER"],
-          ["instrumental", "INSTR"],
-        ] as const).map(([stem, label]) => {
-          const active = deck.activeStems.includes(stem);
-          return (
-            <button
-              key={stem}
-              onClick={() => toggleStem(id, stem)}
-              disabled={deck.isStemLoading}
-              className="deck-action-btn"
-              style={{ ...deckActionBtnStyle, background: active ? "var(--crt-bright)" : "var(--crt-bg)", color: active ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: active ? "var(--crt-bright)" : "var(--crt-dim)", opacity: deck.isStemLoading ? 0.45 : 1 }}
-            >
-              <span style={{ marginRight: 6, fontSize: 10 }}>{active ? "X" : "-"}</span>
-              {label}
-            </button>
-          );
-        })}
-        <button
-          onClick={() => snapToDownbeat(id)}
-          disabled={!deck.sourceBuffer || deck.downbeatDetecting}
-          className="deck-action-btn"
-          style={{ ...deckActionBtnStyle, opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
-        >
-          {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
-        </button>
-        <button
-          onClick={() => setShowKeyFinder((v) => !v)}
-          className="deck-action-btn"
-          style={{ ...deckActionBtnStyle, background: showKeyFinder ? "var(--crt-bright)" : "var(--crt-bg)", color: showKeyFinder ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: showKeyFinder ? "var(--crt-bright)" : "var(--crt-dim)" }}
-        >
-          KEY FINDER
-        </button>
-        <button
-          onClick={() => downloadDeckMP3(id)}
-          disabled={!deck.sourceBuffer || deckIsConvertingMp3}
-          className="deck-action-btn"
-          style={{ ...deckActionBtnStyle, opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
-        >
-          {deckIsConvertingMp3 ? "CONVERTING…" : "DOWNLOAD MP3"}
-        </button>
+      {/* Deck action zone — two fixed rows: stems line, then snap/key/download line */}
+      <div className="flex flex-col gap-2 px-1">
+        {/* Row 1: stem checkboxes — always on one line */}
+        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "auto repeat(5, minmax(0, 1fr))" }}>
+          <span className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", opacity: 0.6 }}>
+            STEMS{deck.isStemLoading ? " (SEP…)" : ""}
+          </span>
+          {([
+            ["vocals", "VOCALS"],
+            ["drums", "DRUMS"],
+            ["bass", "BASS"],
+            ["other", "OTHER"],
+            ["instrumental", "INSTR"],
+          ] as const).map(([stem, label]) => {
+            const active = deck.activeStems.includes(stem);
+            return (
+              <button
+                key={stem}
+                onClick={() => toggleStem(id, stem)}
+                disabled={deck.isStemLoading}
+                className="deck-action-btn w-full justify-center"
+                style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", background: active ? "var(--crt-bright)" : "var(--crt-bg)", color: active ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: active ? "var(--crt-bright)" : "var(--crt-dim)", opacity: deck.isStemLoading ? 0.45 : 1 }}
+              >
+                <span style={{ marginRight: 6, fontSize: 11, lineHeight: 1 }}>{active ? "✓" : "-"}</span>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        {/* Row 2: snap + key finder + download — always on one line */}
+        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+          <button
+            onClick={() => snapToDownbeat(id)}
+            disabled={!deck.sourceBuffer || deck.downbeatDetecting}
+            className="deck-action-btn w-full justify-center"
+            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
+          >
+            {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
+          </button>
+          <button
+            onClick={() => setShowKeyFinder((v) => !v)}
+            className="deck-action-btn w-full justify-center"
+            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", background: showKeyFinder ? "var(--crt-bright)" : "var(--crt-bg)", color: showKeyFinder ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: showKeyFinder ? "var(--crt-bright)" : "var(--crt-dim)" }}
+          >
+            KEY FINDER
+          </button>
+          <button
+            onClick={() => downloadDeckMP3(id)}
+            disabled={!deck.sourceBuffer || deckIsConvertingMp3}
+            className="deck-action-btn w-full justify-center"
+            style={{ ...deckActionBtnStyle, width: "100%", justifyContent: "center", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
+          >
+            {deckIsConvertingMp3 ? "CONVERTING…" : "DOWNLOAD MP3"}
+          </button>
+        </div>
       </div>
 
       {/* Stem error only */}
@@ -1402,8 +1408,10 @@ function HomeInner() {
           {/* Sync controls — own bordered zone, above the decks */}
           {showDeckB && (() => {
             const bothLoaded = !!deckA.sourceBuffer && !!deckB.sourceBuffer;
+            const bothDownbeat = deckA.firstDownbeatMs !== null && deckB.firstDownbeatMs !== null;
+            const bothStems = !!deckA.stemBuffers && !!deckB.stemBuffers;
             const anyPlaying = deckA.isPlaying || deckB.isPlaying;
-            const armed = bothLoaded && !anyPlaying;
+            const armed = bothLoaded && bothDownbeat && bothStems && !anyPlaying;
             return (
               <div className="zone-inset boot-stagger boot-delay-3">
                 <div className="flex items-center justify-center gap-10 py-2">
