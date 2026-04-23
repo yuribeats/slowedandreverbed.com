@@ -355,6 +355,8 @@ interface RemixStore {
   lookupEverysong: (deck: DeckId, artist: string, title: string) => Promise<void>;
   loadDeck: (deck: DeckId, artist: string, title: string, opts?: { autoStem?: boolean }) => Promise<void>;
   detectDownbeat: (deck: DeckId) => Promise<void>;
+  snapToDownbeat: (deck: DeckId) => Promise<void>;
+  autoMatchDeckBSpeed: () => void;
   play: (deck: DeckId, forceLoop?: boolean) => Promise<void>;
   stop: (deck: DeckId) => void;
   pause: (deck: DeckId) => void;
@@ -1306,6 +1308,11 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       console.error(`[loadDeck:${id}] metadata lookup failed:`, e);
     }
 
+    // Once both decks have a BPM, nudge deck B's speed so it matches deck A's effective BPM.
+    // This runs whichever deck was just loaded — if the other side isn't ready yet, it's a no-op
+    // and the next load will trigger the match.
+    get().autoMatchDeckBSpeed();
+
     console.log(`[loadDeck:${id}] complete`);
   },
 
@@ -1322,10 +1329,13 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     try {
       let requestBody: Record<string, unknown>;
-      if (deck.sourceCdnUrl) {
-        requestBody = { cdnUrl: deck.sourceCdnUrl };
-      } else if (deck.sourceUrl?.includes("youtube")) {
+      if (deck.sourceUrl?.includes("youtube")) {
+        // Prefer re-fetching a fresh CDN link server-side — the cached sourceCdnUrl
+        // from RapidAPI expires within minutes, and Modal's download-side fetch
+        // will 404 if we hand it a stale link.
         requestBody = { youtubeUrl: deck.sourceUrl };
+      } else if (deck.sourceCdnUrl) {
+        requestBody = { cdnUrl: deck.sourceCdnUrl };
       } else if (deck.sourceUrl) {
         requestBody = { audioUrl: deck.sourceUrl };
       } else {
@@ -1371,6 +1381,29 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       get().setRegion(id, inPoint, 0);
     } catch (e) {
       fail(e instanceof Error ? e.message : "Unexpected error");
+    }
+  },
+
+  snapToDownbeat: async (id) => {
+    const deck = getDeck(get(), id);
+    if (!deck.sourceBuffer) return;
+    if (deck.firstDownbeatMs !== null) {
+      get().setRegion(id, deck.firstDownbeatMs / 1000, deck.regionEnd);
+      return;
+    }
+    await get().detectDownbeat(id);
+  },
+
+  autoMatchDeckBSpeed: () => {
+    const { deckA, deckB } = get();
+    if (!deckA.sourceBuffer || !deckB.sourceBuffer) return;
+    if (!deckA.calculatedBPM || !deckB.calculatedBPM) return;
+    const rateA = 1.0 + deckA.params.speed;
+    const targetRateB = (deckA.calculatedBPM * rateA) / deckB.calculatedBPM;
+    const newSpeed = Math.max(-0.5, Math.min(0.5, targetRateB - 1.0));
+    get().setParam("B", "speed", newSpeed);
+    if (deckB.params.pitchSpeedLinked ?? true) {
+      get().setParam("B", "pitch", 12 * Math.log2(1.0 + newSpeed));
     }
   },
 

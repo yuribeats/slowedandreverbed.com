@@ -48,6 +48,22 @@ const detailBtnClass = (active: boolean) =>
 
 const detailBtnStyle: React.CSSProperties = { fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" };
 
+// Green-on-black CRT-style deck action button — shared by stems/snap/key-finder/download-mp3.
+const deckActionBtnStyle: React.CSSProperties = {
+  fontFamily: "var(--font-tech)",
+  fontSize: "11px",
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  padding: "8px 12px",
+  minHeight: "32px",
+  color: "var(--crt-bright)",
+  background: "var(--crt-bg)",
+  border: "1px solid var(--crt-dim)",
+  display: "inline-flex",
+  alignItems: "center",
+  lineHeight: 1,
+};
+
 function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const deck = useRemixStore((s) => (id === "A" ? s.deckA : s.deckB));
   const loadFile = useRemixStore((s) => s.loadFile);
@@ -66,10 +82,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
   const [stepMode, setStepMode] = useState(true);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
-  const [deckMenuOpen, setDeckMenuOpen] = useState(false);
   const [showEQ, setShowEQ] = useState(true);
-  const stemsBtnRef = useRef<HTMLButtonElement>(null);
-  const [stemsMenuPos, setStemsMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [showYouTube, setShowYouTube] = useState(false);
   const [showKeyFinder, setShowKeyFinder] = useState(false);
 
@@ -83,7 +96,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const linked = deck.params.pitchSpeedLinked ?? true;
   const displaySemitones = pitchSemitones;
   const [ytUrl, setYtUrl] = useState("");
-  const [loopEnabled, setLoopEnabled] = useState(false);
   const baseKey = deck.baseKey;
   const baseMode = deck.baseMode;
   const [editingKey, setEditingKey] = useState(false);
@@ -93,7 +105,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [speedInput, setSpeedInput] = useState("");
   const setBPM = useRemixStore((s) => s.setBPM);
   const setDeckMeta = useRemixStore((s) => s.setDeckMeta);
-  const detectDownbeat = useRemixStore((s) => s.detectDownbeat);
+  const snapToDownbeat = useRemixStore((s) => s.snapToDownbeat);
   const toggleStem = useRemixStore((s) => s.toggleStem);
   const downloadDeckMP3 = useRemixStore((s) => s.downloadDeckMP3);
   const deckIsConvertingMp3 = useRemixStore((s) => s.isConvertingMp3);
@@ -187,8 +199,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const handleStart = useCallback(async () => {
     const ctx = getAudioContext();
     await ctx.resume();
-    play(id, loopEnabled || undefined);
-  }, [play, id, loopEnabled]);
+    play(id);
+  }, [play, id]);
 
   const handleSkip = useCallback(async (delta: number) => {
     if (!deck.sourceBuffer) return;
@@ -456,46 +468,60 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onRegionChange={(s, e) => setRegion(id, s, e)}
             onSeek={(pos) => seek(id, pos)}
             onScrub={(pos) => scrub(id, pos)}
-            rightControls={
-              <button
-                onClick={() => setLoopEnabled((v) => !v)}
-                className="text-[12px] px-1.5 py-0 border border-[#555]"
-                style={{
-                  fontFamily: "var(--font-tech)",
-                  color: loopEnabled ? "var(--accent-gold)" : "var(--text-dark)",
-                  background: "transparent",
-                  lineHeight: "16px",
-                  borderColor: loopEnabled ? "var(--accent-gold)" : "#555",
-                }}
-              >
-                LOOP {loopEnabled ? "ON" : "OFF"}
-              </button>
-            }
-            leftControls={
-              <div className="shrink-0">
-                <button
-                  ref={stemsBtnRef}
-                  onClick={() => {
-                    if (!deckMenuOpen && stemsBtnRef.current) {
-                      const rect = stemsBtnRef.current.getBoundingClientRect();
-                      setStemsMenuPos({ top: rect.bottom + 4, left: rect.left });
-                    }
-                    setDeckMenuOpen(!deckMenuOpen);
-                  }}
-                  className="text-[12px] px-1.5 py-0 border border-[#555]"
-                  style={{ fontFamily: "var(--font-tech)", color: deckMenuOpen ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", lineHeight: "16px" }}
-                >
-                  STEMS
-                </button>
-              </div>
-            }
           />
         </div>
       </div>
 
-
-
-      {/* Step nudger removed */}
+      {/* Deck action zone — inline stems + per-deck buttons */}
+      <div className="flex flex-wrap items-center gap-2 justify-center px-1">
+        <span className="text-[11px] uppercase tracking-[0.18em] mr-1" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", opacity: 0.6 }}>
+          STEMS{deck.isStemLoading ? " (SEPARATING…)" : ""}
+        </span>
+        {([
+          ["vocals", "VOCALS"],
+          ["drums", "DRUMS"],
+          ["bass", "BASS"],
+          ["other", "OTHER"],
+          ["instrumental", "INSTR"],
+        ] as const).map(([stem, label]) => {
+          const active = deck.activeStems.includes(stem);
+          return (
+            <button
+              key={stem}
+              onClick={() => toggleStem(id, stem)}
+              disabled={deck.isStemLoading}
+              className="deck-action-btn"
+              style={{ ...deckActionBtnStyle, background: active ? "var(--crt-bright)" : "var(--crt-bg)", color: active ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: active ? "var(--crt-bright)" : "var(--crt-dim)", opacity: deck.isStemLoading ? 0.45 : 1 }}
+            >
+              <span style={{ marginRight: 6, fontSize: 10 }}>{active ? "X" : "-"}</span>
+              {label}
+            </button>
+          );
+        })}
+        <button
+          onClick={() => snapToDownbeat(id)}
+          disabled={!deck.sourceBuffer || deck.downbeatDetecting}
+          className="deck-action-btn"
+          style={{ ...deckActionBtnStyle, opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
+        >
+          {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
+        </button>
+        <button
+          onClick={() => setShowKeyFinder((v) => !v)}
+          className="deck-action-btn"
+          style={{ ...deckActionBtnStyle, background: showKeyFinder ? "var(--crt-bright)" : "var(--crt-bg)", color: showKeyFinder ? "var(--crt-bg)" : "var(--crt-bright)", borderColor: showKeyFinder ? "var(--crt-bright)" : "var(--crt-dim)" }}
+        >
+          KEY FINDER
+        </button>
+        <button
+          onClick={() => downloadDeckMP3(id)}
+          disabled={!deck.sourceBuffer || deckIsConvertingMp3}
+          className="deck-action-btn"
+          style={{ ...deckActionBtnStyle, opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
+        >
+          {deckIsConvertingMp3 ? "CONVERTING…" : "DOWNLOAD MP3"}
+        </button>
+      </div>
 
       {/* Stem error only */}
       {deck.stemError && (
@@ -553,14 +579,14 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       )}
 
-      {/* EQ toggle button */}
+      {/* Parameters toggle button */}
       <div className="flex justify-center">
         <button
           onClick={() => setShowEQ(!showEQ)}
           className={detailBtnClass(showEQ)}
           style={detailBtnStyle}
         >
-          EQ
+          PARAMETERS
         </button>
       </div>
 
@@ -672,65 +698,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       {/* end showEQ */}
       </>}
 
-      {/* Stems menu — fixed overlay to escape stacking contexts */}
-      {deckMenuOpen && (
-        <>
-          <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setDeckMenuOpen(false)} />
-          <div className="fixed border-2 border-[#555] flex flex-col" style={{ minWidth: "220px", zIndex: 9999, backgroundColor: "var(--bg-base, #c4b89a)", top: stemsMenuPos?.top ?? 0, left: stemsMenuPos?.left ?? 0 }}>
-            <div className="text-[10px] uppercase tracking-[0.2em] px-4 py-1 border-b border-[#333]" style={{ fontFamily: "var(--font-tech)", color: "#666" }}>
-              DECK {id} STEMS {deck.isStemLoading ? "(SEPARATING...)" : deck.activeStems.length > 0 ? `(${deck.activeStems.length} ACTIVE)` : ""}
-            </div>
-            {([
-              ["vocals", "VOCALS"],
-              ["drums", "DRUMS"],
-              ["bass", "BASS"],
-              ["other", "OTHER"],
-              ["instrumental", "INSTRUMENTAL"],
-            ] as const).map(([stem, label]) => {
-              const active = deck.activeStems.includes(stem);
-              return (
-                <button
-                  key={stem}
-                  onClick={() => { toggleStem(id, stem); }}
-                  disabled={deck.isStemLoading}
-                  className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center gap-3"
-                  style={{ fontFamily: "var(--font-tech)", color: active ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: deck.isStemLoading ? 0.5 : 1 }}
-                >
-                  <span style={{ width: 14, textAlign: "center", fontSize: "14px" }}>{active ? "X" : "-"}</span>
-                  {label}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => { detectDownbeat(id); setDeckMenuOpen(false); }}
-              disabled={!deck.sourceBuffer || deck.downbeatDetecting}
-              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-              style={{ fontFamily: "var(--font-tech)", color: deck.firstDownbeatMs !== null ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.5 : 1 }}
-            >
-              <span>{deck.downbeatDetecting
-                ? "DETECTING..."
-                : deck.firstDownbeatMs !== null
-                ? `DOWNBEAT: ${(deck.firstDownbeatMs / 1000).toFixed(3)}S`
-                : "DETECT DOWNBEAT"}</span>
-            </button>
-            <button
-              onClick={() => { setShowKeyFinder(!showKeyFinder); setDeckMenuOpen(false); }}
-              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between border-b border-[#333]"
-              style={{ fontFamily: "var(--font-tech)", color: showKeyFinder ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
-            >
-              KEY FINDER
-            </button>
-            <button
-              onClick={() => { downloadDeckMP3(id); setDeckMenuOpen(false); }}
-              disabled={!deck.sourceBuffer || deckIsConvertingMp3}
-              className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
-              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.5 : 1 }}
-            >
-              {deckIsConvertingMp3 ? "CONVERTING..." : "DOWNLOAD MP3"}
-            </button>
-          </div>
-        </>
-      )}
 
     </div>
   );
@@ -992,78 +959,79 @@ function Manual({ onClose }: { onClose: () => void }) {
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>LOADING TRACKS</div>
-            <div className="mb-1">ENTER AN ARTIST AND TITLE, THEN HIT LOAD. THE TRACK IS FOUND ON YOUTUBE AND LOADED AUTOMATICALLY.</div>
-            <div className="mb-1">LOCAL: LOAD AN AUDIO FILE FROM YOUR DEVICE.</div>
-            <div>YT URL: PASTE A SPECIFIC YOUTUBE URL TO LOAD DIRECTLY.</div>
+            <div className="mb-1">DECK A: ENTER ARTIST AND TITLE, THEN HIT LOAD. THE TRACK IS FOUND ON YOUTUBE AND LOADED AUTOMATICALLY.</div>
+            <div className="mb-1">DECK B: PICK A KEY/BPM-COMPATIBLE MATCH FROM THE LIST BELOW, OR USE THE NEW YOUTUBE URL / LOCAL FILE BUTTONS AT THE TOP OF THE MATCH PANEL TO SKIP THE LIST ENTIRELY.</div>
+            <div>LOCAL: LOAD AN AUDIO FILE FROM YOUR DEVICE. YT URL: PASTE A SPECIFIC YOUTUBE URL TO LOAD DIRECTLY.</div>
           </div>
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>TWO DECKS</div>
-            <div>DECK A AND DECK B ARE ALWAYS VISIBLE. EACH DECK HAS ITS OWN ARTIST/TITLE INPUTS, LOAD BUTTON, AND FULL INDEPENDENT EFFECTS CHAIN. SYNC CONTROLS AND CROSSFADER APPEAR BELOW THE DECKS.</div>
+            <div>DECK A AND DECK B ARE ALWAYS VISIBLE. EACH DECK HAS ITS OWN ARTIST/TITLE INPUTS, LOAD BUTTON, AND FULL INDEPENDENT EFFECTS CHAIN. SYNC CONTROLS SIT IN THEIR OWN BORDERED ZONE ABOVE THE DECKS; THE CROSSFADER AND MASTER BUS SIT BELOW.</div>
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>SPEED + PITCH</div>
-            <div className="mb-1">SPEED AND PITCH ARE TWO SEPARATE PARAMETERS. SPEED CONTROLS PLAYBACK RATE. PITCH CONTROLS PITCH SHIFT. THEY ARE STORED AND APPLIED INDEPENDENTLY.</div>
-            <div className="mb-1">THE LINK BUTTON COUPLES THEM IN THE UI. TOGGLING LINK DOES NOT CHANGE EITHER VALUE — IT ONLY CHANGES HOW THE SLIDERS BEHAVE FROM THAT POINT FORWARD.</div>
-            <div className="mb-1">LINKED (DEFAULT — VARISPEED): MOVING THE SPEED SLIDER UPDATES BOTH SPEED AND PITCH ATOMICALLY SO THEY STAY IN SYNC. PITCH FOLLOWS SPEED LIKE A TAPE DECK. NET PITCH CORRECTION IS 1.0 — THE AUDIO IS NOT PROCESSED, JUST PLAYED AT A DIFFERENT RATE.</div>
-            <div className="mb-1">UNLINKED: SPEED AND PITCH MOVE INDEPENDENTLY. SPEED CHANGES TEMPO WITHOUT AFFECTING PITCH. PITCH SHIFTS WITHOUT AFFECTING TEMPO. THE PITCH SHIFTER (RUBBER BAND) APPLIES THE DIFFERENCE BETWEEN WHERE PITCH IS AND WHERE SPEED WOULD PUT IT.</div>
-            <div className="mb-1">RELINKING: IF YOU UNLINK, ADJUST PITCH, THEN RELINK — BOTH VALUES ARE PRESERVED EXACTLY AS YOU LEFT THEM. THE FIRST TIME YOU MOVE THE SPEED SLIDER AFTER RELINKING, PITCH WILL SYNC TO MATCH THE NEW SPEED. UNTIL THEN, NOTHING CHANGES.</div>
-            <div>STEP: SNAPS PITCH TO SEMITONE INTERVALS. ONLY AVAILABLE WHEN UNLINKED.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>DECK ACTION ZONE</div>
+            <div className="mb-1">EACH DECK HAS AN INLINE ROW OF GREEN/BLACK CRT BUTTONS UNDER THE WAVEFORM — NO MORE POPUP MENU.</div>
+            <div className="mb-1">STEM CHECKBOXES: VOCALS / DRUMS / BASS / OTHER / INSTR. TOGGLE ONE OR MORE; FIRST USE TRIGGERS ML SEPARATION (DEMUCS, ~30S), AFTER THAT SWITCHING IS INSTANT.</div>
+            <div className="mb-1">SNAP TO DOWNBEAT: MOVES THE REGION START TO THE ML-DETECTED FIRST DOWNBEAT. IF NO DOWNBEAT IS KNOWN YET, THIS RUNS DETECTION FIRST.</div>
+            <div className="mb-1">KEY FINDER: OPENS A ONE-OCTAVE SINE PIANO FOR FINDING THE KEY BY EAR.</div>
+            <div>DOWNLOAD MP3: RENDERS THE DECK THROUGH THE FULL EFFECTS CHAIN AND DOWNLOADS A 192 KBPS MP3.</div>
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>MATCH LEN</div>
-            <div className="mb-1">ADJUSTS THE PLAYBACK SPEED OF BOTH DECKS SO THEIR SELECTED REGIONS ARE THE SAME LENGTH IN SECONDS. BOTH DECKS MOVE TOWARD A GEOMETRIC MEAN — NEITHER ONE IS TREATED AS THE REFERENCE.</div>
-            <div>THIS OPERATES ON SPEED ONLY AND DOES NOT AFFECT PITCH. BOTH DECKS ARE UNLINKED BEFORE THE SPEED VALUES ARE SET.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>PARAMETERS</div>
+            <div className="mb-1">THE PARAMETERS PANEL (FORMERLY EQ) HOUSES SPEED, PITCH, VOLUME, REVERB, TONE, AND SATURATION FOR EACH DECK.</div>
+            <div className="mb-1">SPEED AND PITCH ARE INDEPENDENT PARAMETERS. LINKED (DEFAULT, VARISPEED) MOVES THEM TOGETHER LIKE A TAPE DECK — NO PITCH-SHIFTING IS DONE, JUST PLAYBACK RATE.</div>
+            <div className="mb-1">UNLINKED: SPEED CHANGES TEMPO ONLY; PITCH SHIFTS INDEPENDENTLY VIA THE WSOLA PITCH SHIFTER. STEP SNAPS PITCH TO SEMITONES WHILE UNLINKED.</div>
+            <div>LOOPING IS OFF — PLAYBACK STOPS AT REGION END OR END OF FILE.</div>
+          </div>
+
+          <div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>DECK B MATCH PANEL</div>
+            <div className="mb-1">AUTO-POPULATES FROM DECK A&apos;S KEY AND BPM. THE RESULT COUNTER IN THE HEADER IS THE TRUE TOTAL FOR THE CURRENT CRITERIA — PAGES AUTO-LOAD IN THE BACKGROUND UNTIL EXHAUSTED. NO MORE LOAD-MORE BUTTON.</div>
+            <div className="mb-1">BPM ± SETS HOW WIDE A TEMPO WINDOW TO SEARCH. KEY ± SETS THE SEMITONE RANGE FOR PITCH MATCH.</div>
+            <div className="mb-1">SORT: BPM TOGGLES BPM SORT; OTHERWISE RESULTS ARE ORDERED BY POPULARITY.</div>
+            <div className="mb-1">PITCH MATCH ADDS EXTRA RESULTS PITCHED WITHIN KEY ± SEMITONES OF DECK A.</div>
+            <div>LOAD DECK B DIRECTLY: PASTE A YOUTUBE URL, OR CHOOSE A LOCAL FILE — BYPASSES THE MATCH LIST.</div>
+          </div>
+
+          <div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>SYNC + AUTO-MATCH</div>
+            <div className="mb-1">AS SOON AS BOTH DECKS HAVE A BPM, DECK B&apos;S SPEED IS AUTO-ADJUSTED SO ITS EFFECTIVE BPM MATCHES DECK A. YOU CAN OVERRIDE THIS ANY TIME BY MOVING DECK B&apos;S SPEED.</div>
+            <div className="mb-1">WHEN BOTH DECKS ARE LOADED, SYNC START GLOWS RED TO INDICATE IT&apos;S ARMED. HIT IT TO START BOTH DECKS SIMULTANEOUSLY WITH SAMPLE-ACCURATE TIMING; THE GLOW CLEARS ONCE PLAYBACK BEGINS.</div>
+            <div>MATCH LEN STRETCHES BOTH REGIONS TO THE SAME LENGTH IN SECONDS (GEOMETRIC MEAN). AFFECTS SPEED ONLY, NOT PITCH.</div>
           </div>
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>EFFECTS CHAIN</div>
-            <div className="mb-1">EACH DECK RUNS: SOURCE → EQ → SATURATION → REVERB → OUTPUT.</div>
+            <div className="mb-1">EACH DECK: SOURCE → EQ → SATURATION → REVERB → OUTPUT.</div>
             <div className="mb-1">REVERB DETAIL: WET LEVEL, SIZE (ROOM DURATION), DECAY.</div>
             <div className="mb-1">TONE DETAIL: 5-BAND PARAMETRIC EQ — LOW SHELF, MID, HIGH SHELF, FREQUENCY SWEEP, PEAK GAIN.</div>
-            <div>SAT DETAIL: DRIVE (WAVESHAPER AGGRESSIVENESS), MIX (DRY/WET BLEND), TONE (POST-SATURATION LOWPASS).</div>
+            <div>SAT DETAIL: DRIVE (WAVESHAPER), MIX (DRY/WET), TONE (POST-SATURATION LOWPASS).</div>
           </div>
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>OUTPUT BUS</div>
             <div className="mb-1">MASTER EQ (LOW/MID/HIGH), COMPRESSOR, AND LIMITER ON THE FINAL MIX. EACH HAS A DETAIL PANEL.</div>
-            <div className="mb-1">COMP: SINGLE KNOB MAPS TO THRESHOLD + RATIO + MAKEUP GAIN TOGETHER. DETAIL PANEL OVERRIDES INDIVIDUAL PARAMS.</div>
+            <div className="mb-1">COMP: SINGLE KNOB MAPS TO THRESHOLD + RATIO + MAKEUP. DETAIL PANEL OVERRIDES INDIVIDUAL PARAMS.</div>
             <div>LIMIT: BRICK-WALL LIMITER AFTER THE COMPRESSOR. DETAIL CONTROLS CEILING, RELEASE, AND KNEE.</div>
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>LOOP FINE-TUNE</div>
-            <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE LOOP BOUNDARIES. STEP SIZE SLIDER ADJUSTS FROM 10MS TO 1S.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>REGION FINE-TUNE</div>
+            <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE BOUNDARIES. THE STEP-SIZE SLIDER ADJUSTS FROM 10MS TO 1S.</div>
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>PIANO KEYBOARD</div>
-            <div>ONE OCTAVE SINE WAVE GENERATOR FOR FINDING THE KEY BY EAR. OCTAVE UP/DOWN BUTTONS. LATCH HOLDS A NOTE UNTIL YOU PRESS ANOTHER OR THE SAME KEY AGAIN.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>SYNC + CROSSFADER</div>
-            <div className="mb-1">SYNC START: STARTS BOTH DECKS SIMULTANEOUSLY WITH SAMPLE-ACCURATE TIMING.</div>
-            <div>CROSSFADER: CENTER = BOTH DECKS FULL VOLUME. LEFT = DECK A ONLY. RIGHT = DECK B ONLY.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>LIVE RECORDING</div>
-            <div>CLICK LIVE RECORDING TO ARM. RECORDING CAPTURES THE LIVE MIX WHEN BOTH DECKS PLAY. CLICK AGAIN TO STOP. THE RECORDING CAN BE DOWNLOADED AS WAV OR EXPORTED AS MP4.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>CROSSFADER + RECORDING</div>
+            <div className="mb-1">CROSSFADER: CENTER = BOTH DECKS FULL. LEFT = DECK A ONLY. RIGHT = DECK B ONLY.</div>
+            <div>ARM LIVE RECORDING TO CAPTURE THE MIX WHEN BOTH DECKS PLAY. AFTER STOP, THE RECORDING CAN BE DOWNLOADED AS WAV OR MP3, OR EXPORTED AS AN MP4 VIDEO.</div>
           </div>
 
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>EXPORT MP4</div>
-            <div className="mb-1">OPEN THE MENU AND HIT EXPORT MP4. RENDERS THE MIX WITH ALL EFFECTS APPLIED. ENTER ARTIST AND TITLE. A VIDEO IS GENERATED WITH COVER ART AND STORED ON PINATA. DOWNLOADS AUTOMATICALLY.</div>
+            <div className="mb-1">OPEN THE MENU AND HIT EXPORT MP4. AUDIO IS ENCODED CLIENT-SIDE TO MP3 AND POSTED DIRECTLY TO THE VIDEO ROUTE — NO INTERMEDIATE PINATA UPLOAD. A SINGLE FFMPEG PASS MIXES THE WATERMARK AND ENCODES THE VIDEO. THE MP4 STREAMS BACK IN THE RESPONSE; THE GALLERY COPY UPLOADS IN THE BACKGROUND.</div>
             <div>ALL EXPORTS ARE SAVED TO THE GALLERY.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>STEMS</div>
-            <div className="mb-1">OPEN TOOLS AND TOGGLE INDIVIDUAL STEMS ON/OFF: VOCALS, DRUMS, BASS, OTHER, INSTRUMENTAL. SELECT MULTIPLE TO MIX THEM TOGETHER.</div>
-            <div>FIRST USE TRIGGERS ML SEPARATION (DEMUCS, ~30S). AFTER THAT, SWITCHING BETWEEN STEMS IS INSTANT.</div>
           </div>
 
           <div>
@@ -1075,9 +1043,9 @@ function Manual({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>GALLERY + RADIO</div>
-            <div className="mb-1">ALL EXPORTS ARE SAVED TO THE GALLERY. ACCESS IT FROM THE MENU.</div>
-            <div>HIT RADIO IN THE GALLERY TO OPEN THE SLOWED + REVERBED RADIO — AN IPOD-STYLE PLAYER THAT SHUFFLES THROUGH ALL YOUR EXPORTS. SUPPORTS IOS LOCK SCREEN PLAYBACK.</div>
+            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>MENU</div>
+            <div className="mb-1">THE GREEN/BLACK CRT MENU IN THE UPPER RIGHT OPENS SAVE SESSION, LOAD SESSION, MANUAL, EXPORT MP4, SHARE SESSION, YOUTUBE, AND GALLERY. EACH OPTION SHARES THE SAME STYLE AS THE DECK READOUTS.</div>
+            <div>GALLERY HOSTS ALL EXPORTS. HIT RADIO IN THE GALLERY TO OPEN THE SLOWED + REVERBED RADIO — AN IPOD-STYLE PLAYER THAT SHUFFLES YOUR EXPORTS AND SUPPORTS IOS LOCK-SCREEN PLAYBACK.</div>
           </div>
 
           <div>
@@ -1344,33 +1312,46 @@ function HomeInner() {
             <div className="ml-auto relative" style={{ zIndex: 100 }}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="text-[12px] uppercase tracking-[0.15em] px-2 py-0.5 border border-[#555]"
-                style={{ fontFamily: "var(--font-tech)", color: menuOpen ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
+                className="text-[12px] uppercase tracking-[0.15em] px-3 py-1 border"
+                style={{
+                  fontFamily: "var(--font-tech)",
+                  color: "var(--crt-bright)",
+                  background: "var(--crt-bg)",
+                  borderColor: menuOpen ? "var(--crt-bright)" : "var(--crt-dim)",
+                }}
               >
                 MENU
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 border-2 border-[#555] flex flex-col" style={{ minWidth: "200px", zIndex: 100, backgroundColor: "var(--bg-base, #c4b89a)" }}>
+                <div
+                  className="absolute right-0 top-full mt-1 border flex flex-col"
+                  style={{
+                    minWidth: "220px",
+                    zIndex: 100,
+                    backgroundColor: "var(--crt-bg)",
+                    borderColor: "var(--crt-dim)",
+                  }}
+                >
                   <button
                     onClick={() => { saveSession(); setMenuOpen(false); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: saveStatus ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent" }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
                   >
                     {saveStatus || "SAVE SESSION"}
                     <span data-tooltip-right="SAVE CURRENT SESSION TO THIS BROWSER" className="ml-3 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={() => { setLoadModalOpen(true); setMenuOpen(false); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
                   >
                     LOAD SESSION
                     <span data-tooltip-right="RESTORE A PREVIOUSLY SAVED SESSION" className="ml-3 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={() => { setManualOpen(true); setMenuOpen(false); }}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
                   >
                     MANUAL
                     <span data-tooltip-right="VIEW THE FULL USER MANUAL" className="ml-3 text-[10px]">?</span>
@@ -1378,8 +1359,8 @@ function HomeInner() {
                   <button
                     onClick={() => { exportMP4(); setMenuOpen(false); }}
                     disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
                   >
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
                     <span data-tooltip-right="RENDER YOUR MIX AS A VIDEO FILE" className="ml-3 text-[10px]">?</span>
@@ -1387,8 +1368,8 @@ function HomeInner() {
                   <button
                     onClick={handleShare}
                     disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || shareLoading}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: shareStatus ? "var(--accent-gold)" : "var(--text-dark)", background: "transparent", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
                   >
                     {shareLoading ? "UPLOADING..." : shareStatus || "SHARE SESSION"}
                     <span data-tooltip-right="UPLOAD AND SHARE A LINK TO THIS SESSION" className="ml-3 text-[10px]">?</span>
@@ -1398,8 +1379,8 @@ function HomeInner() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--accent-gold)", background: "transparent" }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
                   >
                     YOUTUBE
                     <span data-tooltip-right="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL" className="ml-3 text-[10px]">?</span>
@@ -1407,8 +1388,8 @@ function HomeInner() {
                   <a
                     href="/gallery"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b border-[#333] flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent" }}
                   >
                     GALLERY
                     <span data-tooltip-right="BROWSE EXPORTED MIXES" className="ml-3 text-[10px]">?</span>
@@ -1417,6 +1398,54 @@ function HomeInner() {
               )}
             </div>
           </div>
+
+          {/* Sync controls — own bordered zone, above the decks */}
+          {showDeckB && (() => {
+            const bothLoaded = !!deckA.sourceBuffer && !!deckB.sourceBuffer;
+            const anyPlaying = deckA.isPlaying || deckB.isPlaying;
+            const armed = bothLoaded && !anyPlaying;
+            return (
+              <div className="zone-inset boot-stagger boot-delay-3">
+                <div className="flex items-center justify-center gap-10 py-2">
+                  <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
+                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
+                    <button
+                      onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
+                      disabled={!bothLoaded}
+                      className="rocker-switch"
+                      style={{
+                        width: "90px",
+                        height: "60px",
+                        boxShadow: armed ? "0 0 14px 3px var(--led-red-on, #c82828), inset 0 0 8px rgba(200,40,40,0.35)" : undefined,
+                        borderColor: armed ? "var(--led-red-on, #c82828)" : undefined,
+                        transition: "box-shadow 120ms ease-out",
+                      }}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{
+                          border: armed ? "none" : "2px solid #555",
+                          background: armed ? "var(--led-red-on, #c82828)" : undefined,
+                          boxShadow: armed ? "0 0 6px var(--led-red-on, #c82828)" : undefined,
+                        }}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
+                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
+                    <button
+                      onClick={() => { stopDeck("A"); stopDeck("B"); }}
+                      disabled={!bothLoaded}
+                      className="rocker-switch"
+                      style={{ width: "90px", height: "60px" }}
+                    >
+                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Decks */}
           <div className="grid gap-5 boot-stagger boot-delay-3 grid-cols-1 sm:grid-cols-2">
@@ -1427,37 +1456,6 @@ function HomeInner() {
               <Deck id="B" />
             </div>
           </div>
-
-          {/* Sync controls — only when deck B visible */}
-          {showDeckB && (
-            <div className="flex flex-col items-center gap-4 boot-stagger boot-delay-3">
-              {/* Primary: Sync Start + Stop — large */}
-              <div className="flex justify-center gap-6">
-                <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
-                  <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
-                  <button
-                    onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
-                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
-                    className="rocker-switch"
-                    style={{ width: "90px", height: "60px" }}
-                  >
-                    <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                  </button>
-                </div>
-                <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
-                  <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
-                  <button
-                    onClick={() => { stopDeck("A"); stopDeck("B"); }}
-                    disabled={!deckA.sourceBuffer || !deckB.sourceBuffer}
-                    className="rocker-switch"
-                    style={{ width: "90px", height: "60px" }}
-                  >
-                    <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Crossfader — only when deck B visible */}
           {showDeckB && (

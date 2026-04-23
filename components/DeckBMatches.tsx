@@ -18,21 +18,27 @@ const ALL_KEYS = [
 export default function DeckBMatches() {
   const deckA = useRemixStore((s) => s.deckA);
   const loadDeck = useRemixStore((s) => s.loadDeck);
+  const loadFromYouTube = useRemixStore((s) => s.loadFromYouTube);
+  const loadFile = useRemixStore((s) => s.loadFile);
 
   const [tracks, setTracks] = useState<MatchTrack[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exhausting, setExhausting] = useState(false);
   const [error, setError] = useState("");
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("popularity");
   const [bpmWindow, setBpmWindow] = useState(10);
+  const [semitoneWindow, setSemitoneWindow] = useState(3);
   const [deckBLoading, setDeckBLoading] = useState(false);
   const [deckBError, setDeckBError] = useState("");
   const [manualArtist, setManualArtist] = useState("");
   const [manualTitle, setManualTitle] = useState("");
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
+  const [ytUrl, setYtUrl] = useState("");
+  const [manualLoadError, setManualLoadError] = useState("");
   const [pitchMatch, setPitchMatch] = useState(false);
   const fetchedRef = useRef(false);
+  const exhaustTokenRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Editable key/BPM — auto-populated from Deck A
   const deckAKey = deckA.baseKey !== null && deckA.baseMode
@@ -57,100 +63,124 @@ export default function DeckBMatches() {
   const sourceKey = searchKey || null;
   const sourceBPM = parseFloat(searchBPM) || null;
 
-  const fetchMatches = useCallback(async (pageNum: number, append: boolean) => {
-    if (!sourceKey || !sourceBPM) return;
-    initializedRef.current = true;
-    setLoading(true);
-    setError("");
-
-    const compatKeys = getCompatibleKeys(sourceKey);
-
+  const fetchPage = useCallback(async (
+    pageNum: number,
+    opts: { key: string; bpm: number; bpmWin: number; sort: SortMode; pmRange: number; pm: boolean },
+    seen: Set<string>,
+  ) => {
+    const compatKeys = getCompatibleKeys(opts.key);
     const params = new URLSearchParams({
       keys: compatKeys.join(","),
       limit: "100",
       page: String(pageNum),
-      sort: sortMode === "random" ? "popularity" : sortMode,
+      sort: opts.sort === "random" ? "popularity" : opts.sort,
       dir: "desc",
       excludeArtist: deckA.artist,
       excludeTitle: deckA.title,
     });
-    params.set("bpmMin", String(Math.round(sourceBPM - bpmWindow)));
-    params.set("bpmMax", String(Math.round(sourceBPM + bpmWindow)));
+    params.set("bpmMin", String(Math.round(opts.bpm - opts.bpmWin)));
+    params.set("bpmMax", String(Math.round(opts.bpm + opts.bpmWin)));
 
-    try {
-      const res = await fetch(`/api/everysong/match?${params}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+    const res = await fetch(`/api/everysong/match?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
 
-      let newTracks = (data.tracks ?? []) as MatchTrack[];
+    let pageTracks = (data.tracks ?? []) as MatchTrack[];
+    pageTracks = pageTracks.filter((t) => {
+      const k = `${t.artist.toLowerCase()}|${t.title.toLowerCase()}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
 
-      // De-duplicate on artist+title
-      const seen = new Set<string>();
-      if (append) {
-        tracks.forEach((t) => seen.add(`${t.artist.toLowerCase()}|${t.title.toLowerCase()}`));
+    if (opts.sort === "random") {
+      for (let i = pageTracks.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pageTracks[i], pageTracks[j]] = [pageTracks[j], pageTracks[i]];
       }
-      newTracks = newTracks.filter((t) => {
-        const k = `${t.artist.toLowerCase()}|${t.title.toLowerCase()}`;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
+    }
 
-      if (sortMode === "random") {
-        for (let i = newTracks.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [newTracks[i], newTracks[j]] = [newTracks[j], newTracks[i]];
-        }
-      }
-
-      // Pitch-match results (if toggled on, first page only)
-      if (pitchMatch && pageNum === 0 && sourceKey) {
-        try {
-          const pmParams = new URLSearchParams({
-            key: sourceKey,
-            bpmMin: String(Math.round(sourceBPM - bpmWindow)),
-            bpmMax: String(Math.round(sourceBPM + bpmWindow)),
-            range: "3",
-            limit: "20",
-          });
-          const pmRes = await fetch(`/api/everysong/pitch-match?${pmParams}`);
-          if (pmRes.ok) {
-            const pmData = await pmRes.json();
-            for (const bucket of (pmData.results ?? [])) {
-              for (const t of (bucket.tracks ?? [])) {
-                const k = `${(t.artist as string).toLowerCase()}|${(t.title as string).toLowerCase()}`;
-                if (!seen.has(k)) {
-                  seen.add(k);
-                  newTracks.push({ ...t, shift: bucket.shift } as MatchTrack);
-                }
+    const pmTracks: MatchTrack[] = [];
+    if (opts.pm && pageNum === 0 && opts.key) {
+      try {
+        const pmParams = new URLSearchParams({
+          key: opts.key,
+          bpmMin: String(Math.round(opts.bpm - opts.bpmWin)),
+          bpmMax: String(Math.round(opts.bpm + opts.bpmWin)),
+          range: String(opts.pmRange),
+          limit: "20",
+        });
+        const pmRes = await fetch(`/api/everysong/pitch-match?${pmParams}`);
+        if (pmRes.ok) {
+          const pmData = await pmRes.json();
+          for (const bucket of (pmData.results ?? [])) {
+            for (const t of (bucket.tracks ?? [])) {
+              const k = `${(t.artist as string).toLowerCase()}|${(t.title as string).toLowerCase()}`;
+              if (!seen.has(k)) {
+                seen.add(k);
+                pmTracks.push({ ...t, shift: bucket.shift } as MatchTrack);
               }
             }
           }
-        } catch { /* pitch-match is optional */ }
-      }
-
-      setTracks(append ? [...tracks, ...newTracks] : newTracks);
-      setHasMore(data.hasMore ?? false);
-      setPage(pageNum);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "MATCH SEARCH FAILED");
+        }
+      } catch { /* pitch-match is optional */ }
     }
-    setLoading(false);
-  }, [sourceKey, sourceBPM, bpmWindow, sortMode, pitchMatch, deckA.artist, deckA.title, tracks]);
+
+    return { pageTracks: [...pageTracks, ...pmTracks], hasMore: Boolean(data.hasMore) };
+  }, [deckA.artist, deckA.title]);
+
+  const runSearch = useCallback(async () => {
+    if (!sourceKey || !sourceBPM) return;
+    initializedRef.current = true;
+    fetchedRef.current = true;
+
+    // Invalidate any in-flight exhaust loop from a previous query
+    const token = ++exhaustTokenRef.current;
+    setLoading(true);
+    setExhausting(false);
+    setError("");
+
+    const opts = { key: sourceKey, bpm: sourceBPM, bpmWin: bpmWindow, sort: sortMode, pmRange: semitoneWindow, pm: pitchMatch };
+    const seen = new Set<string>();
+    try {
+      const first = await fetchPage(0, opts, seen);
+      if (token !== exhaustTokenRef.current) return;
+      setTracks(first.pageTracks);
+      setSelectedIdx(null);
+      setLoading(false);
+
+      if (!first.hasMore) return;
+      setExhausting(true);
+
+      for (let page = 1; ; page++) {
+        if (token !== exhaustTokenRef.current) return;
+        const next = await fetchPage(page, opts, seen);
+        if (token !== exhaustTokenRef.current) return;
+        if (next.pageTracks.length > 0) {
+          setTracks((prev) => [...prev, ...next.pageTracks]);
+        }
+        if (!next.hasMore) break;
+      }
+    } catch (e) {
+      if (token !== exhaustTokenRef.current) return;
+      setError(e instanceof Error ? e.message : "MATCH SEARCH FAILED");
+      setLoading(false);
+    } finally {
+      if (token === exhaustTokenRef.current) setExhausting(false);
+    }
+  }, [sourceKey, sourceBPM, bpmWindow, sortMode, semitoneWindow, pitchMatch, fetchPage]);
 
   // Initial fetch — trigger when BOTH key AND BPM are available
   useEffect(() => {
     if (sourceKey && sourceBPM && !fetchedRef.current) {
-      fetchedRef.current = true;
-      fetchMatches(0, false);
+      runSearch();
     }
-  }, [sourceKey, sourceBPM]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sourceKey, sourceBPM, runSearch]);
 
   const handleRefetch = useCallback(() => {
-    fetchedRef.current = true;
-    fetchMatches(0, false);
-  }, [fetchMatches]);
+    runSearch();
+  }, [runSearch]);
 
   const handleLoadDeckB = useCallback(async () => {
     if (selectedIdx === null) return;
@@ -191,7 +221,37 @@ export default function DeckBMatches() {
     setLoading(false);
   }, [manualArtist, manualTitle]);
 
+  const handleYTLoad = useCallback(async () => {
+    const url = ytUrl.trim();
+    if (!url) return;
+    setDeckBLoading(true);
+    setManualLoadError("");
+    try {
+      getAudioContext();
+      await loadFromYouTube("B", url);
+    } catch (e) {
+      setManualLoadError(e instanceof Error ? e.message : "LOAD FAILED");
+      setTimeout(() => setManualLoadError(""), 4000);
+    }
+    setDeckBLoading(false);
+  }, [ytUrl, loadFromYouTube]);
+
+  const handleLocalFile = useCallback(async (file: File | null | undefined) => {
+    if (!file) return;
+    setDeckBLoading(true);
+    setManualLoadError("");
+    try {
+      getAudioContext();
+      await loadFile("B", file);
+    } catch (e) {
+      setManualLoadError(e instanceof Error ? e.message : "LOAD FAILED");
+      setTimeout(() => setManualLoadError(""), 4000);
+    }
+    setDeckBLoading(false);
+  }, [loadFile]);
+
   const selectedTrack = selectedIdx !== null ? tracks[selectedIdx] : null;
+  const resultLabel = exhausting ? `${tracks.length} RESULTS (LOADING…)` : `${tracks.length} RESULTS`;
 
   return (
     <div className="console flex flex-col gap-4 boot-stagger boot-delay-3">
@@ -201,8 +261,56 @@ export default function DeckBMatches() {
             DECK B — SELECT A MATCH
           </span>
           <span className="text-[11px] tracking-[0.5px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>
-            {tracks.length} RESULTS
+            {resultLabel}
           </span>
+        </div>
+
+        {/* Manual deck-B load — YouTube URL + local file (skips the match list) */}
+        <div className="zone-engraved flex flex-col gap-2">
+          <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>
+            LOAD DECK B DIRECTLY
+          </span>
+          <div className="flex gap-2 flex-wrap items-end">
+            <div className="flex-1 min-w-[220px] flex flex-col gap-0.5">
+              <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}>YOUTUBE URL</span>
+              <input
+                value={ytUrl}
+                onChange={(e) => setYtUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleYTLoad()}
+                placeholder="https://www.youtube.com/watch?v=…"
+                className="w-full bg-transparent border border-[#555] px-3 py-1.5 text-[11px] tracking-[1px] outline-none focus:border-[#888]"
+                style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+              />
+            </div>
+            <button
+              onClick={handleYTLoad}
+              disabled={!ytUrl.trim() || deckBLoading}
+              className="tactical-button"
+              style={{ opacity: (!ytUrl.trim() || deckBLoading) ? 0.3 : 1 }}
+            >
+              {deckBLoading ? "…" : "YOUTUBE → DECK B"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={(e) => handleLocalFile(e.target.files?.[0])}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={deckBLoading}
+              className="tactical-button"
+              style={{ opacity: deckBLoading ? 0.3 : 1 }}
+            >
+              LOCAL FILE → DECK B
+            </button>
+          </div>
+          {manualLoadError && (
+            <span className="text-[11px] tracking-[1px] uppercase" style={{ color: "var(--led-red-on, #c82828)", fontFamily: "var(--font-tech)" }}>
+              {manualLoadError}
+            </span>
+          )}
         </div>
 
         {/* Key + BPM fields */}
@@ -263,6 +371,20 @@ export default function DeckBMatches() {
               style={{ fontSize: "12px", padding: "4px" }}
             />
           </div>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>KEY ±</span>
+            <input
+              type="number"
+              value={semitoneWindow}
+              onChange={(e) => setSemitoneWindow(Math.max(1, Math.min(12, parseInt(e.target.value) || 3)))}
+              onBlur={handleRefetch}
+              onKeyDown={(e) => e.key === "Enter" && handleRefetch()}
+              className="tactical-input w-[50px] text-center"
+              style={{ fontSize: "12px", padding: "4px" }}
+              title="Semitone range for PITCH MATCH"
+            />
+            <span className="text-[10px] tracking-[1px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.45 }}>ST</span>
+          </div>
           <button
             onClick={() => { setPitchMatch(!pitchMatch); setTimeout(handleRefetch, 0); }}
             className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border"
@@ -318,21 +440,10 @@ export default function DeckBMatches() {
                   onClick={() => setSelectedIdx(i)}
                 />
               ))}
-              {hasMore && (
-                <button
-                  onClick={() => fetchMatches(page + 1, true)}
-                  disabled={loading}
-                  className="py-2 text-center text-[11px] uppercase tracking-[1px]"
-                  style={{
-                    color: "var(--text-dark)",
-                    fontFamily: "var(--font-tech)",
-                    background: "transparent",
-                    border: "none",
-                    opacity: loading ? 0.3 : 0.6,
-                  }}
-                >
-                  {loading ? "LOADING..." : "LOAD MORE"}
-                </button>
+              {exhausting && (
+                <div className="py-2 text-center text-[10px] uppercase tracking-[1px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.45 }}>
+                  LOADING MORE…
+                </div>
               )}
             </>
           )}
