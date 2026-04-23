@@ -227,7 +227,7 @@ function GalleryContent() {
         if (r.status === 401) {
           try { localStorage.removeItem(SESSION_KEY); } catch {}
           setIpSession(null);
-          setIpAuthStep("idle");
+          setIpAuthStep("email");
           return null;
         }
         return r.json();
@@ -309,7 +309,7 @@ function GalleryContent() {
   const clearIpSession = () => {
     try { localStorage.removeItem(SESSION_KEY); } catch {}
     setIpSession(null);
-    setIpAuthStep("idle");
+    setIpAuthStep("email");
   };
 
   async function handleMint(item: GalleryItem) {
