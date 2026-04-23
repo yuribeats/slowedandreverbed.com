@@ -59,6 +59,7 @@ const deckActionBtnStyle: React.CSSProperties = {
   color: "var(--crt-bright)",
   background: "var(--crt-bg)",
   border: "1px solid var(--crt-dim)",
+  borderRadius: "10px",
   display: "inline-flex",
   alignItems: "center",
   lineHeight: 1,
@@ -67,13 +68,11 @@ const deckActionBtnStyle: React.CSSProperties = {
 function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const deck = useRemixStore((s) => (id === "A" ? s.deckA : s.deckB));
   const loadFile = useRemixStore((s) => s.loadFile);
-  const loadFromYouTube = useRemixStore((s) => s.loadFromYouTube);
   const play = useRemixStore((s) => s.play);
   const stop = useRemixStore((s) => s.stop);
   const pause = useRemixStore((s) => s.pause);
   const setParam = useRemixStore((s) => s.setParam);
   const setVolume = useRemixStore((s) => s.setVolume);
-  const eject = useRemixStore((s) => s.eject);
 
   const setRegion = useRemixStore((s) => s.setRegion);
   const seek = useRemixStore((s) => s.seek);
@@ -83,7 +82,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [stepMode, setStepMode] = useState(true);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [showEQ, setShowEQ] = useState(true);
-  const [showYouTube, setShowYouTube] = useState(false);
   const [showKeyFinder, setShowKeyFinder] = useState(false);
 
   const rate = 1.0 + deck.params.speed;
@@ -95,7 +93,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const pitchSemitones = deck.params.pitch ?? 0;
   const linked = deck.params.pitchSpeedLinked ?? true;
   const displaySemitones = pitchSemitones;
-  const [ytUrl, setYtUrl] = useState("");
   const baseKey = deck.baseKey;
   const baseMode = deck.baseMode;
   const [editingKey, setEditingKey] = useState(false);
@@ -177,12 +174,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   };
 
 
-  const handleLoad = useCallback(() => {
-    getAudioContext();
-    if (deck.sourceBuffer) eject(id);
-    inputRef.current?.click();
-  }, [deck.sourceBuffer, eject, id]);
-
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const ctx = getAudioContext();
@@ -235,18 +226,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex flex-col items-center gap-0.5">
-            <button onClick={handleLoad} disabled={deck.isLoading} className="rocker-switch" style={{ width: "28px", height: "28px" }}>
-              <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-            </button>
-            <span className="text-[8px] tracking-[1px]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>LOCAL</span>
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <button onClick={() => setShowYouTube(!showYouTube)} className="rocker-switch" style={{ width: "28px", height: "28px" }}>
-              <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-            </button>
-            <span className="text-[8px] tracking-[1px]" style={{ color: showYouTube ? "var(--accent-gold)" : "var(--text-dark)", fontFamily: "var(--font-tech)" }}>YT URL</span>
-          </div>
           {onHide && (
             <button
               onClick={onHide}
@@ -299,47 +278,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           </button>
         </div>
       </div>
-
-      {/* YouTube URL input */}
-      {showYouTube && (
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            value={ytUrl}
-            onChange={(e) => setYtUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && ytUrl.trim()) {
-                const url = ytUrl.trim();
-                setYtUrl("");
-                const ctx = getAudioContext();
-                ctx.resume().then(async () => {
-                  await loadFromYouTube(id, url);
-                });
-              }
-            }}
-            placeholder="PASTE YOUTUBE URL"
-            disabled={deck.isLoading}
-            className="flex-1 bg-transparent border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider placeholder:text-black"
-            style={{ fontFamily: "var(--font-tech)", color: "#000", outline: "none" }}
-          />
-          <button
-            onClick={() => {
-              if (!ytUrl.trim()) return;
-              const url = ytUrl.trim();
-              setYtUrl("");
-              const ctx = getAudioContext();
-              ctx.resume().then(async () => {
-                await loadFromYouTube(id, url);
-              });
-            }}
-            disabled={deck.isLoading || !ytUrl.trim()}
-            className="border-2 border-[#555] px-3 py-2 text-[12px] uppercase tracking-wider disabled:opacity-30"
-            style={{ fontFamily: "var(--font-tech)", color: "#000", background: "transparent" }}
-          >
-            {deck.isLoading ? "LOADING..." : "GO"}
-          </button>
-        </div>
-      )}
 
       {/* CRT status */}
       <div className="display-bezel flex flex-col gap-2 p-3">
@@ -1324,18 +1262,20 @@ function HomeInner() {
                   color: "var(--crt-bright)",
                   background: "var(--crt-bg)",
                   borderColor: menuOpen ? "var(--crt-bright)" : "var(--crt-dim)",
+                  borderRadius: "10px",
                 }}
               >
                 MENU
               </button>
               {menuOpen && (
                 <div
-                  className="absolute right-0 top-full mt-1 border flex flex-col"
+                  className="absolute right-0 top-full mt-1 border flex flex-col overflow-hidden"
                   style={{
                     minWidth: "220px",
                     zIndex: 100,
                     backgroundColor: "var(--crt-bg)",
                     borderColor: "var(--crt-dim)",
+                    borderRadius: "12px",
                   }}
                 >
                   <button
@@ -1353,6 +1293,14 @@ function HomeInner() {
                   >
                     LOAD SESSION
                     <span data-tooltip-right="RESTORE A PREVIOUSLY SAVED SESSION" className="ml-3 text-[10px]">?</span>
+                  </button>
+                  <button
+                    onClick={() => { if (typeof window !== "undefined") window.location.reload(); }}
+                    className="text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
+                    style={{ fontFamily: "var(--font-tech)", color: "var(--crt-bright)", background: "transparent", borderColor: "var(--crt-dim)" }}
+                  >
+                    RESTART
+                    <span data-tooltip-right="RELOAD THE APP FROM SCRATCH" className="ml-3 text-[10px]">?</span>
                   </button>
                   <button
                     onClick={() => { setManualOpen(true); setMenuOpen(false); }}
@@ -1421,20 +1369,15 @@ function HomeInner() {
                       onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
                       disabled={!bothLoaded}
                       className="rocker-switch"
-                      style={{
-                        width: "90px",
-                        height: "60px",
-                        boxShadow: armed ? "0 0 14px 3px var(--led-red-on, #c82828), inset 0 0 8px rgba(200,40,40,0.35)" : undefined,
-                        borderColor: armed ? "var(--led-red-on, #c82828)" : undefined,
-                        transition: "box-shadow 120ms ease-out",
-                      }}
+                      style={{ width: "90px", height: "60px" }}
                     >
                       <div
                         className="w-2 h-2 rounded-full"
                         style={{
                           border: armed ? "none" : "2px solid #555",
                           background: armed ? "var(--led-red-on, #c82828)" : undefined,
-                          boxShadow: armed ? "0 0 6px var(--led-red-on, #c82828)" : undefined,
+                          boxShadow: armed ? "0 0 10px 2px var(--led-red-on, #c82828)" : undefined,
+                          transition: "box-shadow 120ms ease-out, background 120ms ease-out",
                         }}
                       />
                     </button>
@@ -1559,7 +1502,7 @@ function HomeInner() {
 
         <Toast />
         <div className="mt-16 py-5 border-t border-[#333] text-center">
-          <a href="https://thegoodinternet.app" target="_blank" rel="noopener noreferrer" className="uppercase tracking-[1px]" style={{ fontSize: "10px", fontWeight: 300, color: "var(--text-muted, #777)", textDecoration: "none" }}>IN PUBLIC</a>
+          <a href="https://yuri.biz" target="_blank" rel="noopener noreferrer" className="uppercase tracking-[1px]" style={{ fontSize: "10px", fontWeight: 300, color: "var(--text-muted, #777)", textDecoration: "none" }}>YURI.BIZ</a>
         </div>
       </div>
       {manualOpen && <Manual onClose={() => setManualOpen(false)} />}
