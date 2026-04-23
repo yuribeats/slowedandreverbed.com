@@ -91,8 +91,13 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
   const [stepMode, setStepMode] = useState(true);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
-  const [showEQ, setShowEQ] = useState(true);
+  const [showEQ, setShowEQ] = useState(false);
   const [showKeyFinder, setShowKeyFinder] = useState(false);
+
+  // Open PARAMETERS automatically when the user loads a manual track (local file / YouTube URL)
+  useEffect(() => {
+    if (deck.sourceBuffer && deck.manualUpload) setShowEQ(true);
+  }, [deck.sourceBuffer, deck.manualUpload]);
 
   const rate = 1.0 + deck.params.speed;
   const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
@@ -1100,7 +1105,6 @@ function SaveLoadModal({ onClose }: { onClose: () => void }) {
 
 function HomeInner() {
   const crossfader = useRemixStore((s) => s.crossfader);
-  const setCrossfader = useRemixStore((s) => s.setCrossfader);
   const syncPlay = useRemixStore((s) => s.syncPlay);
   const stopDeck = useRemixStore((s) => s.stop);
   const setParam = useRemixStore((s) => s.setParam);
@@ -1146,7 +1150,7 @@ function HomeInner() {
   const [saveStatus, setSaveStatus] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(true);
-  const [showMasterEQ, setShowMasterEQ] = useState(true);
+  const [showMasterEQ, setShowMasterEQ] = useState(false);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
   const restoreSession = useRemixStore((s) => s.restoreSession);
@@ -1421,37 +1425,6 @@ function HomeInner() {
             </div>
           </div>
 
-          {/* Crossfader — only when deck B visible */}
-          {showDeckB && (
-            <div className="zone-inset boot-stagger boot-delay-3">
-              <div className="flex items-center gap-4">
-                <span className="label" style={{ margin: 0, fontSize: "12px", minWidth: "20px" }}>A</span>
-                <div className="flex-1 relative h-[40px] flex items-center">
-                  <div
-                    className="absolute inset-y-[14px] left-0 right-0"
-                    style={{
-                      background: "linear-gradient(to right, #0a0a0a, #1a1a1a 30%, #1a1a1a 70%, #0a0a0a)",
-                      borderRadius: "5px",
-                      boxShadow: "inset 2px 2px 6px rgba(0,0,0,0.9), inset -1px -1px 3px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.3), 0 0 0 2px rgba(255,255,255,0.05)",
-                    }}
-                  />
-                  <input
-                    type="range"
-                    min="-1"
-                    max="1"
-                    step="0.01"
-                    value={crossfader}
-                    onChange={(e) => setCrossfader(parseFloat(e.target.value))}
-                    className="w-full relative z-10"
-                    style={{ WebkitAppearance: "none", appearance: "none", background: "transparent", height: "40px" }}
-                  />
-                </div>
-                <span className="label" style={{ margin: 0, fontSize: "12px", minWidth: "20px" }}>B</span>
-              </div>
-              <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>CROSSFADER</div>
-            </div>
-          )}
-
           {/* Recording complete — export options */}
           {pendingRecording && (
             <div className="zone-inset flex flex-col items-center gap-3 py-4">
@@ -1567,23 +1540,33 @@ function SceneRouter() {
   const deckAReady = !!deckA.sourceBuffer && (deckA.baseKey !== null || deckA.calculatedBPM !== null);
   const deckBReady = !!deckB.sourceBuffer;
 
-  const targetPath = hasUrlParams || (deckAReady && deckBReady)
-    ? "/mix"
-    : deckAReady
-    ? "/match"
-    : "/";
-
+  // Forward-only auto-nav. Never route backward on its own — loading deck B briefly
+  // flips state and would otherwise bounce the user to /.
   useEffect(() => {
-    if (pathname !== targetPath) {
+    if (hasUrlParams && pathname !== "/mix") {
       const query = typeof window !== "undefined" ? window.location.search : "";
-      router.replace(targetPath + (targetPath === "/mix" ? query : ""));
+      router.replace("/mix" + query);
+      return;
     }
-  }, [pathname, targetPath, router]);
+    if (deckAReady && deckBReady && pathname !== "/mix") {
+      router.replace("/mix");
+      return;
+    }
+    if (deckAReady && pathname === "/") {
+      router.replace("/match");
+    }
+  }, [hasUrlParams, deckAReady, deckBReady, pathname, router]);
 
-  if (pathname !== targetPath) return null;
-
-  if (targetPath === "/mix") return <HomeInner />;
-  if (targetPath === "/match") return <SceneMatchBrowser />;
+  // Render what the URL says. Fallback to landing if prerequisite state is missing.
+  if (pathname === "/mix") {
+    if (hasUrlParams || (deckAReady && deckBReady)) return <HomeInner />;
+    if (deckAReady) return <SceneMatchBrowser />;
+    return <SceneLanding />;
+  }
+  if (pathname === "/match") {
+    if (deckAReady) return <SceneMatchBrowser />;
+    return <SceneLanding />;
+  }
   return <SceneLanding />;
 }
 
