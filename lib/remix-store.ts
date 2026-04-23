@@ -100,6 +100,7 @@ interface DeckNodes {
   analyser: AnalyserNode;
   fadeGain: GainNode;
   deckGain: GainNode;
+  wallEndTime?: number;
 }
 
 function disconnectDeckNodes(nodes: DeckNodes) {
@@ -651,11 +652,30 @@ function buildDeckGraph(
     source.start(0, safeOffset);
   }
 
+  const wallEndTime = duration && duration > 0 && !loopRegion
+    ? ctx.currentTime + duration / expanded.rate
+    : undefined;
+
   return {
     source, pitchShifter, lowShelf, peaking, highShelf, bump,
     waveshaper, satFilter,
     convolver, dryGain, wetGain, analyser, fadeGain, deckGain,
+    wallEndTime,
   };
+}
+
+/* ─── Cross-deck fade: when one deck ends, fade the other so the mix goes silent together ─── */
+function scheduleCrossDeckFade(ctx: AudioContext, a: DeckNodes | null, b: DeckNodes | null) {
+  if (!a || !b || a.wallEndTime === undefined || b.wallEndTime === undefined) return;
+  const FADE_SECS = 5;
+  const earlier = a.wallEndTime <= b.wallEndTime ? a : b;
+  const later = earlier === a ? b : a;
+  const earlierEnd = earlier.wallEndTime!;
+  const fadeStart = Math.max(ctx.currentTime + 0.01, earlierEnd - FADE_SECS);
+  later.fadeGain.gain.cancelScheduledValues(ctx.currentTime);
+  later.fadeGain.gain.setValueAtTime(later.fadeGain.gain.value, ctx.currentTime);
+  later.fadeGain.gain.setValueAtTime(1.0, fadeStart);
+  later.fadeGain.gain.linearRampToValueAtTime(0, earlierEnd);
 }
 
 /* ─── Helper to get/set deck state ─── */
@@ -1471,6 +1491,13 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         startedAt: ctx.currentTime - (playOffset - rStart) / expandParams(freshDeck.params).rate,
       },
     }));
+
+    // Schedule the "other" deck to fade out when whichever deck ends first, so the mix ends together
+    const otherId: DeckId = id === "A" ? "B" : "A";
+    const otherDeck = getDeck(get(), otherId);
+    if (otherDeck.isPlaying && otherDeck.nodes) {
+      scheduleCrossDeckFade(ctx, nodes, otherDeck.nodes);
+    }
   },
 
   stop: (id) => {
