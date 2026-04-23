@@ -1199,7 +1199,7 @@ function HomeInner() {
   const [saveStatus, setSaveStatus] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(true);
-  const [showMasterEQ, setShowMasterEQ] = useState(false);
+  const [showMasterEQ, setShowMasterEQ] = useState(true);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
   const restoreSession = useRemixStore((s) => s.restoreSession);
