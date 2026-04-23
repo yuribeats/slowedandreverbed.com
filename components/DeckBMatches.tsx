@@ -28,7 +28,7 @@ export default function DeckBMatches() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [sortMode] = useState<SortMode>("popularity");
   const [bpmWindow, setBpmWindow] = useState(10);
-  const [semitoneWindow, setSemitoneWindow] = useState(3);
+  const [semitoneWindow, setSemitoneWindow] = useState(0);
   const [deckBLoading, setDeckBLoading] = useState(false);
   const [deckBError, setDeckBError] = useState("");
   const [manualArtist, setManualArtist] = useState("");
@@ -325,7 +325,7 @@ export default function DeckBMatches() {
             <input
               type="number"
               value={semitoneWindow}
-              onChange={(e) => setSemitoneWindow(Math.max(1, Math.min(12, parseInt(e.target.value) || 3)))}
+              onChange={(e) => setSemitoneWindow(Math.max(0, Math.min(12, parseInt(e.target.value) || 0)))}
               onBlur={handleRefetch}
               onKeyDown={(e) => e.key === "Enter" && handleRefetch()}
               className="tactical-input w-[50px] text-center"
@@ -357,7 +357,12 @@ export default function DeckBMatches() {
             />
           </div>
           <button
-            onClick={() => { setPitchMatch(!pitchMatch); setTimeout(handleRefetch, 0); }}
+            onClick={() => {
+              const next = !pitchMatch;
+              setPitchMatch(next);
+              if (next && semitoneWindow === 0) setSemitoneWindow(3);
+              setTimeout(handleRefetch, 0);
+            }}
             className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border"
             style={{
               fontFamily: "var(--font-tech)",
