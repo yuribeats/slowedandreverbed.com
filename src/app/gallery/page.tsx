@@ -1003,7 +1003,9 @@ function GalleryContent() {
                       {/* Tweet (web intent — no API needed) */}
                       <button
                         onClick={() => {
-                          const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent("automash.xyz")}&url=${encodeURIComponent(item.url)}`;
+                          // X's intent endpoint ignores url= on some paths; fold everything into text= instead.
+                          const body = `${item.url}\n\nautomash.xyz`;
+                          const intent = `https://x.com/intent/post?text=${encodeURIComponent(body)}`;
                           window.open(intent, "_blank", "noopener,noreferrer");
                         }}
                         className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
