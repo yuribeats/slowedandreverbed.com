@@ -15,6 +15,7 @@ interface Props {
 
 const STEPS = [
   "PREPARING AUDIO...",
+  "UPLOADING AUDIO...",
   "GENERATING VIDEO...",
   "DOWNLOADING...",
   "DONE",
@@ -65,10 +66,24 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
         generateCover(artistUpper, titleUpper, customImage || undefined),
       ]);
 
-      // Step 1: Generate video (audio goes directly in the request — no Pinata round-trip)
+      // Step 1: upload MP3 directly to Pinata via a signed URL. Sidesteps Vercel's
+      // 4.5MB serverless body limit — full songs routinely exceed that inline.
       setStep(1);
+      const urlRes = await fetch("/api/pinata-upload-url", { method: "POST" });
+      if (!urlRes.ok) throw new Error("FAILED TO GET UPLOAD URL");
+      const { url: uploadUrl } = await urlRes.json();
+      const uploadForm = new FormData();
+      uploadForm.append("file", mp3Blob, "audio.mp3");
+      const uploadRes = await fetch(uploadUrl, { method: "POST", body: uploadForm });
+      if (!uploadRes.ok) throw new Error("AUDIO UPLOAD FAILED");
+      const uploadData = await uploadRes.json();
+      const audioCid = uploadData.data?.cid || uploadData.cid;
+      if (!audioCid) throw new Error("UPLOAD RETURNED NO CID");
+
+      // Step 2: Generate video — pass CID instead of audio bytes
+      setStep(2);
       const formData = new FormData();
-      formData.append("audio", mp3Blob, "audio.mp3");
+      formData.append("audioCid", audioCid);
       formData.append("image", coverBlob, "cover.png");
       formData.append("artist", artistUpper);
       formData.append("title", titleUpper);
@@ -89,8 +104,8 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
         throw new Error(msg.substring(0, 200) || `SERVER ${res.status}`);
       }
 
-      // Step 2: save the video bytes returned in the response
-      setStep(2);
+      // Step 3: save the video bytes returned in the response
+      setStep(3);
       const videoBlob = await res.blob();
       const url = URL.createObjectURL(videoBlob);
       const a = document.createElement("a");
@@ -101,8 +116,8 @@ export default function ExportVideoModalRemix({ audioBlob, defaultFilename, init
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
 
-      // Step 3: Done
-      setStep(3);
+      // Step 4: Done
+      setStep(4);
       setTimeout(() => onClose(), 1500);
     } catch (e) {
       console.error("[EXPORT] Error:", e);
