@@ -1416,7 +1416,9 @@ function HomeInner() {
                     <span data-tooltip-right="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL" className="ml-3 text-[10px]">?</span>
                   </a>
                   <a
-                    href="/gallery"
+                    href="https://automash.xyz/gallery"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
                     className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent" }}
