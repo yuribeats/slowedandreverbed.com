@@ -490,7 +490,6 @@ export default function DeckBMatches() {
             color: selectedIdx !== null ? "var(--crt-bright)" : "var(--panel-light)",
             textShadow: selectedIdx !== null ? "0 0 6px var(--crt-bright), 0 0 14px var(--crt-dim)" : "none",
             opacity: selectedIdx === null || deckBLoading ? 0.55 : 1,
-            animation: selectedIdx !== null && !deckBLoading ? "pulse 1.2s ease-in-out infinite" : "none",
           }}
         >
           {deckBLoading ? "LOADING..." : "LOAD → DECK B"}
