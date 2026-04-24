@@ -985,7 +985,7 @@ function Manual({ onClose }: { onClose: () => void }) {
           <div>
             <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>MENU</div>
             <div className="mb-1">THE GREEN/BLACK CRT MENU IN THE UPPER RIGHT OPENS SAVE SESSION, LOAD SESSION, MANUAL, EXPORT MP4, SHARE SESSION, YOUTUBE, AND GALLERY. EACH OPTION SHARES THE SAME STYLE AS THE DECK READOUTS.</div>
-            <div>GALLERY HOSTS ALL EXPORTS. HIT RADIO IN THE GALLERY TO OPEN THE SLOWED + REVERBED RADIO — AN IPOD-STYLE PLAYER THAT SHUFFLES YOUR EXPORTS AND SUPPORTS IOS LOCK-SCREEN PLAYBACK.</div>
+            <div>GALLERY HOSTS ALL EXPORTS. HIT RADIO IN THE GALLERY TO OPEN THE AUTOMASH RADIO — AN IPOD-STYLE PLAYER THAT SHUFFLES YOUR EXPORTS AND SUPPORTS IOS LOCK-SCREEN PLAYBACK.</div>
           </div>
 
           <div>
@@ -1260,10 +1260,10 @@ function HomeInner() {
                       <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                     </button>
                   </div>
-                  <div className="flex flex-col items-center" data-tooltip="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL">
+                  <div className="flex flex-col items-center" data-tooltip="VISIT THE AUTOMASH.XYZ YOUTUBE CHANNEL">
                     <span className="label" style={labelStyle}>YOUTUBE</span>
                     <button
-                      onClick={() => { if (typeof window !== "undefined") window.open("https://www.youtube.com/@SLOWANDREVERBEDMACHINE", "_blank", "noopener,noreferrer"); }}
+                      onClick={() => { if (typeof window !== "undefined") window.open("https://www.youtube.com/@automashdotxyz", "_blank", "noopener,noreferrer"); }}
                       className="rocker-switch"
                       style={rockerStyle}
                     >

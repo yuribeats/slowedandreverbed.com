@@ -665,7 +665,7 @@ function GalleryContent() {
           {adminMenuOpen && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <a
-                href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE/"
+                href="https://www.youtube.com/@automashdotxyz/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[11px] uppercase tracking-[0.15em] px-3 py-2 border-2 border-black text-center"
