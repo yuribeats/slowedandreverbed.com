@@ -1131,7 +1131,6 @@ function HomeInner() {
 
 
   const [loadModalOpen, setLoadModalOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(true);
   const [showMasterEQ, setShowMasterEQ] = useState(false);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
@@ -1168,46 +1167,102 @@ function HomeInner() {
               const bothStems = !!deckA.stemBuffers && !!deckB.stemBuffers;
               const anyPlaying = deckA.isPlaying || deckB.isPlaying;
               const armed = bothLoaded && bothDownbeat && bothStems && !anyPlaying;
-              if (!showDeckB) return null;
+              const rockerStyle = { width: "70px", height: "42px", alignItems: "center", paddingBottom: 0 } as const;
+              const labelStyle = { margin: 0, fontSize: "12px", marginBottom: "4px" } as const;
               return (
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 sm:gap-5">
-                  <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
-                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-3 sm:gap-4">
+                  {showDeckB && (
+                    <>
+                      <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
+                        <span className="label" style={labelStyle}>SYNC START</span>
+                        <button
+                          onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
+                          disabled={!bothLoaded}
+                          className="rocker-switch"
+                          style={rockerStyle}
+                        >
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{
+                              border: armed ? "none" : "2px solid #555",
+                              background: armed ? "var(--led-red-on, #c82828)" : undefined,
+                              boxShadow: armed ? "0 0 10px 2px var(--led-red-on, #c82828)" : undefined,
+                              transition: "box-shadow 120ms ease-out, background 120ms ease-out",
+                            }}
+                          />
+                        </button>
+                      </div>
+                      <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
+                        <span className="label" style={labelStyle}>SYNC STOP</span>
+                        <button
+                          onClick={() => { stopDeck("A"); stopDeck("B"); }}
+                          disabled={!bothLoaded}
+                          className="rocker-switch"
+                          style={rockerStyle}
+                        >
+                          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                        </button>
+                      </div>
+                      <div className="flex flex-col items-center" data-tooltip="DOWNLOADS THE FULL MIX (BOTH DECKS) AS MP3.">
+                        <span className="label" style={labelStyle}>{isConvertingMp3 ? "WAIT" : "MP3"}</span>
+                        <button
+                          onClick={() => { downloadMixMP3(); }}
+                          disabled={!bothLoaded || isConvertingMp3}
+                          className="rocker-switch"
+                          style={rockerStyle}
+                        >
+                          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex flex-col items-center" data-tooltip="RELOAD THE APP FROM SCRATCH">
+                    <span className="label" style={labelStyle}>RESTART</span>
                     <button
-                      onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
-                      disabled={!bothLoaded}
+                      onClick={() => { if (typeof window !== "undefined") window.location.reload(); }}
                       className="rocker-switch"
-                      style={{ width: "70px", height: "42px", alignItems: "center", paddingBottom: 0 }}
-                    >
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{
-                          border: armed ? "none" : "2px solid #555",
-                          background: armed ? "var(--led-red-on, #c82828)" : undefined,
-                          boxShadow: armed ? "0 0 10px 2px var(--led-red-on, #c82828)" : undefined,
-                          transition: "box-shadow 120ms ease-out, background 120ms ease-out",
-                        }}
-                      />
-                    </button>
-                  </div>
-                  <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
-                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC STOP</span>
-                    <button
-                      onClick={() => { stopDeck("A"); stopDeck("B"); }}
-                      disabled={!bothLoaded}
-                      className="rocker-switch"
-                      style={{ width: "70px", height: "42px", alignItems: "center", paddingBottom: 0 }}
+                      style={rockerStyle}
                     >
                       <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                     </button>
                   </div>
-                  <div className="flex flex-col items-center" data-tooltip="DOWNLOADS THE FULL MIX (BOTH DECKS) AS MP3.">
-                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>{isConvertingMp3 ? "WAIT" : "MP3"}</span>
+                  <div className="flex flex-col items-center" data-tooltip="VIEW THE FULL USER MANUAL">
+                    <span className="label" style={labelStyle}>MANUAL</span>
                     <button
-                      onClick={() => { downloadMixMP3(); }}
-                      disabled={!bothLoaded || isConvertingMp3}
+                      onClick={() => setManualOpen(true)}
                       className="rocker-switch"
-                      style={{ width: "70px", height: "42px", alignItems: "center", paddingBottom: 0 }}
+                      style={rockerStyle}
+                    >
+                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center" data-tooltip="RENDER YOUR MIX AS A VIDEO FILE">
+                    <span className="label" style={labelStyle}>{isExporting ? "WAIT" : "MP4"}</span>
+                    <button
+                      onClick={() => exportMP4()}
+                      disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
+                      className="rocker-switch"
+                      style={rockerStyle}
+                    >
+                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center" data-tooltip="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL">
+                    <span className="label" style={labelStyle}>YOUTUBE</span>
+                    <button
+                      onClick={() => { if (typeof window !== "undefined") window.open("https://www.youtube.com/@SLOWANDREVERBEDMACHINE", "_blank", "noopener,noreferrer"); }}
+                      className="rocker-switch"
+                      style={rockerStyle}
+                    >
+                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center" data-tooltip="BROWSE EXPORTED MIXES">
+                    <span className="label" style={labelStyle}>GALLERY</span>
+                    <button
+                      onClick={() => { if (typeof window !== "undefined") window.location.href = "/gallery"; }}
+                      className="rocker-switch"
+                      style={rockerStyle}
                     >
                       <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                     </button>
@@ -1215,101 +1270,6 @@ function HomeInner() {
                 </div>
               );
             })()}
-            <div className="ml-auto flex items-center gap-2 relative" style={{ zIndex: 100 }}>
-              <a
-                href="/gallery"
-                className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
-                style={{
-                  fontFamily: "var(--font-tech)",
-                  fontWeight: 700,
-                  color: "var(--panel-light)",
-                  background: "var(--control-base)",
-                  borderColor: "#1a1a1a",
-                  borderRadius: "4px",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
-                  textDecoration: "none",
-                }}
-              >
-                GALLERY
-              </a>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
-                style={{
-                  fontFamily: "var(--font-tech)",
-                  fontWeight: 700,
-                  color: menuOpen ? "var(--crt-bright)" : "var(--panel-light)",
-                  textShadow: menuOpen ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none",
-                  background: "var(--control-base)",
-                  borderColor: "#1a1a1a",
-                  borderRadius: "4px",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
-                }}
-              >
-                MENU
-              </button>
-              {menuOpen && (
-                <div
-                  className="absolute right-0 top-full mt-1 border-2 flex flex-col overflow-hidden"
-                  style={{
-                    minWidth: "220px",
-                    zIndex: 100,
-                    backgroundColor: "var(--control-base)",
-                    borderColor: "#1a1a1a",
-                    borderRadius: "4px",
-                    boxShadow: "0 6px 12px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <button
-                    onClick={() => { if (typeof window !== "undefined") window.location.reload(); }}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
-                  >
-                    RESTART
-                    <span data-tooltip-right="RELOAD THE APP FROM SCRATCH" className="ml-3 text-[10px]">?</span>
-                  </button>
-                  <button
-                    onClick={() => { setManualOpen(true); setMenuOpen(false); }}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
-                  >
-                    MANUAL
-                    <span data-tooltip-right="VIEW THE FULL USER MANUAL" className="ml-3 text-[10px]">?</span>
-                  </button>
-                  <button
-                    onClick={() => { exportMP4(); setMenuOpen(false); }}
-                    disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: isExporting ? "var(--crt-bright)" : "var(--panel-light)", textShadow: isExporting ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none", background: "transparent", borderColor: "rgba(0,0,0,0.4)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
-                  >
-                    {isExporting ? "RENDERING..." : "EXPORT MP4"}
-                    <span data-tooltip-right="RENDER YOUR MIX AS A VIDEO FILE" className="ml-3 text-[10px]">?</span>
-                  </button>
-                  <a
-                    href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMenuOpen(false)}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
-                  >
-                    YOUTUBE
-                    <span data-tooltip-right="VISIT THE SLOWED+REVERBED YOUTUBE CHANNEL" className="ml-3 text-[10px]">?</span>
-                  </a>
-                  <a
-                    href="https://automash.xyz/gallery"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMenuOpen(false)}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent" }}
-                  >
-                    GALLERY
-                    <span data-tooltip-right="BROWSE EXPORTED MIXES" className="ml-3 text-[10px]">?</span>
-                  </a>
-                </div>
-              )}
-            </div>
           </div>
 
 
