@@ -38,23 +38,27 @@ export async function GET(req: NextRequest) {
     }
     const uriResults = await Promise.all(uriPromises);
 
-    // Fetch metadata names from Arweave
-    const namePromises = uriResults.map(async (hex) => {
+    // Fetch metadata names from Arweave, paired with their tokenId (1-based)
+    const itemPromises = uriResults.map(async (hex, idx) => {
       const uri = decodeString(hex);
-      if (!uri.startsWith("ar://")) return "";
+      if (!uri.startsWith("ar://")) return null;
       const arId = uri.slice(5);
       try {
         const res = await fetch(`https://api.inprocess.world/api/arweave/${arId}`);
-        if (!res.ok) return "";
+        if (!res.ok) return null;
         const meta = await res.json();
-        return (meta.name as string) ?? "";
+        const name = (meta.name as string) ?? "";
+        if (!name) return null;
+        return { tokenId: idx + 1, name };
       } catch {
-        return "";
+        return null;
       }
     });
-    const names = (await Promise.all(namePromises)).filter(Boolean);
+    const items = (await Promise.all(itemPromises)).filter((x): x is { tokenId: number; name: string } => !!x);
+    // Keep `names` for back-compat with any cached client that reads it.
+    const names = items.map((i) => i.name);
 
-    return NextResponse.json({ names }, { headers: { "Cache-Control": "public, max-age=300" } });
+    return NextResponse.json({ items, names }, { headers: { "Cache-Control": "public, max-age=300" } });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Failed" }, { status: 500 });
   }

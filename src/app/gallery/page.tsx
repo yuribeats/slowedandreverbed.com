@@ -190,18 +190,28 @@ function GalleryContent() {
   // If a request later 401s we clear the session and re-prompt. 365 days covers the realistic upper bound.
   const SESSION_TTL = 365 * 24 * 60 * 60 * 1000;
 
-  const syncOnChainMints = useCallback(async (): Promise<Set<string>> => {
+  // Returns lowercased-name → tokenId so callers that need to fire a side-effect
+  // against a specific token (e.g. airdrop after on-chain recovery) can look it up.
+  const syncOnChainMints = useCallback(async (): Promise<Map<string, number>> => {
     try {
       const res = await fetch("/api/inprocess/minted-items?collection=0x60fc593f063e1be321d305889d2c4119a0cabaa6");
       const data = await res.json();
-      const mintedNames = new Set<string>((data.names ?? []).map((n: string) => n.toLowerCase().trim()));
+      const rawItems = (data.items as { tokenId: number; name: string }[] | undefined) ?? [];
+      const mintedByName = new Map<string, number>();
+      for (const it of rawItems) {
+        mintedByName.set(it.name.toLowerCase().trim(), it.tokenId);
+      }
+      // Back-compat: older cached responses only had `names`.
+      if (rawItems.length === 0 && Array.isArray(data.names)) {
+        for (const n of data.names as string[]) mintedByName.set(n.toLowerCase().trim(), -1);
+      }
       setIpMintResult((prev) => {
         const next = { ...prev };
         let changed = false;
         items.forEach((item) => {
           const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
           const current = next[item.id];
-          if (mintedNames.has(combined)) {
+          if (mintedByName.has(combined)) {
             if (current !== "MINTED") { next[item.id] = "MINTED"; changed = true; }
           } else if (current && (/setupnewtoken|userophash|verifying/i.test(current))) {
             // Stuck parse-error string or "VERIFYING ON-CHAIN" from a previous run —
@@ -213,9 +223,9 @@ function GalleryContent() {
         if (changed) localStorage.setItem("automash_mints", JSON.stringify(next));
         return changed ? next : prev;
       });
-      return mintedNames;
+      return mintedByName;
     } catch {
-      return new Set();
+      return new Map();
     }
   }, [items]);
 
@@ -446,12 +456,29 @@ function GalleryContent() {
         setIpMintState((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
         setIpMintResult((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
         const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
-        let mintedNames = await syncOnChainMints();
-        if (!mintedNames.has(combined)) {
+        let mintedByName = await syncOnChainMints();
+        if (!mintedByName.has(combined)) {
           await new Promise((r) => setTimeout(r, 8000));
-          mintedNames = await syncOnChainMints();
+          mintedByName = await syncOnChainMints();
         }
-        if (mintedNames.has(combined)) {
+        if (mintedByName.has(combined)) {
+          // Airdrop to cxy.eth — same recipient as the happy path, which the
+          // recovery path was previously skipping because tokenId was unknown.
+          const tokenId = mintedByName.get(combined);
+          if (tokenId && tokenId > 0 && ipSelectedCollection && ipSession) {
+            setIpMintState((p) => ({ ...p, [id]: "AIRDROPPING" }));
+            await fetch("/api/inprocess/airdrop", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                collectionAddress: ipSelectedCollection.address,
+                tokenId,
+                recipients: ["0x7b753919b953b1021a33f55671716dc13c1eae08"],
+                account: ipSession.wallet,
+                apiKey: ipSession.token,
+              }),
+            }).catch(() => {});
+          }
           setIpMintState((p) => ({ ...p, [id]: "done" }));
           setIpMintResult((p) => {
             const next = { ...p, [id]: "MINTED" };
