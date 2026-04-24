@@ -474,8 +474,8 @@ export const useStore = create<AppStore>((set, get) => ({
       const normalized = normalizeBuffer(buf);
       const blob = encodeWAV(normalized);
       const filename = sourceFilename
-        ? `${sourceFilename}-driftwave.wav`
-        : "driftwave-output.wav";
+        ? `${sourceFilename}.wav`
+        : "automash-output.wav";
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

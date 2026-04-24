@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const id = Math.random().toString(36).substring(2, 10);
 
     const upload = await pinata.upload.public.file(file)
-      .name(filename || `driftwave-${id}`)
+      .name(filename || `automash-${id}`)
       .keyvalues({
         type: "driftwave-download",
         downloadId: id,

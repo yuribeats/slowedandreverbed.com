@@ -928,7 +928,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const url = URL.createObjectURL(wavBlob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = "driftwave-recording.wav";
+      anchor.download = "automash-recording.wav";
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
@@ -973,7 +973,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       const url = URL.createObjectURL(mp3Blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = "DRIFTWAVE-MIX.mp3";
+      anchor.download = "AUTOMASH-MIX.mp3";
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
