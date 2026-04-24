@@ -1170,7 +1170,7 @@ function HomeInner() {
               style={{
                 fontFamily: '"Arial Black", Arial, sans-serif',
                 fontWeight: 900,
-                fontSize: "18px",
+                fontSize: "32px",
                 color: "var(--text-dark)",
                 letterSpacing: "-2px",
                 lineHeight: 1,
@@ -1179,8 +1179,15 @@ function HomeInner() {
               {"))<>(("}
             </span>
             <span
-              className="text-lg sm:text-xl tracking-[2px] uppercase"
-              style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
+              className="uppercase"
+              style={{
+                color: "var(--text-dark)",
+                fontFamily: "var(--font-tech)",
+                fontWeight: 700,
+                fontSize: "28px",
+                letterSpacing: "2px",
+                textShadow: "0 1px 0 rgba(255,255,255,0.12)",
+              }}
             >
               AUTO MASH
             </span>
@@ -1398,7 +1405,7 @@ function SceneMatchBrowser() {
               style={{
                 fontFamily: '"Arial Black", Arial, sans-serif',
                 fontWeight: 900,
-                fontSize: "18px",
+                fontSize: "32px",
                 color: "var(--text-dark)",
                 letterSpacing: "-2px",
                 lineHeight: 1,
@@ -1406,7 +1413,17 @@ function SceneMatchBrowser() {
             >
               {"))<>(("}
             </span>
-            <span className="text-lg sm:text-xl tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}>
+            <span
+              className="uppercase"
+              style={{
+                color: "var(--text-dark)",
+                fontFamily: "var(--font-tech)",
+                fontWeight: 700,
+                fontSize: "28px",
+                letterSpacing: "2px",
+                textShadow: "0 1px 0 rgba(255,255,255,0.12)",
+              }}
+            >
               AUTO MASH
             </span>
           </div>
