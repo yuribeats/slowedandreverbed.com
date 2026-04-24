@@ -1165,9 +1165,19 @@ function HomeInner() {
         <div className="console flex flex-col gap-5">
           {/* Header */}
           <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1 relative" style={{ zIndex: 100, minHeight: "80px" }}>
-            <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
-              <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
-            </div>
+            <span
+              aria-label="AUTOMASH mark"
+              style={{
+                fontFamily: '"Arial Black", Arial, sans-serif',
+                fontWeight: 900,
+                fontSize: "18px",
+                color: "var(--text-dark)",
+                letterSpacing: "-2px",
+                lineHeight: 1,
+              }}
+            >
+              {"))<>(("}
+            </span>
             <span
               className="text-lg sm:text-xl tracking-[2px] uppercase"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
@@ -1383,9 +1393,19 @@ function SceneMatchBrowser() {
       <div className="w-full max-w-[1100px] flex flex-col gap-5">
         <div className="console flex flex-col gap-5">
           <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1">
-            <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
-              <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
-            </div>
+            <span
+              aria-label="AUTOMASH mark"
+              style={{
+                fontFamily: '"Arial Black", Arial, sans-serif',
+                fontWeight: 900,
+                fontSize: "18px",
+                color: "var(--text-dark)",
+                letterSpacing: "-2px",
+                lineHeight: 1,
+              }}
+            >
+              {"))<>(("}
+            </span>
             <span className="text-lg sm:text-xl tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}>
               AUTO MASH
             </span>
