@@ -122,12 +122,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
 
   const [deckArtist, setDeckArtist] = useState("");
   const [deckTitle, setDeckTitle] = useState("");
-  const [deckLoading, setDeckLoading] = useState(false);
   const [deckLoadError, setDeckLoadError] = useState("");
 
   const handleDeckLoad = useCallback(async () => {
     if (!deckArtist && !deckTitle) return;
-    setDeckLoading(true);
     setDeckLoadError("");
     try {
       await loadDeck(id, deckArtist, deckTitle);
@@ -135,7 +133,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       setDeckLoadError(e instanceof Error ? e.message : "LOAD FAILED");
       setTimeout(() => setDeckLoadError(""), 4000);
     }
-    setDeckLoading(false);
   }, [loadDeck, id, deckArtist, deckTitle]);
 
   // Reset local input state when source changes (store already resets BPM/key at load start)
@@ -251,7 +248,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       </div>
 
-      {/* Per-deck artist + title + load */}
+      {/* Per-deck artist + title. Enter on either input triggers load. */}
       <div className="flex gap-2">
         <div className="flex-1 flex flex-col gap-0.5">
           <span className="text-[10px] tracking-[1px]" style={{ fontFamily: "var(--font-tech)", color: "#000" }}>ARTIST</span>
@@ -277,17 +274,12 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             style={{ fontFamily: "var(--font-tech)", color: "#000" }}
           />
         </div>
-        <div className="flex flex-col justify-end">
-          <button
-            onClick={handleDeckLoad}
-            disabled={deckLoading || (!deckArtist && !deckTitle)}
-            className={detailBtnClass(false)}
-            style={{ ...detailBtnStyle, opacity: (!deckArtist && !deckTitle) ? 0.3 : 1, color: deckLoadError ? "var(--led-red-on)" : "var(--accent-gold)" }}
-          >
-            {deckLoading ? "..." : deckLoadError || "LOAD"}
-          </button>
-        </div>
       </div>
+      {deckLoadError && (
+        <span className="text-[10px] tracking-[1px] uppercase" style={{ fontFamily: "var(--font-tech)", color: "var(--led-red-on)" }}>
+          {deckLoadError}
+        </span>
+      )}
 
       {/* CRT status */}
       <div className="display-bezel flex flex-col gap-2 p-3 min-w-0">

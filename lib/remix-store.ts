@@ -185,7 +185,6 @@ interface DeckState {
   sourceFile: File | null;
   sourceUrl: string | null;
   sourceCdnUrl: string | null;
-  sourceAudioBytes: ArrayBuffer | null;
   artist: string;
   title: string;
   baseKey: number | null;
@@ -232,7 +231,6 @@ const defaultDeck = (): DeckState => ({
   sourceFile: null,
   sourceUrl: null,
   sourceCdnUrl: null,
-  sourceAudioBytes: null,
   artist: "",
   title: "",
   baseKey: null,
@@ -1050,7 +1048,7 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   loadFile: async (id, file) => {
     const dk = deckKey(id);
     get().stop(id);
-    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceFile: file, sourceUrl: null, sourceAudioBytes: null, manualUpload: true } }));
+    set((s) => ({ [dk]: { ...s[dk], isLoading: true, pauseOffset: 0, calculatedBPM: null, activeStem: null, activeStems: [], mixedStemBuffer: null, stemBuffers: null, stemError: null, sourceFile: file, sourceUrl: null, manualUpload: true } }));
     try {
       const audioBuffer = await decodeFile(file);
       set((s) => ({
@@ -1084,7 +1082,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           sourceFile: null,
           sourceUrl: url,
           sourceCdnUrl: cdnUrl,
-          sourceAudioBytes: buffer,
           isLoading: false,
           regionStart: 0,
           regionEnd: 0,
