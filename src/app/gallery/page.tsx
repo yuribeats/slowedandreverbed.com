@@ -356,7 +356,7 @@ function GalleryContent() {
       // Step 2: Build + upload metadata to Arweave
       setIpMintState((p) => ({ ...p, [id]: "UPLOADING METADATA" }));
       const metadata = {
-        name: `${item.artist} - ${item.title}`,
+        name: `${item.artist} - ${item.title}`.toUpperCase(),
         description: "Made with automash.xyz",
         image: imageUri || mediaUri,
         animation_url: mediaUri,
