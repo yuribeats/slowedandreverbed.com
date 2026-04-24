@@ -76,15 +76,8 @@ export default function SceneLanding() {
           {/* Header */}
           <div className="flex items-center gap-4 px-3">
 <span
-              className="uppercase"
-              style={{
-                color: "var(--text-dark)",
-                fontFamily: "var(--font-tech)",
-                fontWeight: 700,
-                fontSize: "28px",
-                letterSpacing: "2px",
-                textShadow: "0 1px 0 rgba(255,255,255,0.12)",
-              }}
+              className="text-lg sm:text-xl tracking-[2px] uppercase"
+              style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
             >
               AUTO MASH
             </span>
