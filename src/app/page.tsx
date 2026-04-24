@@ -369,8 +369,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               </span>
             )}
             {deck.downbeatError && !deck.downbeatDetecting && (
-              <span style={{ color: "#e05050", fontSize: "9px" }} title={deck.downbeatError}>
-                DB ERR
+              <span style={{ color: "#e05050", fontSize: "9px", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={deck.downbeatError}>
+                DB ERR: {deck.downbeatError}
               </span>
             )}
           </div>
