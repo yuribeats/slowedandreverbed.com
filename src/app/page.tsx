@@ -212,16 +212,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
     <div className="flex flex-col gap-3">
       <input ref={inputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileSelect} />
 
-      {/* Deck header */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-0">
-          <span
-            className="text-sm tracking-[2px] uppercase"
-            style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
-          >
-            DECK {id}
-          </span>
-        </div>
+      {/* Deck header — HIDE toggle + LED only; DECK X label removed */}
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           {onHide && (
             <button
