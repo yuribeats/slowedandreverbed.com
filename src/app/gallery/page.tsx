@@ -185,6 +185,7 @@ function GalleryContent() {
     } catch { return {}; }
   });
   const [showInprocess, setShowInprocess] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const SESSION_KEY = "automash_inprocess_session";
   // Keep the session as long as possible on the client — the server token decides actual validity.
   // If a request later 401s we clear the session and re-prompt. 365 days covers the realistic upper bound.
@@ -659,6 +660,15 @@ function GalleryContent() {
               YOUTUBE
             </a>
             <div className="ml-auto flex gap-2">
+              {isAdmin && (
+                <button
+                  onClick={() => setAdminMenuOpen((v) => !v)}
+                  className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
+                  style={{ ...textStyle, fontSize: "10px", background: adminMenuOpen ? "#000" : "transparent", color: adminMenuOpen ? "#fff" : "#000" }}
+                >
+                  MENU
+                </button>
+              )}
               <Link
                 href="/"
                 className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
@@ -670,7 +680,7 @@ function GalleryContent() {
           </div>
 
           {/* inprocess.world minting (admin only) */}
-          {isAdmin && (
+          {isAdmin && adminMenuOpen && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>INPROCESS</span>
@@ -780,7 +790,7 @@ function GalleryContent() {
           )}
 
           {/* All Pinata Files (admin only) */}
-          {isAdmin && (
+          {isAdmin && adminMenuOpen && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>
@@ -861,7 +871,7 @@ function GalleryContent() {
           )}
 
           {/* Playlist Downloader (admin only) */}
-          {isAdmin && (
+          {isAdmin && adminMenuOpen && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>
                 PLAYLIST DOWNLOADER
