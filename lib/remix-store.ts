@@ -168,12 +168,6 @@ function findFirstLoudDownbeat(downbeatsMs: number[], buf: AudioBuffer): number 
   return best;
 }
 
-interface BankedLoop {
-  name: string;
-  start: number;
-  end: number;
-}
-
 interface AutomationPoint {
   time: number;   // seconds into source buffer
   value: number;  // 0–1 volume
@@ -207,15 +201,8 @@ interface DeckState {
   stemBuffers: Partial<Record<StemType, AudioBuffer>> | null;
   stemUrls: Partial<Record<string, string>> | null;
   isStemLoading: boolean;
-  loopBank: BankedLoop[];
   automationEnabled: boolean;
   automationPoints: AutomationPoint[];
-  gridlockEnabled: boolean;
-  gridSubdivide: boolean;       // when true, sectionDur = gridLockedSectionDur / 4 (beat-level)
-  showAllBeats: boolean;        // when true, draw every downbeat marker instead of every 4th
-  gridOffsetMs: number;
-  gridFirstTransient: number;
-  gridLockedSectionDur: number; // seconds — frozen at toggle-on
   firstDownbeatMs: number | null;
   downbeatGrid: number[] | null;  // detected downbeat positions in seconds
   downbeatDetecting: boolean;
@@ -253,15 +240,8 @@ const defaultDeck = (): DeckState => ({
   stemBuffers: null,
   stemUrls: null,
   isStemLoading: false,
-  loopBank: [],
   automationEnabled: false,
   automationPoints: [],
-  gridlockEnabled: false,
-  gridSubdivide: false,
-  showAllBeats: false,
-  gridOffsetMs: 0,
-  gridFirstTransient: 0,
-  gridLockedSectionDur: 0,
   firstDownbeatMs: null,
   downbeatGrid: null,
   downbeatDetecting: false,
@@ -326,7 +306,6 @@ interface RemixStore {
   crossfader: number;
   masterBus: MasterBusParams;
 
-  bpmLocked: boolean;
   isExporting: boolean;
   recordArmed: boolean;
   isRecording: boolean;
@@ -341,11 +320,6 @@ interface RemixStore {
   downloadDeckMP3: (deck: DeckId) => Promise<void>;
   exportRecordingMP4: () => void;
 
-  // Sequencer
-  sequencerOpen: boolean;
-  sequencerTracksA: number[];  // indices into deckA.loopBank
-  sequencerTracksB: number[];  // indices into deckB.loopBank
-  sequencerPlaying: boolean;
 
   loadFile: (deck: DeckId, file: File) => Promise<void>;
   loadFromYouTube: (deck: DeckId, url: string) => Promise<void>;
@@ -373,17 +347,6 @@ interface RemixStore {
   seek: (deck: DeckId, position: number) => Promise<void>;
   scrub: (deck: DeckId, position: number) => void;
   syncPlay: () => Promise<void>;
-  addLoopToBank: (deck: DeckId) => void;
-  removeFromBank: (deck: DeckId, index: number) => void;
-  setSequencerOpen: (open: boolean) => void;
-  addSequencerSlot: (deck: DeckId, bankIndex: number) => void;
-  removeSequencerSlot: (deck: DeckId, slotIndex: number) => void;
-  moveSequencerSlot: (deck: DeckId, fromIndex: number, toIndex: number) => void;
-  clearSequencerTrack: (deck: DeckId) => void;
-  playSequencer: () => Promise<void>;
-  stopSequencer: () => void;
-  lockBPM: () => void;
-  phaseSync: () => void;
   applyStylePreset: (style: BatchStyle) => void;
   renderToBlob: () => Promise<Blob | null>;
   download: () => Promise<void>;
@@ -396,11 +359,6 @@ interface RemixStore {
   addAutomationPoint: (deck: DeckId, time: number, value: number) => void;
   removeAutomationPoint: (deck: DeckId, index: number) => void;
   moveAutomationPoint: (deck: DeckId, index: number, time: number, value: number) => void;
-  toggleGridlock: (deck: DeckId) => void;
-  toggleGridSubdivide: (deck: DeckId) => void;
-  toggleShowAllBeats: (deck: DeckId) => void;
-  setGridOffset: (deck: DeckId, ms: number) => void;
-  lockGridSectionDur: (deck: DeckId) => void;
 }
 
 /* ─── Shared output bus: merger → EQ → compressor → makeup → limiter → destination ─── */
@@ -879,16 +837,12 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 const deckGeneration: Record<string, number> = { A: 0, B: 0 };
 
 /* ─── Store ─── */
-/* ─── Sequencer playback sources ─── */
-let seqSourcesA: AudioBufferSourceNode[] = [];
-let seqSourcesB: AudioBufferSourceNode[] = [];
 
 export const useRemixStore = create<RemixStore>((set, get) => ({
   deckA: defaultDeck(),
   deckB: defaultDeck(),
   crossfader: 0,
   masterBus: { ...defaultMasterBus },
-  bpmLocked: false,
   isExporting: false,
   recordArmed: false,
   isRecording: false,
@@ -1040,11 +994,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       set({ isConvertingMp3: false });
     }
   },
-  sequencerOpen: false,
-  sequencerTracksA: [],
-  sequencerTracksB: [],
-  sequencerPlaying: false,
-
   loadFile: async (id, file) => {
     const dk = deckKey(id);
     get().stop(id);
@@ -1633,40 +1582,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
       deck.nodes.satFilter.frequency.value = expanded.satTone;
     }
 
-    // BPM lock: Deck A speed/pitch changes propagate to Deck B
-    if (id === "A" && get().bpmLocked && (paramKey === "speed" || paramKey === "pitch")) {
-      const { deckA, deckB } = get();
-      if (deckA.sourceBuffer && deckB.sourceBuffer) {
-        const loopA = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
-        const loopB = (deckB.regionEnd > 0 ? deckB.regionEnd : deckB.sourceBuffer.duration) - deckB.regionStart;
-        if (loopA > 0 && loopB > 0) {
-          const rateA = 1.0 + deckA.params.speed;
-          const newRateB = (loopB / loopA) * rateA;
-          const newSpeedB = Math.max(-0.5, Math.min(0.5, newRateB - 1.0));
-
-          // Set B's speed to match A's BPM
-          const bKey = deckKey("B");
-          set((s) => ({
-            [bKey]: { ...s[bKey], params: { ...s[bKey].params, speed: newSpeedB } },
-          }));
-          const deckBFresh = getDeck(get(), "B");
-          if (deckBFresh.nodes) {
-            deckBFresh.nodes.source.playbackRate.value = 1.0 + newSpeedB;
-            if (deckBFresh.nodes.pitchShifter) {
-              const expB = expandParams(deckBFresh.params);
-              deckBFresh.nodes.pitchShifter.port.postMessage(JSON.stringify(["pitch", expB.pitchFactor / expB.rate]));
-            }
-          }
-
-          // If A changed pitch and B is linked, match pitch too
-          if (paramKey === "pitch" && (deckBFresh.params.pitchSpeedLinked ?? true)) {
-            set((s) => ({
-              [bKey]: { ...s[bKey], params: { ...s[bKey].params, pitch: 12 * Math.log2(1.0 + newSpeedB) } },
-            }));
-          }
-        }
-      }
-    }
   },
 
   setVolume: (id, volume) => {
@@ -1969,183 +1884,6 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     }
   },
 
-  addLoopToBank: (id) => {
-    const dk = deckKey(id);
-    const deck = getDeck(get(), id);
-    if (!deck.sourceBuffer) return;
-    const rEnd = deck.regionEnd > 0 ? deck.regionEnd : deck.sourceBuffer.duration;
-    if (deck.regionStart >= rEnd) return;
-    const name = `LOOP ${deck.loopBank.length + 1}`;
-    const loop: BankedLoop = { name, start: deck.regionStart, end: rEnd };
-    set((s) => ({
-      [dk]: { ...s[dk], loopBank: [...s[dk].loopBank, loop] },
-    }));
-  },
-
-  removeFromBank: (id, index) => {
-    const dk = deckKey(id);
-    set((s) => {
-      const bank = [...s[dk].loopBank];
-      bank.splice(index, 1);
-      return { [dk]: { ...s[dk], loopBank: bank } };
-    });
-    // Also remove any sequencer references to this index
-    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
-    set((s) => ({
-      [trackKey]: (s[trackKey] as number[]).filter((i) => i !== index).map((i) => i > index ? i - 1 : i),
-    }));
-  },
-
-  setSequencerOpen: (open) => set({ sequencerOpen: open }),
-
-  addSequencerSlot: (id, bankIndex) => {
-    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
-    set((s) => ({
-      [trackKey]: [...(s[trackKey] as number[]), bankIndex],
-    }));
-  },
-
-  removeSequencerSlot: (id, slotIndex) => {
-    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
-    set((s) => {
-      const track = [...(s[trackKey] as number[])];
-      track.splice(slotIndex, 1);
-      return { [trackKey]: track };
-    });
-  },
-
-  moveSequencerSlot: (id, fromIndex, toIndex) => {
-    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
-    set((s) => {
-      const track = [...(s[trackKey] as number[])];
-      if (fromIndex < 0 || fromIndex >= track.length || toIndex < 0 || toIndex >= track.length) return {};
-      const [item] = track.splice(fromIndex, 1);
-      track.splice(toIndex, 0, item);
-      return { [trackKey]: track };
-    });
-  },
-
-  clearSequencerTrack: (id) => {
-    const trackKey = id === "A" ? "sequencerTracksA" : "sequencerTracksB";
-    set({ [trackKey]: [] });
-  },
-
-  playSequencer: async () => {
-    get().stopSequencer();
-
-    const ctx = getAudioContext();
-    if (ctx.state === "suspended") await ctx.resume();
-
-    const { deckA, deckB, sequencerTracksA, sequencerTracksB } = get();
-    const cfGains = getCrossfaderGains(get().crossfader);
-
-    // Schedule all loops for a track
-    const scheduleDeck = (
-      deck: DeckState,
-      trackSlots: number[],
-      cfGain: number
-    ): AudioBufferSourceNode[] => {
-      if (!deck.sourceBuffer || trackSlots.length === 0) return [];
-      const buf = deck.mixedStemBuffer || (deck.activeStem && deck.stemBuffers?.[deck.activeStem]) || deck.sourceBuffer;
-      const expanded = expandParams(deck.params);
-      const sources: AudioBufferSourceNode[] = [];
-      let offset = 0;
-
-      for (const bankIdx of trackSlots) {
-        const loop = deck.loopBank[bankIdx];
-        if (!loop) continue;
-
-        const loopDur = loop.end - loop.start;
-        const playDur = loopDur / expanded.rate; // real-time duration at this rate
-
-        const nodes = buildDeckGraph(
-          ctx, buf, deck.params,
-          loop.start, loopDur,
-          deck.volume, cfGain,
-          () => {}
-        );
-        // Override the start time — schedule at precise offset from now
-        // buildDeckGraph already called source.start, so we stop and reschedule
-        try { nodes.source.stop(); } catch { /* ok */ }
-
-        // Create a fresh source for precise scheduling
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        src.playbackRate.value = expanded.rate;
-        src.connect(nodes.lowShelf);
-        src.start(ctx.currentTime + offset, loop.start, loopDur);
-        sources.push(src);
-
-        offset += playDur;
-      }
-      return sources;
-    };
-
-    seqSourcesA = scheduleDeck(deckA, sequencerTracksA, cfGains.a);
-    seqSourcesB = scheduleDeck(deckB, sequencerTracksB, cfGains.b);
-
-    set({ sequencerPlaying: true });
-
-    // Auto-stop when all sources finish
-    const allSources = [...seqSourcesA, ...seqSourcesB];
-    if (allSources.length > 0) {
-      const last = allSources[allSources.length - 1];
-      last.onended = () => {
-        set({ sequencerPlaying: false });
-      };
-    }
-  },
-
-  stopSequencer: () => {
-    for (const s of seqSourcesA) { try { s.stop(); } catch { /* ok */ } }
-    for (const s of seqSourcesB) { try { s.stop(); } catch { /* ok */ } }
-    seqSourcesA = [];
-    seqSourcesB = [];
-    set({ sequencerPlaying: false });
-  },
-
-  lockBPM: () => {
-    const { deckA, deckB, bpmLocked } = get();
-
-    // Toggle off
-    if (bpmLocked) {
-      set({ bpmLocked: false });
-      return;
-    }
-
-    if (!deckA.sourceBuffer || !deckB.sourceBuffer) return;
-
-    // Use raw loop lengths for perfect precision (avoid BPM rounding)
-    const loopA = (deckA.regionEnd > 0 ? deckA.regionEnd : deckA.sourceBuffer.duration) - deckA.regionStart;
-    const loopB = (deckB.regionEnd > 0 ? deckB.regionEnd : deckB.sourceBuffer.duration) - deckB.regionStart;
-    if (loopA <= 0 || loopB <= 0) return;
-
-    // Target: make real-time loop durations equal
-    // loopA / rateA = loopB / rateB  →  rateB = (loopB / loopA) * rateA
-    const rateA = 1.0 + deckA.params.speed;
-    const newRateB = (loopB / loopA) * rateA;
-    const newSpeed = Math.max(-0.5, Math.min(0.5, newRateB - 1.0));
-    get().setParam("B", "speed", newSpeed);
-    if (deckB.params.pitchSpeedLinked ?? true) {
-      get().setParam("B", "pitch", 12 * Math.log2(1.0 + newSpeed));
-    }
-
-    set({ bpmLocked: true });
-  },
-
-  phaseSync: () => {
-    // Snap each deck's IN point to its nearest bar boundary so both start on a downbeat
-    for (const id of ["A", "B"] as DeckId[]) {
-      const deck = getDeck(get(), id);
-      if (!deck.gridlockEnabled || !deck.gridLockedSectionDur || !deck.sourceBuffer) continue;
-      const anchor = deck.gridFirstTransient + deck.gridOffsetMs / 1000;
-      const barDur = deck.gridLockedSectionDur / 4;
-      const n = Math.round((deck.regionStart - anchor) / barDur);
-      const newStart = Math.max(0, Math.min(deck.sourceBuffer.duration - 0.1, anchor + n * barDur));
-      get().setRegion(id, newStart, deck.regionEnd);
-    }
-  },
-
   applyStylePreset: (style) => {
     const preset = BATCH_PRESETS[style];
     for (const [k, v] of Object.entries(preset)) {
@@ -2360,40 +2098,4 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     set({ [deckKey(id)]: { ...deck, automationPoints: points } });
   },
 
-  toggleGridlock: (id) => {
-    const dk = deckKey(id);
-    const deck = getDeck(get(), id);
-    if (deck.gridlockEnabled) {
-      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: false, gridOffsetMs: 0, gridFirstTransient: 0, gridLockedSectionDur: 0 } }));
-    } else {
-      const firstTransient = deck.firstDownbeatMs !== null ? deck.firstDownbeatMs / 1000 : 0;
-      // Lock section duration: 4 bars at current BPM, or 0 if no BPM yet
-      const currentRate = 1.0 + deck.params.speed;
-      const lockedDur = deck.calculatedBPM ? 960 / (deck.calculatedBPM * currentRate) : 0;
-      set((s) => ({ [dk]: { ...s[dk], gridlockEnabled: true, gridOffsetMs: 0, gridFirstTransient: firstTransient, gridLockedSectionDur: lockedDur } }));
-    }
-  },
-
-  toggleGridSubdivide: (id) => {
-    const dk = deckKey(id);
-    set((s) => ({ [dk]: { ...s[dk], gridSubdivide: !s[dk].gridSubdivide } }));
-  },
-  toggleShowAllBeats: (id) => {
-    const dk = deckKey(id);
-    set((s) => ({ [dk]: { ...s[dk], showAllBeats: !s[dk].showAllBeats } }));
-  },
-
-  setGridOffset: (id, ms) => {
-    const dk = deckKey(id);
-    set((s) => ({ [dk]: { ...s[dk], gridOffsetMs: ms } }));
-  },
-
-  lockGridSectionDur: (id) => {
-    const dk = deckKey(id);
-    const deck = getDeck(get(), id);
-    if (!deck.gridlockEnabled || deck.gridLockedSectionDur > 0 || !deck.calculatedBPM) return;
-    const currentRate = 1.0 + deck.params.speed;
-    const lockedDur = 960 / (deck.calculatedBPM * currentRate);
-    set((s) => ({ [dk]: { ...s[dk], gridLockedSectionDur: lockedDur } }));
-  },
 }));
