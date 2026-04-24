@@ -37,6 +37,7 @@ export default function DeckBMatches() {
   const [manualLoadError, setManualLoadError] = useState("");
   const [pitchMatch, setPitchMatch] = useState(false);
   const [manualLoadOpen, setManualLoadOpen] = useState(false);
+  const [filterQuery, setFilterQuery] = useState("");
   const fetchedRef = useRef(false);
   const exhaustTokenRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -375,6 +376,28 @@ export default function DeckBMatches() {
           </button>
         </div>
 
+        {/* Filter results (name / artist) */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] tracking-[1px] uppercase shrink-0" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>FILTER</span>
+          <input
+            type="text"
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            placeholder="ARTIST OR TITLE"
+            className="flex-1 bg-transparent border border-[#555] px-3 py-1 text-[11px] tracking-[1px] uppercase outline-none focus:border-[#888]"
+            style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)" }}
+          />
+          {filterQuery && (
+            <button
+              onClick={() => setFilterQuery("")}
+              className="text-[10px] tracking-[1px] uppercase px-2 py-1 border border-[#555]"
+              style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", background: "transparent" }}
+            >
+              CLEAR
+            </button>
+          )}
+        </div>
+
         {/* Track list — CRT styled */}
         <div
           className="display-bezel p-0 overflow-hidden"
@@ -400,36 +423,60 @@ export default function DeckBMatches() {
               <span className="text-[11px] uppercase tracking-[0.1em] w-[90px] text-right hidden sm:block" style={{ color: "var(--crt-dim)", opacity: 0.7 }}>MATCH</span>
             </div>
 
-            {loading && tracks.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <span className="text-[12px] tracking-[2px] uppercase crt-text" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}>
-                  SEARCHING MATCHES...
-                </span>
-              </div>
-            ) : tracks.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", opacity: 0.6 }}>
-                  NO MATCHES FOUND
-                </span>
-              </div>
-            ) : (
-              <>
-                {tracks.map((t, i) => (
-                  <MatchRow
-                    key={`${t.artist}-${t.title}-${i}`}
-                    track={t}
-                    sourceKey={sourceKey ?? ""}
-                    selected={selectedIdx === i}
-                    onClick={() => setSelectedIdx(i)}
-                  />
-                ))}
-                {exhausting && (
-                  <div className="py-2 text-center text-[11px] uppercase tracking-[1px]" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", opacity: 0.6 }}>
-                    LOADING MORE…
+            {(() => {
+              const q = filterQuery.trim().toLowerCase();
+              const filtered = q
+                ? tracks
+                    .map((t, i) => ({ t, i }))
+                    .filter(({ t }) => t.artist.toLowerCase().includes(q) || t.title.toLowerCase().includes(q))
+                : tracks.map((t, i) => ({ t, i }));
+
+              if (loading && tracks.length === 0) {
+                return (
+                  <div className="flex items-center justify-center py-8">
+                    <span className="text-[12px] tracking-[2px] uppercase crt-text" style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)" }}>
+                      SEARCHING MATCHES...
+                    </span>
                   </div>
-                )}
-              </>
-            )}
+                );
+              }
+              if (tracks.length === 0) {
+                return (
+                  <div className="flex items-center justify-center py-8">
+                    <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", opacity: 0.6 }}>
+                      NO MATCHES FOUND
+                    </span>
+                  </div>
+                );
+              }
+              if (filtered.length === 0) {
+                return (
+                  <div className="flex items-center justify-center py-8">
+                    <span className="text-[12px] tracking-[1px] uppercase" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", opacity: 0.6 }}>
+                      NO MATCHES FOR &quot;{filterQuery.toUpperCase()}&quot;
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <>
+                  {filtered.map(({ t, i }) => (
+                    <MatchRow
+                      key={`${t.artist}-${t.title}-${i}`}
+                      track={t}
+                      sourceKey={sourceKey ?? ""}
+                      selected={selectedIdx === i}
+                      onClick={() => setSelectedIdx(i)}
+                    />
+                  ))}
+                  {exhausting && (
+                    <div className="py-2 text-center text-[11px] uppercase tracking-[1px]" style={{ color: "var(--crt-dim)", fontFamily: "var(--font-crt)", opacity: 0.6 }}>
+                      LOADING MORE…
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
