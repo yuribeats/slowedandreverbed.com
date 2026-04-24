@@ -389,6 +389,7 @@ interface RemixStore {
   applyStylePreset: (style: BatchStyle) => void;
   renderToBlob: () => Promise<Blob | null>;
   download: () => Promise<void>;
+  downloadMixMP3: () => Promise<void>;
   exportMP4: () => Promise<void>;
   armRecord: () => void;
   stopRecording: () => void;
@@ -2195,6 +2196,55 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
+  },
+
+  downloadMixMP3: async () => {
+    const wavBlob = await renderMixToWAV(get);
+    if (!wavBlob) return;
+    set({ isConvertingMp3: true });
+    try {
+      const arrayBuf = await wavBlob.arrayBuffer();
+      const ctx = getAudioContext();
+      const decoded = await ctx.decodeAudioData(arrayBuf);
+      let peak = 0;
+      for (let c = 0; c < decoded.numberOfChannels; c++) {
+        const ch = decoded.getChannelData(c);
+        for (let i = 0; i < ch.length; i++) {
+          const abs = Math.abs(ch[i]);
+          if (abs > peak) peak = abs;
+        }
+      }
+      if (peak > 1) {
+        const scale = 0.99 / peak;
+        for (let c = 0; c < decoded.numberOfChannels; c++) {
+          const ch = decoded.getChannelData(c);
+          for (let i = 0; i < ch.length; i++) ch[i] *= scale;
+        }
+      }
+      const mp3Blob = encodeMP3(decoded, 192);
+
+      const { deckA, deckB } = get();
+      const hasA = !!deckA.sourceBuffer;
+      const hasB = !!deckB.sourceBuffer;
+      const nameA = deckA.sourceFilename || "deck-a";
+      const nameB = deckB.sourceFilename || "deck-b";
+      const filename = hasA && hasB
+        ? `${nameA}-x-${nameB}-remix.mp3`
+        : `${hasA ? nameA : nameB}-remix.mp3`;
+
+      const url = URL.createObjectURL(mp3Blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("MP3 mix conversion failed:", e);
+    } finally {
+      set({ isConvertingMp3: false });
+    }
   },
 
   exportMP4: async () => {

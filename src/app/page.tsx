@@ -1127,6 +1127,7 @@ function HomeInner() {
   const clearPendingRecording = useRemixStore((s) => s.clearPendingRecording);
   const downloadRecordingWAV = useRemixStore((s) => s.downloadRecordingWAV);
   const downloadRecordingMP3 = useRemixStore((s) => s.downloadRecordingMP3);
+  const downloadMixMP3 = useRemixStore((s) => s.downloadMixMP3);
   const exportRecordingMP4 = useRemixStore((s) => s.exportRecordingMP4);
   const isConvertingMp3 = useRemixStore((s) => s.isConvertingMp3);
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
@@ -1286,7 +1287,7 @@ function HomeInner() {
               const armed = bothLoaded && bothDownbeat && bothStems && !anyPlaying;
               if (!showDeckB) return null;
               return (
-                <div className="mx-auto flex items-center gap-8">
+                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-8">
                   <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
                     <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
                     <button
@@ -1311,6 +1312,17 @@ function HomeInner() {
                     <button
                       onClick={() => { stopDeck("A"); stopDeck("B"); }}
                       disabled={!bothLoaded}
+                      className="rocker-switch"
+                      style={{ width: "90px", height: "60px", alignItems: "center", paddingBottom: 0 }}
+                    >
+                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center" data-tooltip="DOWNLOADS THE FULL MIX (BOTH DECKS) AS MP3.">
+                    <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>{isConvertingMp3 ? "WAIT" : "MP3"}</span>
+                    <button
+                      onClick={() => { downloadMixMP3(); }}
+                      disabled={!bothLoaded || isConvertingMp3}
                       className="rocker-switch"
                       style={{ width: "90px", height: "60px", alignItems: "center", paddingBottom: 0 }}
                     >
