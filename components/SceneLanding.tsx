@@ -75,20 +75,7 @@ export default function SceneLanding() {
         <div className="console flex flex-col gap-5 boot-stagger boot-delay-1">
           {/* Header */}
           <div className="flex items-center gap-4 px-3">
-            <span
-              aria-label="AUTOMASH mark"
-              style={{
-                fontFamily: '"Arial Black", Arial, sans-serif',
-                fontWeight: 900,
-                fontSize: "32px",
-                color: "var(--text-dark)",
-                letterSpacing: "-2px",
-                lineHeight: 1,
-              }}
-            >
-              {"))<>(("}
-            </span>
-            <span
+<span
               className="uppercase"
               style={{
                 color: "var(--text-dark)",
