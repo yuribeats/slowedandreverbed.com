@@ -7,7 +7,11 @@ export function getAudioContext(): AudioContext {
     workletReady = false;
   }
   if (!ctx) {
-    ctx = new AudioContext();
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) throw new Error("Web Audio API not supported");
+    ctx = new Ctor();
     workletReady = false;
   }
   if (ctx.state === "suspended") {
