@@ -225,13 +225,38 @@ export default function WaveformDisplay({
     ctx.stroke();
 
     // Downbeat grid overlay — every 4th downbeat starting from the first (bar 1 of every 4).
+    // Modal's detector sometimes truncates the downbeat list well before the track ends;
+    // extrapolate past the last detected downbeat using the mean spacing so the grid
+    // covers the entire track length.
     if (showGrid && downbeatGrid && downbeatGrid.length > 0) {
       ctx.strokeStyle = "rgba(117, 204, 70, 0.55)";
       ctx.lineWidth = 1;
       ctx.shadowColor = "rgba(117, 204, 70, 0.6)";
       ctx.shadowBlur = 3;
-      for (let i = 0; i < downbeatGrid.length; i += 4) {
-        const t = downbeatGrid[i];
+
+      const gridTimes = [...downbeatGrid];
+      if (gridTimes.length >= 2 && duration > 0) {
+        // Mean of the last ~16 gaps — use local spacing, not whole-track average, so
+        // tempo drift late in the detection window doesn't poison extrapolation.
+        const gapCount = Math.min(16, gridTimes.length - 1);
+        let gapSum = 0;
+        for (let i = gridTimes.length - gapCount; i < gridTimes.length; i++) {
+          gapSum += gridTimes[i] - gridTimes[i - 1];
+        }
+        const meanGap = gapSum / gapCount;
+        if (meanGap > 0.05) {
+          let t = gridTimes[gridTimes.length - 1] + meanGap;
+          let guard = 0;
+          while (t < duration && guard < 2000) {
+            gridTimes.push(t);
+            t += meanGap;
+            guard++;
+          }
+        }
+      }
+
+      for (let i = 0; i < gridTimes.length; i += 4) {
+        const t = gridTimes[i];
         if (t < viewStart || t > viewEnd) continue;
         const gx = timeToX(t);
         ctx.beginPath();

@@ -887,118 +887,6 @@ function MasterBus() {
 }
 
 
-function Manual({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.85)" }}>
-      <div className="console w-full max-w-[700px] max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}>MANUAL</span>
-          <button onClick={onClose} className={detailBtnClass(false)} style={detailBtnStyle}>CLOSE</button>
-        </div>
-        <div className="flex flex-col gap-5 text-[12px] leading-[1.6]" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)" }}>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>LOADING TRACKS</div>
-            <div className="mb-1">DECK A: ENTER ARTIST AND TITLE, THEN HIT LOAD. THE TRACK IS FOUND ON YOUTUBE AND LOADED AUTOMATICALLY.</div>
-            <div className="mb-1">DECK B: PICK A KEY/BPM-COMPATIBLE MATCH FROM THE LIST BELOW, OR USE THE NEW YOUTUBE URL / LOCAL FILE BUTTONS AT THE TOP OF THE MATCH PANEL TO SKIP THE LIST ENTIRELY.</div>
-            <div>LOCAL: LOAD AN AUDIO FILE FROM YOUR DEVICE. YT URL: PASTE A SPECIFIC YOUTUBE URL TO LOAD DIRECTLY.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>TWO DECKS</div>
-            <div>DECK A AND DECK B ARE ALWAYS VISIBLE. EACH DECK HAS ITS OWN ARTIST/TITLE INPUTS, LOAD BUTTON, AND FULL INDEPENDENT EFFECTS CHAIN. SYNC CONTROLS SIT IN THEIR OWN BORDERED ZONE ABOVE THE DECKS; THE CROSSFADER AND MASTER BUS SIT BELOW.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>DECK ACTION ZONE</div>
-            <div className="mb-1">EACH DECK HAS AN INLINE ROW OF GREEN/BLACK CRT BUTTONS UNDER THE WAVEFORM — NO MORE POPUP MENU.</div>
-            <div className="mb-1">STEM CHECKBOXES: VOCALS / DRUMS / BASS / OTHER / INSTR. TOGGLE ONE OR MORE; FIRST USE TRIGGERS ML SEPARATION (DEMUCS, ~30S), AFTER THAT SWITCHING IS INSTANT.</div>
-            <div className="mb-1">SNAP TO DOWNBEAT: MOVES THE REGION START TO THE ML-DETECTED FIRST DOWNBEAT. IF NO DOWNBEAT IS KNOWN YET, THIS RUNS DETECTION FIRST.</div>
-            <div className="mb-1">KEY FINDER: OPENS A ONE-OCTAVE SINE PIANO FOR FINDING THE KEY BY EAR.</div>
-            <div>DOWNLOAD MP3: RENDERS THE DECK THROUGH THE FULL EFFECTS CHAIN AND DOWNLOADS A 192 KBPS MP3.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>PARAMETERS</div>
-            <div className="mb-1">THE PARAMETERS PANEL (FORMERLY EQ) HOUSES SPEED, PITCH, VOLUME, REVERB, TONE, AND SATURATION FOR EACH DECK.</div>
-            <div className="mb-1">SPEED AND PITCH ARE INDEPENDENT PARAMETERS. LINKED (DEFAULT, VARISPEED) MOVES THEM TOGETHER LIKE A TAPE DECK — NO PITCH-SHIFTING IS DONE, JUST PLAYBACK RATE.</div>
-            <div className="mb-1">UNLINKED: SPEED CHANGES TEMPO ONLY; PITCH SHIFTS INDEPENDENTLY VIA THE WSOLA PITCH SHIFTER. STEP SNAPS PITCH TO SEMITONES WHILE UNLINKED.</div>
-            <div>LOOPING IS OFF — PLAYBACK STOPS AT REGION END OR END OF FILE.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>DECK B MATCH PANEL</div>
-            <div className="mb-1">AUTO-POPULATES FROM DECK A&apos;S KEY AND BPM. THE RESULT COUNTER IN THE HEADER IS THE TRUE TOTAL FOR THE CURRENT CRITERIA — PAGES AUTO-LOAD IN THE BACKGROUND UNTIL EXHAUSTED. NO MORE LOAD-MORE BUTTON.</div>
-            <div className="mb-1">BPM ± SETS HOW WIDE A TEMPO WINDOW TO SEARCH. KEY ± SETS THE SEMITONE RANGE FOR PITCH MATCH.</div>
-            <div className="mb-1">SORT: BPM TOGGLES BPM SORT; OTHERWISE RESULTS ARE ORDERED BY POPULARITY.</div>
-            <div className="mb-1">PITCH MATCH ADDS EXTRA RESULTS PITCHED WITHIN KEY ± SEMITONES OF DECK A.</div>
-            <div>LOAD DECK B DIRECTLY: PASTE A YOUTUBE URL, OR CHOOSE A LOCAL FILE — BYPASSES THE MATCH LIST.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>SYNC + AUTO-MATCH</div>
-            <div className="mb-1">AS SOON AS BOTH DECKS HAVE A BPM, DECK B&apos;S SPEED IS AUTO-ADJUSTED SO ITS EFFECTIVE BPM MATCHES DECK A. YOU CAN OVERRIDE THIS ANY TIME BY MOVING DECK B&apos;S SPEED.</div>
-            <div className="mb-1">WHEN BOTH DECKS ARE LOADED, SYNC START GLOWS RED TO INDICATE IT&apos;S ARMED. HIT IT TO START BOTH DECKS SIMULTANEOUSLY WITH SAMPLE-ACCURATE TIMING; THE GLOW CLEARS ONCE PLAYBACK BEGINS.</div>
-            <div>MATCH LEN STRETCHES BOTH REGIONS TO THE SAME LENGTH IN SECONDS (GEOMETRIC MEAN). AFFECTS SPEED ONLY, NOT PITCH.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>EFFECTS CHAIN</div>
-            <div className="mb-1">EACH DECK: SOURCE → EQ → SATURATION → REVERB → OUTPUT.</div>
-            <div className="mb-1">REVERB DETAIL: WET LEVEL, SIZE (ROOM DURATION), DECAY.</div>
-            <div className="mb-1">TONE DETAIL: 5-BAND PARAMETRIC EQ — LOW SHELF, MID, HIGH SHELF, FREQUENCY SWEEP, PEAK GAIN.</div>
-            <div>SAT DETAIL: DRIVE (WAVESHAPER), MIX (DRY/WET), TONE (POST-SATURATION LOWPASS).</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>OUTPUT BUS</div>
-            <div className="mb-1">MASTER EQ (LOW/MID/HIGH), COMPRESSOR, AND LIMITER ON THE FINAL MIX. EACH HAS A DETAIL PANEL.</div>
-            <div className="mb-1">COMP: SINGLE KNOB MAPS TO THRESHOLD + RATIO + MAKEUP. DETAIL PANEL OVERRIDES INDIVIDUAL PARAMS.</div>
-            <div>LIMIT: BRICK-WALL LIMITER AFTER THE COMPRESSOR. DETAIL CONTROLS CEILING, RELEASE, AND KNEE.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>REGION FINE-TUNE</div>
-            <div>WHEN A REGION IS SELECTED, IN/OUT NUDGE BUTTONS APPEAR. USE &lt; AND &gt; TO NUDGE BOUNDARIES. THE STEP-SIZE SLIDER ADJUSTS FROM 10MS TO 1S.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>CROSSFADER + RECORDING</div>
-            <div className="mb-1">CROSSFADER: CENTER = BOTH DECKS FULL. LEFT = DECK A ONLY. RIGHT = DECK B ONLY.</div>
-            <div>ARM LIVE RECORDING TO CAPTURE THE MIX WHEN BOTH DECKS PLAY. AFTER STOP, THE RECORDING CAN BE DOWNLOADED AS WAV OR MP3, OR EXPORTED AS AN MP4 VIDEO.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>EXPORT MP4</div>
-            <div className="mb-1">OPEN THE MENU AND HIT EXPORT MP4. AUDIO IS ENCODED CLIENT-SIDE TO MP3 AND POSTED DIRECTLY TO THE VIDEO ROUTE — NO INTERMEDIATE PINATA UPLOAD. A SINGLE FFMPEG PASS MIXES THE WATERMARK AND ENCODES THE VIDEO. THE MP4 STREAMS BACK IN THE RESPONSE; THE GALLERY COPY UPLOADS IN THE BACKGROUND.</div>
-            <div>ALL EXPORTS ARE SAVED TO THE GALLERY.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>GRIDLOCK</div>
-            <div className="mb-1">TOGGLE FROM TOOLS MENU. OVERLAYS RED GRID LINES EVERY 4 BARS BASED ON BPM. ALIGN SLIDER SHIFTS ALL LINES UNIFORMLY. GRID IN/OUT ARROWS SNAP REGION TO GRID LINES.</div>
-            <div className="mb-1">BEAT/BAR NUDGE BUTTONS SHIFT THE GRID BY ONE BEAT OR ONE BAR AT A TIME.</div>
-            <div className="mb-1">÷4 BEAT: SUBDIVIDES GRID TO SHOW LINES EVERY BAR INSTEAD OF EVERY 4 BARS.</div>
-            <div>ALL BEATS: TOGGLES GREEN DOWNBEAT MARKERS ON EVERY BEAT ACROSS THE WAVEFORM.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>MENU</div>
-            <div className="mb-1">THE GREEN/BLACK CRT MENU IN THE UPPER RIGHT OPENS SAVE SESSION, LOAD SESSION, MANUAL, EXPORT MP4, SHARE SESSION, YOUTUBE, AND GALLERY. EACH OPTION SHARES THE SAME STYLE AS THE DECK READOUTS.</div>
-            <div>GALLERY HOSTS ALL EXPORTS. HIT RADIO IN THE GALLERY TO OPEN THE AUTOMASH RADIO — AN IPOD-STYLE PLAYER THAT SHUFFLES YOUR EXPORTS AND SUPPORTS IOS LOCK-SCREEN PLAYBACK.</div>
-          </div>
-
-          <div>
-            <div className="text-[12px] mb-2" style={{ color: "var(--accent-gold)" }}>KEYBOARD SHORTCUTS</div>
-            <div>+ / - : ZOOM WAVEFORM IN/OUT</div>
-            <div>F : ZOOM TO FIT SELECTED REGION</div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
-}
 
 interface LocalSession {
   id: string;
@@ -1101,8 +989,6 @@ function HomeInner() {
   const isConvertingMp3 = useRemixStore((s) => s.isConvertingMp3);
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
-  const [manualOpen, setManualOpen] = useState(false);
-
   // Space bar — play/stop transport instead of activating the last-focused button.
   // Browsers fire click on a focused <button> when space is pressed, which previously
   // re-toggled PARAMETERS. Intercept at window level, blur the focused element, and
@@ -1249,7 +1135,7 @@ function HomeInner() {
                         </button>
                       </div>
                       <div className="flex flex-col items-center" data-tooltip="DOWNLOADS THE FULL MIX (BOTH DECKS) AS MP3.">
-                        <span className="label" style={labelStyle}>{isConvertingMp3 ? "WAIT" : "MP3"}</span>
+                        <span className="label" style={labelStyle}>{isConvertingMp3 ? "WAIT" : "↑ MP3"}</span>
                         <button
                           onClick={() => { downloadMixMP3(); }}
                           disabled={!bothLoaded || isConvertingMp3}
@@ -1260,7 +1146,7 @@ function HomeInner() {
                         </button>
                       </div>
                       <div className="flex flex-col items-center" data-tooltip="RENDER YOUR MIX AS A VIDEO FILE">
-                        <span className="label" style={labelStyle}>{isExporting ? "WAIT" : "MP4"}</span>
+                        <span className="label" style={labelStyle}>{isExporting ? "WAIT" : "↑ MP4"}</span>
                         <button
                           onClick={() => exportMP4()}
                           disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
@@ -1272,26 +1158,6 @@ function HomeInner() {
                       </div>
                     </>
                   )}
-                  <div className="flex flex-col items-center" data-tooltip="RELOAD THE APP FROM SCRATCH">
-                    <span className="label" style={labelStyle}>RESTART</span>
-                    <button
-                      onClick={() => { if (typeof window !== "undefined") window.location.reload(); }}
-                      className="rocker-switch"
-                      style={rockerStyle}
-                    >
-                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                    </button>
-                  </div>
-                  <div className="flex flex-col items-center" data-tooltip="VIEW THE FULL USER MANUAL">
-                    <span className="label" style={labelStyle}>MANUAL</span>
-                    <button
-                      onClick={() => setManualOpen(true)}
-                      className="rocker-switch"
-                      style={rockerStyle}
-                    >
-                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                    </button>
-                  </div>
                   <div className="flex flex-col items-center" data-tooltip="VISIT THE AUTOMASH.XYZ YOUTUBE CHANNEL">
                     <span className="label" style={labelStyle}>YOUTUBE</span>
                     <button
@@ -1306,6 +1172,16 @@ function HomeInner() {
                     <span className="label" style={labelStyle}>GALLERY</span>
                     <button
                       onClick={() => { if (typeof window !== "undefined") window.location.href = "/gallery"; }}
+                      className="rocker-switch"
+                      style={rockerStyle}
+                    >
+                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center" data-tooltip="RELOAD THE APP FROM SCRATCH">
+                    <span className="label" style={labelStyle}>RESTART</span>
+                    <button
+                      onClick={() => { if (typeof window !== "undefined") window.location.reload(); }}
                       className="rocker-switch"
                       style={rockerStyle}
                     >
@@ -1394,7 +1270,6 @@ function HomeInner() {
           <a href="https://yuri.biz" target="_blank" rel="noopener noreferrer" className="uppercase tracking-[1px]" style={{ fontSize: "10px", fontWeight: 300, color: "var(--text-muted, #777)", textDecoration: "none" }}>YURI.BIZ</a>
         </div>
       </div>
-      {manualOpen && <Manual onClose={() => setManualOpen(false)} />}
       {loadModalOpen && <SaveLoadModal onClose={() => setLoadModalOpen(false)} />}
       {pendingVideoExport && (
         <ExportVideoModalRemix
