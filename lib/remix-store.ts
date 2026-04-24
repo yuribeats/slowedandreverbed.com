@@ -1423,11 +1423,26 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
   snapToDownbeat: async (id) => {
     const deck = getDeck(get(), id);
     if (!deck.sourceBuffer) return;
-    if (deck.firstDownbeatMs !== null) {
-      get().setRegion(id, deck.firstDownbeatMs / 1000, deck.regionEnd);
+    if (deck.firstDownbeatMs === null && (!deck.downbeatGrid || deck.downbeatGrid.length === 0)) {
+      await get().detectDownbeat(id);
       return;
     }
-    await get().detectDownbeat(id);
+    const grid = deck.downbeatGrid;
+    const current = deck.regionStart;
+    let target: number;
+    if (grid && grid.length > 0) {
+      target = grid[0];
+      let best = Math.abs(grid[0] - current);
+      for (const d of grid) {
+        const dist = Math.abs(d - current);
+        if (dist < best) { best = dist; target = d; }
+      }
+    } else if (deck.firstDownbeatMs !== null) {
+      target = deck.firstDownbeatMs / 1000;
+    } else {
+      return;
+    }
+    get().setRegion(id, target, deck.regionEnd);
   },
 
   autoMatchDeckBSpeed: () => {
