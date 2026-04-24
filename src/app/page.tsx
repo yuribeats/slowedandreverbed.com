@@ -94,11 +94,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [showEQ, setShowEQ] = useState(false);
   const [showKeyFinder, setShowKeyFinder] = useState(false);
 
-  // Open PARAMETERS automatically when the user loads a manual track (local file / YouTube URL)
-  useEffect(() => {
-    if (deck.sourceBuffer && deck.manualUpload) setShowEQ(true);
-  }, [deck.sourceBuffer, deck.manualUpload]);
-
   const rate = 1.0 + deck.params.speed;
   const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
   const deckReady = !!deck.sourceBuffer;
