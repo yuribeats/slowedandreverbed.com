@@ -1145,6 +1145,22 @@ function HomeInner() {
         await loadDeckHome("B", bArtist, bTitle);
         if (bShift !== 0) setParam("B", "speed", Math.pow(2, bShift / 12) - 1);
       }
+      // Tab-discard recovery: if persisted state rehydrated with artist/title but no
+      // AudioBuffer (buffers can't be serialized), re-fetch the tracks automatically.
+      // URL params take precedence via the branches above; this runs second so it
+      // skips decks already being re-loaded from the URL.
+      if (!aArtist && !aTitle) {
+        const { deckA } = useRemixStore.getState();
+        if (!deckA.sourceBuffer && (deckA.artist || deckA.title)) {
+          loadDeckHome("A", deckA.artist, deckA.title);
+        }
+      }
+      if (!bArtist && !bTitle) {
+        const { deckB } = useRemixStore.getState();
+        if (!deckB.sourceBuffer && (deckB.artist || deckB.title)) {
+          loadDeckHome("B", deckB.artist, deckB.title);
+        }
+      }
     };
     run();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
