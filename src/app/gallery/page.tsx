@@ -12,10 +12,14 @@ async function extractVideoFrame(url: string): Promise<Blob> {
   video.preload = "auto";
   video.src = url;
   await new Promise<void>((resolve, reject) => {
-    video.addEventListener("loadeddata", () => resolve(), { once: true });
+    video.addEventListener("loadedmetadata", () => resolve(), { once: true });
     video.addEventListener("error", () => reject(new Error("VIDEO LOAD FAILED")), { once: true });
   });
-  video.currentTime = 0.1;
+  // Seek to a random point in the middle 60% of the video. The first ~3s is always the producer
+  // tag overlay, so frames near t=0 looked identical across mints.
+  const dur = isFinite(video.duration) && video.duration > 0 ? video.duration : 10;
+  const seekTo = dur * (0.2 + Math.random() * 0.6);
+  video.currentTime = seekTo;
   await new Promise<void>((resolve) => {
     video.addEventListener("seeked", () => resolve(), { once: true });
   });
