@@ -510,58 +510,58 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
         </div>
       )}
 
-      {/* Transport buttons */}
-      <div className="flex items-center gap-2 justify-center">
-        <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>REW</span>
-          <button onClick={() => handleSkip(-5)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
-            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-          </button>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>START</span>
-          <button onClick={handleStart} disabled={!deckReady || deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
-            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-          </button>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>STOP</span>
-          <button onClick={() => stop(id)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
-            <div className="w-1.5 h-1.5 rounded-full" style={{
-              background: (id === "A" && recordArmed) ? "var(--led-red-on, #c82828)" : undefined,
-              border: (id === "A" && recordArmed) ? "none" : "2px solid #555",
-            }} />
-          </button>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>PAUSE</span>
-          <button onClick={() => pause(id)} disabled={!deckReady || !deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
-            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-          </button>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>FF</span>
-          <button onClick={() => handleSkip(5)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
-            <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
-          </button>
-        </div>
-      </div>
       {deck.error && (
         <div className="text-[12px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
           {deck.error}
         </div>
       )}
 
-      {/* Parameters toggle button */}
-      <div className="flex justify-center">
-        <button
-          onClick={() => setShowEQ(!showEQ)}
-          className={detailBtnClass(showEQ)}
-          style={detailBtnStyle}
-        >
-          PARAMETERS
-        </button>
-      </div>
+      {/* Parameters toggle button — matches VOCALS/SNAP/DOWNLOAD styling */}
+      <button
+        onClick={() => setShowEQ(!showEQ)}
+        className="deck-action-btn w-full"
+        style={{ ...deckActionBtnStyle, ...(showEQ ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap" }}
+      >
+        PARAMETERS
+      </button>
+
+      {showEQ && (
+        <div className="flex items-center gap-2 justify-center">
+          <div className="flex flex-col items-center">
+            <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>REW</span>
+            <button onClick={() => handleSkip(-5)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+              <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+            </button>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>START</span>
+            <button onClick={handleStart} disabled={!deckReady || deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+              <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+            </button>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>STOP</span>
+            <button onClick={() => stop(id)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{
+                background: (id === "A" && recordArmed) ? "var(--led-red-on, #c82828)" : undefined,
+                border: (id === "A" && recordArmed) ? "none" : "2px solid #555",
+              }} />
+            </button>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>PAUSE</span>
+            <button onClick={() => pause(id)} disabled={!deckReady || !deck.isPlaying} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+              <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+            </button>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>FF</span>
+            <button onClick={() => handleSkip(5)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+              <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* All controls: Speed/Pitch/Vol on top, Reverb/Tone/Sat below */}
       {showEQ && <><div className="zone-engraved" style={{ position: "relative" }}>
