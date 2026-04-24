@@ -1036,8 +1036,9 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
           regionEnd: 0,
         },
       }));
+      // Downbeat detection runs on the isolated drum stem after separateStems finishes
+      // (see separateStems). Stems kick off here in the background.
       get().separateStems(id);
-      get().detectDownbeat(id);
     } catch (err) {
       set((s) => ({ [dk]: { ...s[dk], isLoading: false, error: err instanceof Error ? err.message : "Failed to fetch YouTube audio" } }));
     }
@@ -1312,7 +1313,12 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
 
     try {
       let requestBody: Record<string, unknown>;
-      if (deck.sourceUrl?.includes("youtube")) {
+      // Prefer the isolated drum stem — ML transient detection is significantly more
+      // accurate on drums alone than on the full mix. Falls back to full-track sources
+      // when stems haven't finished separating yet.
+      if (deck.stemUrls?.drums) {
+        requestBody = { audioUrl: deck.stemUrls.drums };
+      } else if (deck.sourceUrl?.includes("youtube")) {
         // Prefer re-fetching a fresh CDN link server-side — the cached sourceCdnUrl
         // from RapidAPI expires within minutes, and Modal's download-side fetch
         // will 404 if we hand it a stale link.
@@ -1830,17 +1836,18 @@ export const useRemixStore = create<RemixStore>((set, get) => ({
         [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false, activeStem: stemTarget[0] ?? null, activeStems: stemTarget, mixedStemBuffer: mixed },
       }));
 
-      // Re-snap in-point using vocal stem — vocals starting = where the song really begins
-      const vocalBuf = stems.vocals;
-      const updatedDeck = getDeck(get(), id);
-      console.log(`[stems] vocal re-snap check: vocalBuf=${!!vocalBuf}, downbeatGrid=${updatedDeck.downbeatGrid?.length ?? "null"}, regionStart=${updatedDeck.regionStart.toFixed(3)}`);
-      if (vocalBuf && updatedDeck.downbeatGrid && updatedDeck.downbeatGrid.length > 0) {
-        const downbeatsMs = updatedDeck.downbeatGrid.map((s) => s * 1000);
-        const vocalInMs = findFirstLoudDownbeat(downbeatsMs, vocalBuf);
-        const vocalInSec = vocalInMs / 1000;
-        console.log(`[stems] vocal in-point: ${vocalInSec.toFixed(3)}s (was ${updatedDeck.regionStart.toFixed(3)}s)`);
-        get().setRegion(id, vocalInSec, 0);
-      }
+      // Now that the drum stem URL is available, run downbeat detection against it
+      // in the background. detectDownbeat reads stemUrls.drums first.
+      get().detectDownbeat(id).then(() => {
+        // Re-snap in-point using vocal stem once the drum-based grid is in state.
+        const vocalBuf = stems.vocals;
+        const freshDeck = getDeck(get(), id);
+        if (vocalBuf && freshDeck.downbeatGrid && freshDeck.downbeatGrid.length > 0) {
+          const downbeatsMs = freshDeck.downbeatGrid.map((s) => s * 1000);
+          const vocalInMs = findFirstLoudDownbeat(downbeatsMs, vocalBuf);
+          get().setRegion(id, vocalInMs / 1000, 0);
+        }
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
       console.error("[stems] Error:", msg);
