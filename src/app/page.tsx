@@ -1080,7 +1080,7 @@ function HomeInner() {
           {/* Header */}
           <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1 relative" style={{ zIndex: 100, minHeight: "80px" }}>
 <span
-              className="text-lg sm:text-xl tracking-[2px] uppercase"
+              className="text-2xl sm:text-3xl tracking-[2px] uppercase"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
             >
               AUTO MASH
@@ -1291,7 +1291,7 @@ function SceneMatchBrowser() {
         <div className="console flex flex-col gap-5">
           <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1">
 <span
-              className="text-lg sm:text-xl tracking-[2px] uppercase"
+              className="text-2xl sm:text-3xl tracking-[2px] uppercase"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
             >
               AUTO MASH
