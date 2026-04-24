@@ -290,10 +290,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
       </div>
 
       {/* CRT status */}
-      <div className="display-bezel flex flex-col gap-2 p-3">
-        <div className="flex items-center justify-between">
+      <div className="display-bezel flex flex-col gap-2 p-3 min-w-0">
+        <div className="flex items-center justify-between min-w-0">
           <div
-            className="text-[12px] truncate crt-text"
+            className="flex-1 min-w-0 text-[12px] truncate crt-text"
             style={{ color: "var(--crt-bright)", fontFamily: "var(--font-crt)", fontSize: "12px" }}
           >
             {deck.isStemLoading

@@ -270,7 +270,7 @@ export default function DeckBMatches() {
         {/* CRT selected-match readout — parity with deck displays */}
         <div className="display-bezel flex items-center gap-3 p-3">
           <div
-            className="flex-1 text-[12px] truncate crt-text"
+            className="flex-1 min-w-0 text-[12px] truncate crt-text"
             style={{ color: selectedTrack ? "var(--crt-bright)" : "var(--crt-dim)", fontFamily: "var(--font-crt)", fontSize: "12px" }}
           >
             {selectedTrack ? (
