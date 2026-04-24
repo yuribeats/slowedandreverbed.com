@@ -1103,6 +1103,34 @@ function HomeInner() {
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
   const [manualOpen, setManualOpen] = useState(false);
 
+  // Space bar — play/stop transport instead of activating the last-focused button.
+  // Browsers fire click on a focused <button> when space is pressed, which previously
+  // re-toggled PARAMETERS. Intercept at window level, blur the focused element, and
+  // drive syncPlay / stopDeck directly.
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space" && e.key !== " ") return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.target as HTMLElement | null)?.isContentEditable) return;
+      e.preventDefault();
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      const bothLoaded = !!deckA.sourceBuffer && !!deckB.sourceBuffer;
+      const anyPlaying = deckA.isPlaying || deckB.isPlaying;
+      if (anyPlaying) {
+        stopDeck("A");
+        stopDeck("B");
+        return;
+      }
+      if (bothLoaded) {
+        const ctx = getAudioContext();
+        ctx.resume().then(() => syncPlay());
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [deckA.sourceBuffer, deckB.sourceBuffer, deckA.isPlaying, deckB.isPlaying, syncPlay, stopDeck]);
+
   // Auto-load decks from URL params (from Everysong match page)
   const searchParams = useSearchParams();
   const loadDeckHome = useRemixStore((s) => s.loadDeck);
