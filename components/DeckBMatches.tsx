@@ -202,13 +202,17 @@ export default function DeckBMatches() {
     setDeckBError("");
     try {
       getAudioContext();
-      await loadDeck("B", track.artist, track.title, { pitchShift: track.shift ?? 0 });
+      // Only honor a pitch shift if the pitch-match toggle is currently on. This
+      // kills stale shift values that could linger from a previous pitch-match
+      // search after the user toggled it back off.
+      const effectiveShift = pitchMatch ? (track.shift ?? 0) : 0;
+      await loadDeck("B", track.artist, track.title, { pitchShift: effectiveShift });
     } catch (e) {
       setDeckBError(e instanceof Error ? e.message : "LOAD FAILED");
       setTimeout(() => setDeckBError(""), 4000);
     }
     setDeckBLoading(false);
-  }, [selectedIdx, tracks, loadDeck]);
+  }, [selectedIdx, tracks, loadDeck, pitchMatch]);
 
   const handleManualSearch = useCallback(async () => {
     if (!manualArtist && !manualTitle) return;
