@@ -180,6 +180,16 @@ export default function DeckBMatches() {
     }
   }, [sourceKey, sourceBPM, runSearch]);
 
+  // Re-fetch automatically whenever any search parameter changes after the
+  // initial fetch. Small debounce covers number-input typing without firing
+  // a request on every keystroke.
+  useEffect(() => {
+    if (!fetchedRef.current) return;
+    if (!sourceKey || !sourceBPM) return;
+    const t = setTimeout(() => runSearch(), 200);
+    return () => clearTimeout(t);
+  }, [sourceKey, sourceBPM, bpmWindow, semitoneWindow, pitchMatch, runSearch]);
+
   const handleRefetch = useCallback(() => {
     runSearch();
   }, [runSearch]);
@@ -260,7 +270,7 @@ export default function DeckBMatches() {
       <div className="zone-inset flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <span className="text-[12px] tracking-[2px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", fontWeight: 700 }}>
-            DECK B — SELECT A MATCH
+            SELECT A MATCH
           </span>
           <span className="text-[11px] tracking-[0.5px] uppercase" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.5 }}>
             {resultLabel}
@@ -313,7 +323,7 @@ export default function DeckBMatches() {
             <span className="text-[10px] tracking-[1px] uppercase shrink-0" style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.6 }}>KEY</span>
             <select
               value={searchKey}
-              onChange={(e) => { setSearchKey(e.target.value); setTimeout(handleRefetch, 0); }}
+              onChange={(e) => setSearchKey(e.target.value)}
               className="tactical-input uppercase"
               style={{ fontSize: "11px", padding: "3px 6px", appearance: "none", WebkitAppearance: "none" }}
             >
@@ -359,10 +369,7 @@ export default function DeckBMatches() {
           </div>
           <button
             onClick={() => {
-              const next = !pitchMatch;
-              setPitchMatch(next);
-              if (next && semitoneWindow === 0) setSemitoneWindow(3);
-              setTimeout(handleRefetch, 0);
+              setPitchMatch((v) => !v);
             }}
             className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border"
             style={{
