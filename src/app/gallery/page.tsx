@@ -170,7 +170,19 @@ function GalleryContent() {
   const [ipSelectedCollection, setIpSelectedCollection] = useState<InprocessCollection | null>(null);
   const [ipMintState, setIpMintState] = useState<Record<string, string>>({});
   const [ipMintResult, setIpMintResult] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem("automash_mints") || "{}"); } catch { return {}; }
+    try {
+      const raw = JSON.parse(localStorage.getItem("automash_mints") || "{}") as Record<string, string>;
+      // Strip any stale non-MINTED entries so a prior session can't park the UI in a
+      // stuck VERIFYING / parse-error state across reloads.
+      const cleaned: Record<string, string> = {};
+      let changed = false;
+      for (const [k, v] of Object.entries(raw)) {
+        if (v === "MINTED") cleaned[k] = v;
+        else changed = true;
+      }
+      if (changed) localStorage.setItem("automash_mints", JSON.stringify(cleaned));
+      return cleaned;
+    } catch { return {}; }
   });
   const [showInprocess, setShowInprocess] = useState(false);
   const SESSION_KEY = "automash_inprocess_session";
@@ -191,9 +203,9 @@ function GalleryContent() {
           const current = next[item.id];
           if (mintedNames.has(combined)) {
             if (current !== "MINTED") { next[item.id] = "MINTED"; changed = true; }
-          } else if (current && /setupnewtoken|userophash/i.test(current)) {
-            // Stuck parse-error string from a previous run — on-chain says not minted, so clear it
-            // and let the MINT button show again.
+          } else if (current && (/setupnewtoken|userophash|verifying/i.test(current))) {
+            // Stuck parse-error string or "VERIFYING ON-CHAIN" from a previous run —
+            // on-chain confirms not minted, so clear and let the MINT button return.
             delete next[item.id];
             changed = true;
           }
