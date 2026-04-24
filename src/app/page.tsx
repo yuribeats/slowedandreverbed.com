@@ -1227,6 +1227,17 @@ function HomeInner() {
                           <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                         </button>
                       </div>
+                      <div className="flex flex-col items-center" data-tooltip="RENDER YOUR MIX AS A VIDEO FILE">
+                        <span className="label" style={labelStyle}>{isExporting ? "WAIT" : "MP4"}</span>
+                        <button
+                          onClick={() => exportMP4()}
+                          disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
+                          className="rocker-switch"
+                          style={rockerStyle}
+                        >
+                          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                        </button>
+                      </div>
                     </>
                   )}
                   <div className="flex flex-col items-center" data-tooltip="RELOAD THE APP FROM SCRATCH">
@@ -1243,17 +1254,6 @@ function HomeInner() {
                     <span className="label" style={labelStyle}>MANUAL</span>
                     <button
                       onClick={() => setManualOpen(true)}
-                      className="rocker-switch"
-                      style={rockerStyle}
-                    >
-                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                    </button>
-                  </div>
-                  <div className="flex flex-col items-center" data-tooltip="RENDER YOUR MIX AS A VIDEO FILE">
-                    <span className="label" style={labelStyle}>{isExporting ? "WAIT" : "MP4"}</span>
-                    <button
-                      onClick={() => exportMP4()}
-                      disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || isExporting}
                       className="rocker-switch"
                       style={rockerStyle}
                     >
