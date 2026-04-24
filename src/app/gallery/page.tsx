@@ -423,11 +423,24 @@ function GalleryContent() {
       }
       const mintData = await mintRes.json().catch(() => ({}));
 
-      // Airdrop to cxy.eth
-      if (mintData.tokenId || mintData.token_id) {
+      // Resolve tokenId: prefer inprocess's response, fall back to on-chain lookup
+      // since the response shape varies and a missing key silently skipped airdrop.
+      let tokenId: number | string | null =
+        mintData.tokenId ?? mintData.token_id ??
+        mintData.token?.tokenId ?? mintData.token?.token_id ??
+        mintData.result?.tokenId ?? mintData.result?.token_id ?? null;
+      if (!tokenId) {
+        // Give chain a moment to settle, then resolve from on-chain state
+        await new Promise((r) => setTimeout(r, 6000));
+        const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
+        const mintedByName = await syncOnChainMints();
+        const resolved = mintedByName.get(combined);
+        if (resolved && resolved > 0) tokenId = resolved;
+      }
+
+      if (tokenId) {
         setIpMintState((p) => ({ ...p, [id]: "AIRDROPPING" }));
-        const tokenId = mintData.tokenId || mintData.token_id;
-        await fetch("/api/inprocess/airdrop", {
+        const airdropRes = await fetch("/api/inprocess/airdrop", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -437,7 +450,13 @@ function GalleryContent() {
             account: ipSession.wallet,
             apiKey: ipSession.token,
           }),
-        }).catch(() => {});
+        }).catch((e) => { console.error("[airdrop] network error", e); return null; });
+        if (airdropRes && !airdropRes.ok) {
+          const body = await airdropRes.text().catch(() => "");
+          console.error("[airdrop] failed", airdropRes.status, body);
+        }
+      } else {
+        console.error("[airdrop] skipped — no tokenId resolved from mint response or on-chain");
       }
 
       setIpMintState((p) => ({ ...p, [id]: "done" }));
@@ -468,7 +487,7 @@ function GalleryContent() {
           const tokenId = mintedByName.get(combined);
           if (tokenId && tokenId > 0 && ipSelectedCollection && ipSession) {
             setIpMintState((p) => ({ ...p, [id]: "AIRDROPPING" }));
-            await fetch("/api/inprocess/airdrop", {
+            const airdropRes = await fetch("/api/inprocess/airdrop", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -478,7 +497,11 @@ function GalleryContent() {
                 account: ipSession.wallet,
                 apiKey: ipSession.token,
               }),
-            }).catch(() => {});
+            }).catch((e) => { console.error("[airdrop recovery] network error", e); return null; });
+            if (airdropRes && !airdropRes.ok) {
+              const body = await airdropRes.text().catch(() => "");
+              console.error("[airdrop recovery] failed", airdropRes.status, body);
+            }
           }
           setIpMintState((p) => ({ ...p, [id]: "done" }));
           setIpMintResult((p) => {
