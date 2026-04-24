@@ -224,13 +224,14 @@ export default function WaveformDisplay({
     ctx.lineTo(w, midY);
     ctx.stroke();
 
-    // Downbeat grid overlay
+    // Downbeat grid overlay — every 4th downbeat starting from the first (bar 1 of every 4).
     if (showGrid && downbeatGrid && downbeatGrid.length > 0) {
       ctx.strokeStyle = "rgba(117, 204, 70, 0.55)";
       ctx.lineWidth = 1;
       ctx.shadowColor = "rgba(117, 204, 70, 0.6)";
       ctx.shadowBlur = 3;
-      for (const t of downbeatGrid) {
+      for (let i = 0; i < downbeatGrid.length; i += 4) {
+        const t = downbeatGrid[i];
         if (t < viewStart || t > viewEnd) continue;
         const gx = timeToX(t);
         ctx.beginPath();
