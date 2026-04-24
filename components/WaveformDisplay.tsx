@@ -21,6 +21,8 @@ interface Props {
   precomputedPeaks?: Float32Array | null;
   precomputedDuration?: number;
   perfStartedAt?: number; // performance.now()-based start time
+  downbeatGrid?: number[] | null; // seconds
+  showGrid?: boolean;
 }
 
 function computePeaks(buffer: AudioBuffer, numBars: number): Float32Array {
@@ -77,6 +79,8 @@ export default function WaveformDisplay({
   precomputedPeaks,
   precomputedDuration,
   perfStartedAt,
+  downbeatGrid,
+  showGrid,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const peaksRef = useRef<Float32Array | null>(null);
@@ -220,6 +224,23 @@ export default function WaveformDisplay({
     ctx.lineTo(w, midY);
     ctx.stroke();
 
+    // Downbeat grid overlay
+    if (showGrid && downbeatGrid && downbeatGrid.length > 0) {
+      ctx.strokeStyle = "rgba(117, 204, 70, 0.55)";
+      ctx.lineWidth = 1;
+      ctx.shadowColor = "rgba(117, 204, 70, 0.6)";
+      ctx.shadowBlur = 3;
+      for (const t of downbeatGrid) {
+        if (t < viewStart || t > viewEnd) continue;
+        const gx = timeToX(t);
+        ctx.beginPath();
+        ctx.moveTo(gx, 0);
+        ctx.lineTo(gx, waveH);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+    }
+
     // Region handles
     const handleSize = 12;
     const rsX = timeToX(effectiveStart);
@@ -359,7 +380,7 @@ export default function WaveformDisplay({
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime]);
+  }, [audioBuffer, effectiveStart, effectiveEnd, duration, viewStart, viewEnd, zoom, getCursorTime, showGrid, downbeatGrid]);
 
   // Animation loop — only useEffect controls scheduling, draw never self-schedules
   useEffect(() => {

@@ -91,6 +91,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [stepMode, setStepMode] = useState(true);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [showEQ, setShowEQ] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
 
   const rate = 1.0 + deck.params.speed;
   const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
@@ -390,6 +391,8 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             onRegionChange={(s, e) => setRegion(id, s, e)}
             onSeek={(pos) => seek(id, pos)}
             onScrub={(pos) => scrub(id, pos)}
+            downbeatGrid={deck.downbeatGrid}
+            showGrid={showGrid}
           />
           {isTrackLoading && (
             <div
@@ -450,15 +453,25 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             );
           })}
         </div>
-        {/* Row 2: snap on its own full-width row — same width as PARAMETERS below */}
-        <button
-          onClick={() => snapToDownbeat(id)}
-          disabled={!deck.sourceBuffer || deck.downbeatDetecting}
-          className="deck-action-btn w-full"
-          style={{ ...deckActionBtnStyle, ...(deck.downbeatDetecting ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
-        >
-          {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
-        </button>
+        {/* Row 2: snap + show grid share a row */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => snapToDownbeat(id)}
+            disabled={!deck.sourceBuffer || deck.downbeatDetecting}
+            className="deck-action-btn w-full"
+            style={{ ...deckActionBtnStyle, ...(deck.downbeatDetecting ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
+          >
+            {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
+          </button>
+          <button
+            onClick={() => setShowGrid(!showGrid)}
+            disabled={!deck.downbeatGrid || deck.downbeatGrid.length === 0}
+            className="deck-action-btn w-full"
+            style={{ ...deckActionBtnStyle, ...(showGrid ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.downbeatGrid || deck.downbeatGrid.length === 0) ? 0.45 : 1 }}
+          >
+            {showGrid ? "HIDE GRID" : "SHOW GRID"}
+          </button>
+        </div>
       </div>
 
       {/* Stem error only */}
