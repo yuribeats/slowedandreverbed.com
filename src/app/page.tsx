@@ -1287,14 +1287,14 @@ function HomeInner() {
               const armed = bothLoaded && bothDownbeat && bothStems && !anyPlaying;
               if (!showDeckB) return null;
               return (
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-8">
+                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 sm:gap-5">
                   <div className="flex flex-col items-center" data-tooltip="STARTS BOTH DECKS SIMULTANEOUSLY.">
                     <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>SYNC START</span>
                     <button
                       onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
                       disabled={!bothLoaded}
                       className="rocker-switch"
-                      style={{ width: "90px", height: "60px", alignItems: "center", paddingBottom: 0 }}
+                      style={{ width: "70px", height: "42px", alignItems: "center", paddingBottom: 0 }}
                     >
                       <div
                         className="w-2 h-2 rounded-full"
@@ -1313,7 +1313,7 @@ function HomeInner() {
                       onClick={() => { stopDeck("A"); stopDeck("B"); }}
                       disabled={!bothLoaded}
                       className="rocker-switch"
-                      style={{ width: "90px", height: "60px", alignItems: "center", paddingBottom: 0 }}
+                      style={{ width: "70px", height: "42px", alignItems: "center", paddingBottom: 0 }}
                     >
                       <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                     </button>
@@ -1324,7 +1324,7 @@ function HomeInner() {
                       onClick={() => { downloadMixMP3(); }}
                       disabled={!bothLoaded || isConvertingMp3}
                       className="rocker-switch"
-                      style={{ width: "90px", height: "60px", alignItems: "center", paddingBottom: 0 }}
+                      style={{ width: "70px", height: "42px", alignItems: "center", paddingBottom: 0 }}
                     >
                       <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                     </button>
@@ -1332,7 +1332,7 @@ function HomeInner() {
                 </div>
               );
             })()}
-            <div className={showDeckB ? "relative" : "ml-auto relative"} style={{ zIndex: 100 }}>
+            <div className="ml-auto relative" style={{ zIndex: 100 }}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
