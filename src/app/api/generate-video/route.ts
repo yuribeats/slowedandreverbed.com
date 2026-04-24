@@ -114,7 +114,9 @@ export async function POST(request: NextRequest) {
       pinata.upload.public
         .file(videoFile)
         .name(`automash-export-${id}.mp4`)
-        .keyvalues({ type: "automash-video", artist, title, createdAt: new Date().toISOString() })
+        // NOTE: keep `type: "driftwave-video"` — the gallery index still queries that key,
+        // and changing it orphaned recent exports. The rename only applies to user-facing filenames.
+        .keyvalues({ type: "driftwave-video", artist, title, createdAt: new Date().toISOString() })
         .then((upload) => {
           console.log("Pinata upload complete:", `https://${gateway}/files/${upload.cid}`);
         })

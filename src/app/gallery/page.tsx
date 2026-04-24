@@ -451,27 +451,6 @@ function GalleryContent() {
       setIpMintResult((p) => ({ ...p, [id]: msg }));
     }
   }
-  const openRadio = () => {
-    // Find currently playing video and pause it
-    const videos = document.querySelectorAll("video");
-    let startId = "";
-    let startPos = 0;
-    videos.forEach((v) => {
-      if (!v.paused) {
-        const card = v.closest("[data-item-id]");
-        if (card) {
-          startId = card.getAttribute("data-item-id") || "";
-          startPos = Math.floor(v.currentTime);
-        }
-        v.pause();
-      }
-    });
-    const params = new URLSearchParams();
-    if (startId) params.set("id", startId);
-    if (startPos > 0) params.set("t", String(startPos));
-    window.open(`/radio${params.toString() ? "?" + params.toString() : ""}`, "driftwave-radio", "width=240,height=400,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,status=no");
-  };
-
   useEffect(() => {
     fetch("/api/gallery")
       .then((r) => r.json())
@@ -630,13 +609,6 @@ function GalleryContent() {
             >
               YOUTUBE
             </a>
-            <button
-              onClick={openRadio}
-              className="text-[9px] uppercase tracking-wider border-2 border-black px-2 py-1"
-              style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
-            >
-              RADIO
-            </button>
             <div className="ml-auto flex gap-2">
               <Link
                 href="/"

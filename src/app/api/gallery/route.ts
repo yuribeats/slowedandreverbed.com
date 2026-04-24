@@ -31,12 +31,10 @@ export async function GET(request: Request) {
 
   try {
     const pinata = getPinata();
-    const query = pinata.files.public.list().order("DESC").limit(100);
-    const result = await (all ? query : query.keyvalues({ type: "driftwave-video" }));
-
     const gateway = process.env.PINATA_GATEWAY;
 
     if (all) {
+      const result = await pinata.files.public.list().order("DESC").limit(100);
       const files = result.files.map((f) => ({
         id: f.id,
         cid: f.cid,
@@ -52,7 +50,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ files });
     }
 
-    const items = result.files.map((f) => ({
+    // A rename window tagged some exports as "automash-video"; query both so none are orphaned.
+    const [oldResult, newResult] = await Promise.all([
+      pinata.files.public.list().order("DESC").limit(100).keyvalues({ type: "driftwave-video" }),
+      pinata.files.public.list().order("DESC").limit(100).keyvalues({ type: "automash-video" }),
+    ]);
+    const merged = [...oldResult.files, ...newResult.files];
+    const seen = new Set<string>();
+    const uniq = merged.filter((f) => (seen.has(f.id) ? false : (seen.add(f.id), true)));
+    uniq.sort((a, b) => {
+      const ad = new Date(a.keyvalues?.createdAt || a.created_at).getTime();
+      const bd = new Date(b.keyvalues?.createdAt || b.created_at).getTime();
+      return bd - ad;
+    });
+
+    const items = uniq.slice(0, 100).map((f) => ({
       id: f.id,
       cid: f.cid,
       url: `https://${gateway}/files/${f.cid}`,
