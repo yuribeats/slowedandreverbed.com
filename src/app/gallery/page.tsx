@@ -427,8 +427,10 @@ function GalleryContent() {
       const msg = e instanceof Error ? e.message : "MINT FAILED";
       // Both "SetupNewToken event not found" and the "userOpHash regex" error mean the inprocess
       // server failed to parse the tx, but the on-chain mint usually succeeded. Verify against the
-      // on-chain list and flip to MINTED if we find it; otherwise reset so the user can retry.
-      if (/setupnewtoken/i.test(msg) || /userophash/i.test(msg)) {
+      // on-chain list and flip to MINTED if we find it; otherwise clear state so MINT returns
+      // (the ugly raw JSON used to leak to the UI).
+      const isParseError = /setupnewtoken/i.test(msg) || /userophash/i.test(msg);
+      if (isParseError) {
         setIpMintState((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
         setIpMintResult((p) => ({ ...p, [id]: "VERIFYING ON-CHAIN" }));
         const combined = `${item.artist} - ${item.title}`.toLowerCase().trim();
@@ -446,9 +448,15 @@ function GalleryContent() {
           });
           return;
         }
+        // On-chain still not showing — drop the error entirely so MINT button returns.
+        setIpMintState((p) => { const n = { ...p }; delete n[id]; return n; });
+        setIpMintResult((p) => { const n = { ...p }; delete n[id]; return n; });
+        return;
       }
+      // Shorten and sanitize non-parse errors so the raw JSON payload never reaches the UI.
+      const clean = msg.replace(/[{}"\\]/g, "").replace(/\s+/g, " ").trim().slice(0, 40).toUpperCase() || "MINT FAILED";
       setIpMintState((p) => ({ ...p, [id]: "error" }));
-      setIpMintResult((p) => ({ ...p, [id]: msg }));
+      setIpMintResult((p) => ({ ...p, [id]: clean }));
     }
   }
   useEffect(() => {
@@ -500,7 +508,9 @@ function GalleryContent() {
         return next;
       });
     } catch (e) {
-      setUploadResult((prev) => ({ ...prev, [item.id]: e instanceof Error ? e.message : "FAILED" }));
+      const raw = e instanceof Error ? e.message : "FAILED";
+      const clean = raw.replace(/[{}"\\]/g, "").replace(/\s+/g, " ").trim().slice(0, 40).toUpperCase() || "FAILED";
+      setUploadResult((prev) => ({ ...prev, [item.id]: clean }));
     }
     setUploading(null);
   }
