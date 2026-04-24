@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "AUTO MASH",
-  description: "Automatic harmonic mashup engine",
+  description: "MILLENIAL CRINGE MASHUP SLOP",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "AUTO MASH",
-    description: "Automatic harmonic mashup engine",
+    description: "MILLENIAL CRINGE MASHUP SLOP",
     url: "https://automash.xyz",
     siteName: "AUTO MASH",
     images: [{ url: "https://automash.xyz/og.png", width: 1312, height: 940 }],
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "AUTO MASH",
-    description: "Automatic harmonic mashup engine",
+    description: "MILLENIAL CRINGE MASHUP SLOP",
     images: ["https://automash.xyz/og.png"],
   },
 };
