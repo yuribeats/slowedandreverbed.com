@@ -1298,7 +1298,7 @@ function HomeInner() {
                       onClick={async () => { const ctx = getAudioContext(); await ctx.resume(); syncPlay(); }}
                       disabled={!bothLoaded}
                       className="rocker-switch"
-                      style={{ width: "90px", height: "60px" }}
+                      style={{ width: "90px", height: "60px", alignItems: "center", paddingBottom: 0 }}
                     >
                       <div
                         className="w-2 h-2 rounded-full"
@@ -1317,7 +1317,7 @@ function HomeInner() {
                       onClick={() => { stopDeck("A"); stopDeck("B"); }}
                       disabled={!bothLoaded}
                       className="rocker-switch"
-                      style={{ width: "90px", height: "60px" }}
+                      style={{ width: "90px", height: "60px", alignItems: "center", paddingBottom: 0 }}
                     >
                       <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                     </button>
