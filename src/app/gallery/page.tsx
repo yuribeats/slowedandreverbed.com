@@ -673,7 +673,7 @@ function GalleryContent() {
             >
               GALLERY
             </span>
-            <div className="ml-auto flex gap-2">
+            <div className="ml-auto flex gap-2 relative">
               <button
                 onClick={() => setAdminMenuOpen((v) => !v)}
                 className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black"
@@ -681,30 +681,31 @@ function GalleryContent() {
               >
                 MENU
               </button>
+              {adminMenuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 flex flex-col border-2 border-black"
+                  style={{ background: "#fff", minWidth: "160px", zIndex: 50 }}
+                >
+                  <a
+                    href="https://www.youtube.com/@automashdotxyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
+                    style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
+                  >
+                    YOUTUBE
+                  </a>
+                  <Link
+                    href="/"
+                    className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 text-left"
+                    style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
+                  >
+                    AUTO MASH
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Menu (YouTube + Auto Mash always; admin panels when ?admin=1) */}
-          {adminMenuOpen && (
-            <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
-              <a
-                href="https://www.youtube.com/@automashdotxyz/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] uppercase tracking-[0.15em] px-3 py-2 border-2 border-black text-center"
-                style={{ ...textStyle, fontSize: "11px", background: "transparent" }}
-              >
-                YOUTUBE
-              </a>
-              <Link
-                href="/"
-                className="text-[11px] uppercase tracking-[0.15em] px-3 py-2 border-2 border-black text-center"
-                style={{ ...textStyle, fontSize: "11px", background: "transparent" }}
-              >
-                AUTO MASH
-              </Link>
-            </div>
-          )}
 
           {/* inprocess.world minting (admin only) */}
           {isAdmin && adminMenuOpen && (
