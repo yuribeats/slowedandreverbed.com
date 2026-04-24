@@ -6,7 +6,6 @@ import { useRemixStore, getMasterAnalyser } from "../../lib/remix-store";
 import type { MasterBusParams } from "../../lib/remix-store";
 import { getAudioContext } from "../../lib/audio-context";
 import WaveformDisplay from "../../components/WaveformDisplay";
-import PianoKeyboard from "../../components/PianoKeyboard";
 import Toast from "../../components/Toast";
 import ExportVideoModalRemix from "../../components/ExportVideoModalRemix";
 import SceneLanding from "../../components/SceneLanding";
@@ -92,7 +91,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const [stepMode, setStepMode] = useState(true);
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [showEQ, setShowEQ] = useState(false);
-  const [showKeyFinder, setShowKeyFinder] = useState(false);
 
   const rate = 1.0 + deck.params.speed;
   const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
@@ -114,8 +112,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const setDeckMeta = useRemixStore((s) => s.setDeckMeta);
   const snapToDownbeat = useRemixStore((s) => s.snapToDownbeat);
   const toggleStem = useRemixStore((s) => s.toggleStem);
-  const downloadDeckMP3 = useRemixStore((s) => s.downloadDeckMP3);
-  const deckIsConvertingMp3 = useRemixStore((s) => s.isConvertingMp3);
   const loadDeck = useRemixStore((s) => s.loadDeck);
   const lookupEverysong = useRemixStore((s) => s.lookupEverysong);
   const recordArmed = useRemixStore((s) => s.recordArmed);
@@ -224,12 +220,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
           >
             DECK {id}
-          </span>
-          <span
-            className="text-[8px] tracking-[1px] uppercase"
-            style={{ color: "var(--text-dark)", fontFamily: "var(--font-tech)", opacity: 0.55 }}
-          >
-            ENTER AN ARTIST, TITLE AND HIT LOAD TO BEGIN
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -468,32 +458,15 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             );
           })}
         </div>
-        {/* Row 2: snap + key finder + download — always on one line, equal sizes */}
-        <div className="grid items-stretch gap-2" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-          <button
-            onClick={() => snapToDownbeat(id)}
-            disabled={!deck.sourceBuffer || deck.downbeatDetecting}
-            className="deck-action-btn w-full"
-            style={{ ...deckActionBtnStyle, ...(deck.downbeatDetecting ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
-          >
-            {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
-          </button>
-          <button
-            onClick={() => setShowKeyFinder((v) => !v)}
-            className="deck-action-btn w-full"
-            style={{ ...deckActionBtnStyle, ...(showKeyFinder ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap" }}
-          >
-            KEY FINDER
-          </button>
-          <button
-            onClick={() => downloadDeckMP3(id)}
-            disabled={!deck.sourceBuffer || deckIsConvertingMp3}
-            className="deck-action-btn w-full"
-            style={{ ...deckActionBtnStyle, ...(deckIsConvertingMp3 ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deckIsConvertingMp3) ? 0.45 : 1 }}
-          >
-            {deckIsConvertingMp3 ? "CONVERTING…" : "DOWNLOAD MP3"}
-          </button>
-        </div>
+        {/* Row 2: snap on its own full-width row — same width as PARAMETERS below */}
+        <button
+          onClick={() => snapToDownbeat(id)}
+          disabled={!deck.sourceBuffer || deck.downbeatDetecting}
+          className="deck-action-btn w-full"
+          style={{ ...deckActionBtnStyle, ...(deck.downbeatDetecting ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap", opacity: (!deck.sourceBuffer || deck.downbeatDetecting) ? 0.45 : 1 }}
+        >
+          {deck.downbeatDetecting ? "DETECTING…" : "SNAP TO DOWNBEAT"}
+        </button>
       </div>
 
       {/* Stem error only */}
@@ -504,12 +477,6 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
           </span>
         </div>
       )}
-      {showKeyFinder && (
-        <div className="flex justify-center">
-          <PianoKeyboard />
-        </div>
-      )}
-
       {deck.error && (
         <div className="text-[12px] uppercase tracking-wider" style={{ fontFamily: "var(--font-tech)", color: "#ff4444" }}>
           {deck.error}
@@ -596,22 +563,22 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
                   value={speedInput}
                   onChange={(e) => setSpeedInput(e.target.value)}
                   onBlur={() => setEditingSpeed(false)}
-                  className="bg-transparent border border-[#333] text-center w-[70px] text-[12px]"
-                  style={{ fontFamily: "var(--font-tech)", color: "var(--text-dark)", outline: "none" }}
+                  className="tactical-input w-[70px] text-center"
+                  style={{ fontSize: "11px", padding: "3px 6px" }}
                 />
               </form>
             ) : deck.calculatedBPM ? (
               <span
-                className="text-[12px]"
-                style={{ color: "var(--text-dark)" }}
+                className="tactical-input text-center"
+                style={{ fontSize: "11px", padding: "3px 6px", width: "70px", cursor: "text" }}
                 onClick={() => { setSpeedInput((deck.calculatedBPM! * rate).toFixed(3)); setEditingSpeed(true); }}
               >
                 {(deck.calculatedBPM * rate).toFixed(3)}
               </span>
             ) : (
               <span
-                className="text-[12px]"
-                style={{ color: "var(--text-dark)" }}
+                className="tactical-input text-center"
+                style={{ fontSize: "11px", padding: "3px 6px", width: "70px", cursor: "text" }}
                 onClick={() => { setSpeedInput(rate.toFixed(4)); setEditingSpeed(true); }}
               >
                 {rate.toFixed(4)}X
@@ -631,7 +598,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               />
             </div>
             <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>PITCH</div>
-            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>
+            <span
+              className="tactical-input text-center"
+              style={{ fontSize: "11px", padding: "3px 6px", width: "70px" }}
+            >
               {baseKey !== null
                 ? semitoneToKey(baseKey, displaySemitones, baseMode)
                 : `${displaySemitones >= 0 ? "+" : ""}${displaySemitones.toFixed(1)}ST`
@@ -651,7 +621,10 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
               />
             </div>
             <div className="label" style={{ fontSize: "12px", marginTop: "4px" }}>VOL</div>
-            <span className="text-[12px]" style={{ color: "var(--text-dark)" }}>{Math.round(deck.volume * 100)}%</span>
+            <span
+              className="tactical-input text-center"
+              style={{ fontSize: "11px", padding: "3px 6px", width: "70px" }}
+            >{Math.round(deck.volume * 100)}%</span>
           </div>
         </div>
       </div>
@@ -1108,7 +1081,6 @@ function SaveLoadModal({ onClose }: { onClose: () => void }) {
 }
 
 function HomeInner() {
-  const crossfader = useRemixStore((s) => s.crossfader);
   const syncPlay = useRemixStore((s) => s.syncPlay);
   const stopDeck = useRemixStore((s) => s.stop);
   const setParam = useRemixStore((s) => s.setParam);
@@ -1124,7 +1096,6 @@ function HomeInner() {
   const isConvertingMp3 = useRemixStore((s) => s.isConvertingMp3);
   const pendingVideoExport = useRemixStore((s) => s.pendingVideoExport);
   const clearPendingExport = useRemixStore((s) => s.clearPendingExport);
-  const masterBus = useRemixStore((s) => s.masterBus);
   const [manualOpen, setManualOpen] = useState(false);
 
   // Auto-load decks from URL params (from Everysong match page)
@@ -1168,17 +1139,13 @@ function HomeInner() {
 
 
   const [loadModalOpen, setLoadModalOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeckB, setShowDeckB] = useState(true);
   const [showMasterEQ, setShowMasterEQ] = useState(false);
   const exportMP4 = useRemixStore((s) => s.exportMP4);
   const isExporting = useRemixStore((s) => s.isExporting);
   const restoreSession = useRemixStore((s) => s.restoreSession);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [shareStatus, setShareStatus] = useState("");
-
-  // Restore shared session on load
+  // Restore shared session on load (?s= URL, kept for link compatibility)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("s");
@@ -1188,96 +1155,12 @@ function HomeInner() {
     }
   }, [restoreSession]);
 
-  const handleShare = async () => {
-    if (!deckA.sourceBuffer && !deckB.sourceBuffer) return;
-    setShareLoading(true);
-    setMenuOpen(false);
-    try {
-      const buildDeckData = (deck: typeof deckA) => deck.sourceBuffer ? {
-        audioUrl: deck.sourceUrl || null,
-        filename: deck.sourceFilename || "track",
-        params: deck.params,
-        regionStart: deck.regionStart,
-        regionEnd: deck.regionEnd,
-        volume: deck.volume,
-        calculatedBPM: deck.calculatedBPM,
-        artist: deck.artist,
-        title: deck.title,
-        baseKey: deck.baseKey,
-        activeStem: deck.activeStem || null,
-        activeStems: deck.activeStems || [],
-        stemUrls: deck.stemUrls || null,
-      } : null;
-
-      const form = new FormData();
-      form.append("session", JSON.stringify({
-        deckA: buildDeckData(deckA),
-        deckB: buildDeckData(deckB),
-        crossfader,
-      }));
-      if (deckA.sourceFile) form.append("audioA", deckA.sourceFile);
-      if (deckB.sourceFile) form.append("audioB", deckB.sourceFile);
-
-      const res = await fetch("/api/session", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      const url = `${window.location.origin}/?s=${data.id}`;
-      await navigator.clipboard.writeText(url);
-      setShareStatus("LINK COPIED");
-    } catch {
-      setShareStatus("SHARE FAILED");
-    }
-    setShareLoading(false);
-    setTimeout(() => setShareStatus(""), 3000);
-  };
-
-  const saveSession = () => {
-    const buildDeckData = (deck: typeof deckA) => deck.sourceBuffer ? {
-      audioUrl: deck.sourceUrl || null,
-      filename: deck.sourceFilename || "track",
-      params: deck.params,
-      regionStart: deck.regionStart,
-      regionEnd: deck.regionEnd,
-      volume: deck.volume,
-      calculatedBPM: deck.calculatedBPM,
-      artist: deck.artist,
-      title: deck.title,
-      baseKey: deck.baseKey,
-    } : null;
-
-    const parts: string[] = [];
-    if (deckA.sourceBuffer && deckA.title) parts.push(deckA.title.toUpperCase());
-    if (deckB.sourceBuffer && deckB.title) parts.push(deckB.title.toUpperCase());
-    const name = parts.length > 0 ? parts.join(" + ") : "SESSION";
-
-    const id = Math.random().toString(36).slice(2, 12);
-    const savedAt = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).toUpperCase();
-
-    const session: LocalSession = {
-      id,
-      name,
-      savedAt,
-      deckA: buildDeckData(deckA) as Record<string, unknown> | null,
-      deckB: buildDeckData(deckB) as Record<string, unknown> | null,
-      crossfader,
-      masterBus,
-    };
-
-    const existing = getSavedSessions();
-    existing.unshift(session);
-    if (existing.length > 30) existing.splice(30);
-    localStorage.setItem(LS_KEY, JSON.stringify(existing));
-    setSaveStatus("SAVED");
-    setTimeout(() => setSaveStatus(""), 2500);
-  };
-
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-[1100px] flex flex-col gap-5">
         <div className="console flex flex-col gap-5">
           {/* Header */}
-          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1 relative" style={{ zIndex: 100 }}>
+          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1 relative" style={{ zIndex: 100, minHeight: "80px" }}>
             <div className="w-6 h-6 border-[3px] border-[var(--text-dark)] rounded-[4px] relative">
               <div className="absolute inset-[4px] bg-[var(--text-dark)]" />
             </div>
@@ -1370,22 +1253,6 @@ function HomeInner() {
                   }}
                 >
                   <button
-                    onClick={() => { saveSession(); setMenuOpen(false); }}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
-                  >
-                    {saveStatus || "SAVE SESSION"}
-                    <span data-tooltip-right="SAVE CURRENT SESSION TO THIS BROWSER" className="ml-3 text-[10px]">?</span>
-                  </button>
-                  <button
-                    onClick={() => { setLoadModalOpen(true); setMenuOpen(false); }}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
-                  >
-                    LOAD SESSION
-                    <span data-tooltip-right="RESTORE A PREVIOUSLY SAVED SESSION" className="ml-3 text-[10px]">?</span>
-                  </button>
-                  <button
                     onClick={() => { if (typeof window !== "undefined") window.location.reload(); }}
                     className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
                     style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: "var(--panel-light)", background: "transparent", borderColor: "rgba(0,0,0,0.4)" }}
@@ -1409,15 +1276,6 @@ function HomeInner() {
                   >
                     {isExporting ? "RENDERING..." : "EXPORT MP4"}
                     <span data-tooltip-right="RENDER YOUR MIX AS A VIDEO FILE" className="ml-3 text-[10px]">?</span>
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    disabled={(!deckA.sourceBuffer && !deckB.sourceBuffer) || shareLoading}
-                    className="menu-item text-[12px] uppercase tracking-[0.15em] px-4 py-2 text-left border-b flex items-center justify-between"
-                    style={{ fontFamily: "var(--font-tech)", fontWeight: 700, color: shareLoading ? "var(--crt-bright)" : "var(--panel-light)", textShadow: shareLoading ? "0 0 4px var(--crt-bright), 0 0 10px var(--crt-dim)" : "none", background: "transparent", borderColor: "rgba(0,0,0,0.4)", opacity: (!deckA.sourceBuffer && !deckB.sourceBuffer) ? 0.3 : 1 }}
-                  >
-                    {shareLoading ? "UPLOADING..." : shareStatus || "SHARE SESSION"}
-                    <span data-tooltip-right="UPLOAD AND SHARE A LINK TO THIS SESSION" className="ml-3 text-[10px]">?</span>
                   </button>
                   <a
                     href="https://www.youtube.com/@SLOWANDREVERBEDMACHINE"
@@ -1502,11 +1360,11 @@ function HomeInner() {
           )}
 
           {/* Master output bus */}
-          <div className="flex justify-center boot-stagger boot-delay-4">
+          <div className="boot-stagger boot-delay-4 px-1">
             <button
               onClick={() => setShowMasterEQ(!showMasterEQ)}
-              className={detailBtnClass(showMasterEQ)}
-              style={detailBtnStyle}
+              className="deck-action-btn w-full"
+              style={{ ...deckActionBtnStyle, ...(showMasterEQ ? selectedTextGlow : null), width: "100%", whiteSpace: "nowrap" }}
             >
               MASTER EQ
             </button>
