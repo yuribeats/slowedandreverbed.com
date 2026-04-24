@@ -1215,7 +1215,23 @@ function HomeInner() {
                 </div>
               );
             })()}
-            <div className="ml-auto relative" style={{ zIndex: 100 }}>
+            <div className="ml-auto flex items-center gap-2 relative" style={{ zIndex: 100 }}>
+              <a
+                href="/gallery"
+                className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
+                style={{
+                  fontFamily: "var(--font-tech)",
+                  fontWeight: 700,
+                  color: "var(--panel-light)",
+                  background: "var(--control-base)",
+                  borderColor: "#1a1a1a",
+                  borderRadius: "4px",
+                  boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
+                  textDecoration: "none",
+                }}
+              >
+                GALLERY
+              </a>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
