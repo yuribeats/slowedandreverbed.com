@@ -293,22 +293,6 @@ export default function DeckBMatches() {
               "NO MATCH SELECTED"
             )}
           </div>
-          <button
-            onClick={handleLoadDeckB}
-            disabled={selectedIdx === null || deckBLoading}
-            className="shrink-0 text-[12px] tracking-[1px] uppercase crt-text"
-            style={{
-              fontFamily: "var(--font-crt)",
-              color: selectedIdx === null ? "var(--crt-dim)" : "var(--crt-bright)",
-              background: "var(--crt-bg)",
-              border: "1px solid var(--crt-dim)",
-              padding: "4px 10px",
-              borderRadius: "4px",
-              opacity: selectedIdx === null ? 0.5 : 1,
-            }}
-          >
-            {deckBLoading ? "LOADING..." : "LOAD → DECK B"}
-          </button>
         </div>
 
         {deckBError && (
@@ -492,6 +476,21 @@ export default function DeckBMatches() {
             {error}
           </span>
         )}
+
+        {/* Primary load action — flashes when a match is selected */}
+        <button
+          onClick={handleLoadDeckB}
+          disabled={selectedIdx === null || deckBLoading}
+          className="tactical-button self-start"
+          style={{
+            color: selectedIdx !== null ? "var(--crt-bright)" : "var(--panel-light)",
+            textShadow: selectedIdx !== null ? "0 0 6px var(--crt-bright), 0 0 14px var(--crt-dim)" : "none",
+            opacity: selectedIdx === null || deckBLoading ? 0.55 : 1,
+            animation: selectedIdx !== null && !deckBLoading ? "pulse 1.2s ease-in-out infinite" : "none",
+          }}
+        >
+          {deckBLoading ? "LOADING..." : "LOAD → DECK B"}
+        </button>
 
         {/* Manual load toggle */}
         <button

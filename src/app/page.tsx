@@ -1211,15 +1211,20 @@ function HomeInner() {
                           className="rocker-switch"
                           style={rockerStyle}
                         >
-                          <div
-                            className="w-2 h-2 rounded-full"
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 14 14"
                             style={{
-                              border: armed ? "none" : "2px solid #555",
-                              background: armed ? "var(--led-red-on, #c82828)" : undefined,
-                              boxShadow: armed ? "0 0 10px 2px var(--led-red-on, #c82828)" : undefined,
-                              transition: "box-shadow 120ms ease-out, background 120ms ease-out",
+                              filter: armed ? "drop-shadow(0 0 6px var(--led-red-on, #c82828))" : "none",
+                              transition: "filter 120ms ease-out",
                             }}
-                          />
+                          >
+                            <polygon
+                              points="3,2 12,7 3,12"
+                              fill={armed ? "var(--led-red-on, #c82828)" : "#555"}
+                            />
+                          </svg>
                         </button>
                       </div>
                       <div className="flex flex-col items-center" data-tooltip="STOPS BOTH DECKS SIMULTANEOUSLY.">
@@ -1230,7 +1235,9 @@ function HomeInner() {
                           className="rocker-switch"
                           style={rockerStyle}
                         >
-                          <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
+                          <svg width="12" height="12" viewBox="0 0 12 12">
+                            <rect x="1" y="1" width="10" height="10" fill="#555" />
+                          </svg>
                         </button>
                       </div>
                       <div className="flex flex-col items-center" data-tooltip="DOWNLOADS THE FULL MIX (BOTH DECKS) AS MP3.">
