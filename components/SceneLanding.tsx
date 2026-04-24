@@ -70,23 +70,7 @@ export default function SceneLanding() {
     isLoading ? "SEARCHING..." : "";
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative">
-      <a
-        href="/gallery"
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
-        style={{
-          fontFamily: "var(--font-tech)",
-          fontWeight: 700,
-          color: "var(--panel-light)",
-          background: "var(--control-base)",
-          borderColor: "#1a1a1a",
-          borderRadius: "4px",
-          boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
-          textDecoration: "none",
-        }}
-      >
-        GALLERY
-      </a>
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-[520px]">
         <div className="console flex flex-col gap-5 boot-stagger boot-delay-1">
           {/* Header */}
@@ -100,6 +84,22 @@ export default function SceneLanding() {
             >
               AUTO MASH
             </span>
+            <a
+              href="/gallery"
+              className="ml-auto text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
+              style={{
+                fontFamily: "var(--font-tech)",
+                fontWeight: 700,
+                color: "var(--panel-light)",
+                background: "var(--control-base)",
+                borderColor: "#1a1a1a",
+                borderRadius: "4px",
+                boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
+                textDecoration: "none",
+              }}
+            >
+              GALLERY
+            </a>
           </div>
 
           {/* Deck A input */}
