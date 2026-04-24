@@ -12,6 +12,7 @@ export default function SpectrumAnalyzer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const peaksRef = useRef<number[]>(new Array(BAR_COUNT).fill(0));
+  const freqDataRef = useRef<Uint8Array<ArrayBuffer>>(new Uint8Array(new ArrayBuffer(128)));
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -44,10 +45,12 @@ export default function SpectrumAnalyzer() {
     }
 
     const barWidth = (width - BAR_GAP * (BAR_COUNT - 1)) / BAR_COUNT;
-    const freqData = new Uint8Array(128);
+    const freqData = freqDataRef.current;
 
     if (nodes?.analyser && isPlaying) {
       nodes.analyser.getByteFrequencyData(freqData);
+    } else {
+      freqData.fill(0);
     }
 
     for (let i = 0; i < BAR_COUNT; i++) {

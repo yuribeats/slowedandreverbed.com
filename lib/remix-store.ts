@@ -375,7 +375,7 @@ let masterAnalyser: AnalyserNode | null = null;
 
 /* ─── Live recording state ─── */
 let liveRecorder: MediaRecorder | null = null;
-let recordedChunks: Blob[] = [];
+const recordedChunks: Blob[] = [];
 
 function getSharedMerger(): GainNode {
   const ctx = getAudioContext();
@@ -1717,7 +1717,7 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
     // Start recording if armed
     if (recordArmed && masterStreamDest) {
       getSharedMerger(); // ensure bus is built
-      recordedChunks = [];
+      recordedChunks.length = 0;
       liveRecorder = new MediaRecorder(masterStreamDest.stream);
       liveRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunks.push(e.data);
@@ -1883,7 +1883,9 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
       const mixed = stemTarget.length > 0 ? mixStemBuffers(stemTarget, stems) : null;
 
       set((s) => ({
-        [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false, activeStem: stemTarget[0] ?? null, activeStems: stemTarget, mixedStemBuffer: mixed },
+        // Release the raw File — the original bytes were only needed to POST to /api/stems
+        // and can be 10–50MB of otherwise-idle heap per deck.
+        [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false, activeStem: stemTarget[0] ?? null, activeStems: stemTarget, mixedStemBuffer: mixed, sourceFile: null },
       }));
 
       // Now that the drum stem URL is available, run downbeat detection against it
@@ -2122,7 +2124,7 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
 
     liveRecorder.onstop = () => {
       const blob = new Blob(recordedChunks, { type: recordedChunks[0]?.type || "audio/webm" });
-      recordedChunks = [];
+      recordedChunks.length = 0;
       liveRecorder = null;
       set({ isRecording: false, pendingRecording: blob });
     };
