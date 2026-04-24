@@ -4,6 +4,35 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
+async function extractVideoFrame(url: string): Promise<Blob> {
+  const video = document.createElement("video");
+  video.crossOrigin = "anonymous";
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "auto";
+  video.src = url;
+  await new Promise<void>((resolve, reject) => {
+    video.addEventListener("loadedmetadata", () => resolve(), { once: true });
+    video.addEventListener("error", () => reject(new Error("VIDEO LOAD FAILED")), { once: true });
+  });
+  // Seek to a random point in the middle 60% of the video. The first ~3s is always the producer
+  // tag overlay, so frames near t=0 looked identical across mints.
+  const dur = isFinite(video.duration) && video.duration > 0 ? video.duration : 10;
+  const seekTo = dur * (0.2 + Math.random() * 0.6);
+  video.currentTime = seekTo;
+  await new Promise<void>((resolve) => {
+    video.addEventListener("seeked", () => resolve(), { once: true });
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(video, 0, 0);
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("FRAME EXTRACT FAILED"))), "image/png");
+  });
+}
+
 interface GalleryItem {
   id: string;
   cid: string;
@@ -301,30 +330,24 @@ function GalleryContent() {
     if (!ipSession || !ipSelectedCollection) return;
     const id = item.id;
 
-    setIpMintState((p) => ({ ...p, [id]: "FETCHING COVER" }));
+    setIpMintState((p) => ({ ...p, [id]: "EXTRACTING FRAME" }));
     try {
       const mediaUri = `ipfs://${item.cid}`;
 
-      // Step 1: Fetch a fresh random image for the cover. The MP4 is just a still-image video,
-      // so every frame is identical — pulling from the video produced repeat covers. A new random
-      // image per mint guarantees variety.
-      const coverRes0 = await fetch(`/api/random-image?t=${Date.now()}_${Math.random()}`);
-      if (!coverRes0.ok) throw new Error(`COVER FETCH FAILED (${coverRes0.status})`);
-      const coverBlob = await coverRes0.blob();
+      // Step 1: Extract first frame of video as cover art and upload to Arweave
+      const coverBlob = await extractVideoFrame(item.url);
       const coverBuffer = await coverBlob.arrayBuffer();
       const coverBytes = new Uint8Array(coverBuffer);
       let coverBinary = "";
       for (let i = 0; i < coverBytes.length; i++) coverBinary += String.fromCharCode(coverBytes[i]);
       const coverBase64 = btoa(coverBinary);
-      const coverMime = coverBlob.type || "image/jpeg";
-      const coverExt = coverMime.split("/")[1] || "jpg";
       const coverRes = await fetch("/api/inprocess/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           data: coverBase64,
-          contentType: coverMime,
-          filename: `cover.${coverExt}`,
+          contentType: "image/png",
+          filename: "cover.png",
           apiKey: ipSession.token,
         }),
       });
