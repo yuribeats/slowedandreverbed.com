@@ -48,6 +48,15 @@ export default function MatchRow({ track, sourceKey, selected, onClick }: Props)
       <span className="text-[12px] uppercase tracking-[0.05em] shrink-0 w-[70px] text-right">
         {track.key ? track.key.toUpperCase() : "—"}
       </span>
+      <span
+        className="text-[11px] uppercase tracking-[0.05em] shrink-0 w-[52px] text-right"
+        style={{
+          color: track.shift && track.shift !== 0 ? "var(--led-orange)" : "transparent",
+          fontWeight: 700,
+        }}
+      >
+        {track.shift && track.shift !== 0 ? `${track.shift > 0 ? "+" : ""}${track.shift}ST` : ""}
+      </span>
       {reason && (
         <span className="text-[11px] uppercase tracking-[0.05em] shrink-0 w-[90px] text-right hidden sm:block" style={{ opacity: 0.6 }}>
           {reason}

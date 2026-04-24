@@ -860,7 +860,6 @@ type PersistedDeck = Pick<
   | "firstDownbeatMs"
   | "downbeatGrid"
   | "manualUpload"
-  | "volume"
 >;
 interface PersistedState {
   deckA: PersistedDeck;
@@ -884,7 +883,6 @@ function pickDeck(d: DeckState): PersistedDeck {
     firstDownbeatMs: d.firstDownbeatMs,
     downbeatGrid: d.downbeatGrid,
     manualUpload: d.manualUpload,
-    volume: d.volume,
   };
 }
 
@@ -2159,7 +2157,7 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
 
 }), {
   name: "driftwave-deck-state-v1",
-  version: 1,
+  version: 2,
   storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : undefined as unknown as Storage)),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   partialize: (state): any => ({
