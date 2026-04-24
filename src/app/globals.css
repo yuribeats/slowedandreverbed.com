@@ -471,3 +471,27 @@ button, .rocker-switch, .tactical-button, input[type="range"] {
     height: 65px;
   }
 }
+
+.crt-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--crt-dim) #000;
+}
+.crt-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.crt-scroll::-webkit-scrollbar-track {
+  background: #000;
+  border-left: 1px solid rgba(117, 204, 70, 0.15);
+}
+.crt-scroll::-webkit-scrollbar-thumb {
+  background: var(--crt-dim);
+  border: 2px solid #000;
+  box-shadow: inset 0 0 4px var(--crt-bright);
+}
+.crt-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--crt-bright);
+}
+.crt-scroll::-webkit-scrollbar-corner {
+  background: #000;
+}

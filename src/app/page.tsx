@@ -1328,7 +1328,7 @@ function HomeInner() {
             <div className={showDeckB ? "relative" : "ml-auto relative"} style={{ zIndex: 100 }}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="text-[12px] uppercase tracking-[0.15em] px-3 py-1 border-2"
+                className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
                 style={{
                   fontFamily: "var(--font-tech)",
                   fontWeight: 700,

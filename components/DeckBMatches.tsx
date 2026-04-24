@@ -404,7 +404,7 @@ export default function DeckBMatches() {
           style={{ padding: "6px" }}
         >
           <div
-            className="flex flex-col overflow-y-auto"
+            className="flex flex-col overflow-y-auto crt-scroll"
             style={{
               maxHeight: "400px",
               background: "var(--crt-bg)",
