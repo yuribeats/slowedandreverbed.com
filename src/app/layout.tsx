@@ -45,14 +45,14 @@ export const metadata: Metadata = {
     description: "Automatic harmonic mashup engine",
     url: "https://automash.xyz",
     siteName: "AUTO MASH",
-    images: [{ url: "https://slowedandreverbed.com/og.png", width: 1312, height: 940 }],
+    images: [{ url: "https://automash.xyz/og.png", width: 1312, height: 940 }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "AUTO MASH",
     description: "Automatic harmonic mashup engine",
-    images: ["https://slowedandreverbed.com/og.png"],
+    images: ["https://automash.xyz/og.png"],
   },
 };
 

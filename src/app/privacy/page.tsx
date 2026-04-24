@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <div className="flex flex-col gap-4 text-[12px] leading-relaxed" style={{ ...textStyle, fontSize: "12px", fontWeight: 400 }}>
           <p>LAST UPDATED: MARCH 22, 2026</p>
 
-          <p>THIS PRIVACY POLICY DESCRIBES HOW SLOWEDANDREVERBED.COM (&ldquo;THE SERVICE&rdquo;) HANDLES YOUR INFORMATION.</p>
+          <p>THIS PRIVACY POLICY DESCRIBES HOW AUTOMASH.XYZ (&ldquo;THE SERVICE&rdquo;) HANDLES YOUR INFORMATION.</p>
 
           <h2 className="text-[14px] mt-4" style={{ ...textStyle, fontSize: "14px" }}>1. INFORMATION WE COLLECT</h2>
           <p>WE COLLECT MINIMAL INFORMATION NECESSARY TO PROVIDE THE SERVICE. THIS MAY INCLUDE AUDIO FILES YOU UPLOAD FOR PROCESSING, METADATA ASSOCIATED WITH YOUR EXPORTS (ARTIST NAME, TRACK TITLE), AND STANDARD WEB SERVER LOGS (IP ADDRESS, BROWSER TYPE, ACCESS TIMES).</p>

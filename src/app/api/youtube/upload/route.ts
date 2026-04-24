@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
     // Use just the part before any slash if present
     const cleanArtist = (artist || "").split("/")[0].trim() || "UNKNOWN";
     const cleanTitle = (title || "").split("/")[0].trim() || "UNTITLED";
-    const videoTitle = `${cleanArtist} - ${cleanTitle} (SLOWED + REVERB)`.slice(0, 100);
-    const description = `${artist || ""} - ${title || ""}\nSLOWED + REVERB\n\nMADE WITH SLOWEDANDREVERBED.COM`;
+    const videoTitle = `${cleanArtist} - ${cleanTitle}`.slice(0, 100);
+    const description = `${artist || ""} - ${title || ""}\n\nMADE WITH AUTOMASH.XYZ`;
 
     const videoRes = await fetch(url);
     if (!videoRes.ok) throw new Error("Failed to download video from storage");

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const accessToken = await getAccessToken();
-    const caption = `${artist || ""} - ${title || ""} (SLOWED + REVERB) | MADE WITH SLOWEDANDREVERBED.COM`;
+    const caption = `${artist || ""} - ${title || ""} | MADE WITH AUTOMASH.XYZ`;
 
     // Download video to get file size
     const videoRes = await fetch(url);

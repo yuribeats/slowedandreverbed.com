@@ -15,7 +15,7 @@ export default function TermsPage() {
         <div className="flex flex-col gap-4 text-[12px] leading-relaxed" style={{ ...textStyle, fontSize: "12px", fontWeight: 400 }}>
           <p>LAST UPDATED: MARCH 22, 2026</p>
 
-          <p>BY USING SLOWEDANDREVERBED.COM (&ldquo;THE SERVICE&rdquo;), YOU AGREE TO THESE TERMS. IF YOU DO NOT AGREE, DO NOT USE THE SERVICE.</p>
+          <p>BY USING AUTOMASH.XYZ (&ldquo;THE SERVICE&rdquo;), YOU AGREE TO THESE TERMS. IF YOU DO NOT AGREE, DO NOT USE THE SERVICE.</p>
 
           <h2 className="text-[14px] mt-4" style={{ ...textStyle, fontSize: "14px" }}>1. USE OF SERVICE</h2>
           <p>THE SERVICE PROVIDES AUDIO PROCESSING TOOLS FOR PERSONAL AND CREATIVE USE. YOU MAY USE THE SERVICE TO PROCESS AUDIO FILES YOU HAVE THE RIGHT TO USE. YOU ARE SOLELY RESPONSIBLE FOR ANY CONTENT YOU UPLOAD, PROCESS, OR DISTRIBUTE USING THE SERVICE.</p>
