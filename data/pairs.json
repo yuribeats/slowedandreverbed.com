@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 191,
+  "cursor": 195,
   "paused": false,
   "pairs": [
     {
@@ -3068,6 +3068,74 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeihwdmbfknexxieehpz5uzwhzv76ia6gcjug6mkb23dznljjjwdtra"
+    },
+    {
+      "id": "d48989e2-5e13-49f9-8d85-29a1dbbfede6",
+      "instArtist": "Iggy Azalea, Charli xcx",
+      "instTitle": "Fancy",
+      "acapArtist": "SZA",
+      "acapTitle": "Saturn",
+      "instBpm": 94.981,
+      "instKey": "Bb Minor",
+      "acapBpm": 89.1,
+      "acapKey": "Db Major",
+      "style": "mashup",
+      "cursorAtRun": 191,
+      "createdAt": "2026-04-25T18:15:30.328Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeicle6igtfl7nzcjhpzell4ljon76sro4woqijjnzahtxgmrckxea4"
+    },
+    {
+      "id": "3ebe9266-3411-444c-ac87-554f8cb43ec4",
+      "instArtist": "Fetty Wap",
+      "instTitle": "Trap Queen",
+      "acapArtist": "DG e Batidão Stronda, Mc Davi, J. Eskine, MC G15",
+      "acapTitle": "Mãe Solteira",
+      "instBpm": 148.075,
+      "instKey": "G Major",
+      "acapBpm": 140,
+      "acapKey": "E Minor",
+      "style": "mashup",
+      "cursorAtRun": 192,
+      "createdAt": "2026-04-25T18:19:56.609Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeifw3eddfp5aeltdoxd2voywahxde6vr6ifllrcupvv4pv6h3uyvu4"
+    },
+    {
+      "id": "d1e54c75-2028-4bff-9383-94de86137a30",
+      "instArtist": "Rihanna, Drake",
+      "instTitle": "Work",
+      "acapArtist": "Juice WRLD",
+      "acapTitle": "Empty Out Your Pockets",
+      "instBpm": 91.974,
+      "instKey": "B Major",
+      "acapBpm": 91.9,
+      "acapKey": "Ab Minor",
+      "style": "mashup",
+      "cursorAtRun": 193,
+      "createdAt": "2026-04-25T18:24:09.386Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeihwctbpy6xlref4qnzbwlbqqt6okph62ddiax7g65yhvxmhhw5tai"
+    },
+    {
+      "id": "a4b59d27-7408-47ce-998d-53b0b4719f08",
+      "instArtist": "Kendrick Lamar",
+      "instTitle": "HUMBLE.",
+      "acapArtist": "Bon Jovi",
+      "acapTitle": "Always",
+      "instBpm": 150.011,
+      "instKey": "Db Minor",
+      "acapBpm": 140.8,
+      "acapKey": "E Major",
+      "style": "mashup",
+      "cursorAtRun": 194,
+      "createdAt": "2026-04-25T18:28:37.850Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeicrl4ter3epkebouu4wkmqvsbo7xfee5yqiipxm66f3mkyes5h7ma"
     }
   ]
 }

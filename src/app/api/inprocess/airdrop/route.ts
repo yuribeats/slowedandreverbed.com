@@ -17,6 +17,10 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = {
+    moment: {
+      tokenId: String(tokenId),
+      collectionAddress,
+    },
     collectionAddress,
     recipients: recipients.map((addr: string) => ({
       recipientAddress: addr,
