@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 188,
+  "cursor": 191,
   "paused": false,
   "pairs": [
     {
@@ -3017,6 +3017,57 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeibzorezdg4ydhenkqjoxvbcugequ6am4362zacrbhj62onp5eg7km"
+    },
+    {
+      "id": "cd9da9cb-d5a8-4093-a7f9-683e99300380",
+      "instArtist": "Katy Perry, Kanye West",
+      "instTitle": "E.T.",
+      "acapArtist": "Childish Gambino",
+      "acapTitle": "Redbone",
+      "instBpm": 151.684,
+      "instKey": "Db Major",
+      "acapBpm": 160,
+      "acapKey": "Db Major",
+      "style": "mashup",
+      "cursorAtRun": 188,
+      "createdAt": "2026-04-25T18:01:15.206Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeifwhl5tjbfzqgyicwth6siea6at4j64oglo3vwkdmoquluxnwcpti"
+    },
+    {
+      "id": "685c6c68-3e41-43b3-8c11-b2e86b2442f5",
+      "instArtist": "Maroon 5, Wiz Khalifa",
+      "instTitle": "Payphone",
+      "acapArtist": "Kapo",
+      "acapTitle": "Ohnana",
+      "instBpm": 110.015,
+      "instKey": "E Major",
+      "acapBpm": 105,
+      "acapKey": "Db Minor",
+      "style": "mashup",
+      "cursorAtRun": 189,
+      "createdAt": "2026-04-25T18:07:06.607Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeiefdvf433wbov3bue2n23lbhi46braltrwugtiz4pi2xbqlgu6sdi"
+    },
+    {
+      "id": "124a4782-3088-450e-988b-d410927cd369",
+      "instArtist": "Baauer",
+      "instTitle": "Harlem Shake",
+      "acapArtist": "BL3SS, CamrinWatsin, bbyclose",
+      "acapTitle": "Kisses (feat. bbyclose)",
+      "instBpm": 137.825,
+      "instKey": "C Major",
+      "acapBpm": 142,
+      "acapKey": "A Minor",
+      "style": "mashup",
+      "cursorAtRun": 190,
+      "createdAt": "2026-04-25T18:12:09.774Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeihwdmbfknexxieehpz5uzwhzv76ia6gcjug6mkb23dznljjjwdtra"
     }
   ]
 }
