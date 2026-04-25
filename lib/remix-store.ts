@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+// No persist middleware — every session starts with default controls.
 import {
   SimpleParams,
   SIMPLE_DEFAULTS,
@@ -852,7 +852,7 @@ function pickDeck(d: DeckState): PersistedDeck {
   };
 }
 
-export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get) => ({
+export const useRemixStore = create<RemixStore>()((set, get) => ({
   deckA: defaultDeck(),
   deckB: defaultDeck(),
   crossfader: 0,
@@ -2097,27 +2097,4 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
     set({ [deckKey(id)]: { ...deck, automationPoints: points } });
   },
 
-}), {
-  name: "driftwave-deck-state-v1",
-  version: 2,
-  storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : undefined as unknown as Storage)),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  partialize: (state): any => ({
-    deckA: pickDeck(state.deckA),
-    deckB: pickDeck(state.deckB),
-    crossfader: state.crossfader,
-    masterBus: state.masterBus,
-  }),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  merge: (persistedState, currentState): RemixStore => {
-    const p = persistedState as PersistedState | undefined;
-    if (!p) return currentState;
-    return {
-      ...currentState,
-      crossfader: p.crossfader ?? currentState.crossfader,
-      masterBus: p.masterBus ?? currentState.masterBus,
-      deckA: { ...currentState.deckA, ...p.deckA },
-      deckB: { ...currentState.deckB, ...p.deckB },
-    };
-  },
 }));

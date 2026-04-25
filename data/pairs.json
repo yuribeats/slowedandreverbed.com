@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 7,
+  "cursor": 8,
   "paused": false,
   "pairs": [
     {
@@ -51,6 +51,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeiccufqrcgvdq33hlhsbgp5n3vio3o6uxthz2f5vp764da46m4pmry"
+    },
+    {
+      "id": "d03b1159-c1b6-43ea-8563-12937bf0a4c7",
+      "instArtist": "Blondie",
+      "instTitle": "Call Me",
+      "acapArtist": "LE SSERAFIM",
+      "acapTitle": "Perfect Night",
+      "instBpm": 142.667,
+      "instKey": "D Minor",
+      "acapBpm": 136.1,
+      "acapKey": "F Major",
+      "style": "mashup",
+      "cursorAtRun": 7,
+      "createdAt": "2026-04-25T02:21:16.214Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeigvsjgcbmqytcixxi4tepwuvidernz2ojf3meizbsjotvfbnhzqze"
     }
   ]
 }
