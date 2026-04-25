@@ -713,7 +713,7 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
     const peakB = peakOf(renders[1].data[0]);
     const aOut = peakA * renders[0].gain;
     const bOut = peakB * renders[1].gain;
-    const targetBOut = aOut * 0.3;
+    const targetBOut = aOut * 0.55;
     if (bOut > 1e-6) {
       const factor = Math.min(0.5, targetBOut / bOut);
       renders[1].gain *= factor;
