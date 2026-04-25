@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 5,
+  "cursor": 7,
   "paused": false,
   "pairs": [
     {
@@ -34,6 +34,23 @@
       "createdAt": "2026-04-25T01:52:01.242Z",
       "status": "error",
       "error": "Unexpected token '\u0000', \"\u0000\u0000\u0000 ftypis\"... is not valid JSON"
+    },
+    {
+      "id": "a09627d9-4a2c-4cd1-8586-046b6b2be63f",
+      "instArtist": "The Knack",
+      "instTitle": "My Sharona",
+      "acapArtist": "Fedez",
+      "acapTitle": "BATTITO",
+      "instBpm": 147.245,
+      "instKey": "C Major",
+      "acapBpm": 141.1,
+      "acapKey": "A Minor",
+      "style": "mashup",
+      "cursorAtRun": 6,
+      "createdAt": "2026-04-25T02:12:21.750Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeiccufqrcgvdq33hlhsbgp5n3vio3o6uxthz2f5vp764da46m4pmry"
     }
   ]
 }

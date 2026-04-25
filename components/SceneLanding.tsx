@@ -78,9 +78,10 @@ export default function SceneLanding() {
             <div
               style={{
                 flex: 1,
+                minWidth: 0,
                 background: "radial-gradient(ellipse at center, #25391e 0%, var(--crt-bg) 70%, #16221b 100%)",
                 borderRadius: "6px",
-                padding: "36px 28px 28px",
+                padding: "20px 16px",
                 position: "relative",
                 overflow: "hidden",
                 boxShadow:
@@ -103,16 +104,16 @@ export default function SceneLanding() {
               <div
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(36px, 8vw, 56px)",
+                  fontSize: "clamp(24px, 6vw, 40px)",
                   color: "var(--crt-bright)",
-                  letterSpacing: "6px",
+                  letterSpacing: "2px",
                   lineHeight: 1,
+                  whiteSpace: "nowrap",
                   textShadow: [
                     "0 0 2px var(--crt-bright)",
-                    "0 0 8px var(--crt-bright)",
-                    "0 0 18px var(--crt-bright)",
-                    "0 0 36px rgba(117,204,70,0.7)",
-                    "0 0 60px rgba(117,204,70,0.4)",
+                    "0 0 6px var(--crt-bright)",
+                    "0 0 14px rgba(117,204,70,0.7)",
+                    "0 0 26px rgba(117,204,70,0.4)",
                   ].join(", "),
                   position: "relative",
                 }}

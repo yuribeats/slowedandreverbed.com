@@ -186,6 +186,9 @@ function GalleryContent() {
   });
   const [showInprocess, setShowInprocess] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [showInprocessPanel, setShowInprocessPanel] = useState(false);
+  const [showPinataPanel, setShowPinataPanel] = useState(false);
+  const [showPlaylistPanel, setShowPlaylistPanel] = useState(false);
   const SESSION_KEY = "automash_inprocess_session";
   // Keep the session as long as possible on the client — the server token decides actual validity.
   // If a request later 401s we clear the session and re-prompt. 365 days covers the realistic upper bound.
@@ -684,7 +687,7 @@ function GalleryContent() {
               {adminMenuOpen && (
                 <div
                   className="absolute right-0 top-full mt-1 flex flex-col border-2 border-black"
-                  style={{ background: "#fff", minWidth: "160px", zIndex: 50 }}
+                  style={{ background: "#fff", minWidth: "200px", zIndex: 50 }}
                 >
                   <a
                     href="https://www.youtube.com/@automashdotxyz/"
@@ -697,18 +700,43 @@ function GalleryContent() {
                   </a>
                   <Link
                     href="/"
-                    className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 text-left"
+                    className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
                     style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
                   >
                     AUTO MASH
                   </Link>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => setShowInprocessPanel((v) => !v)}
+                        className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
+                        style={{ ...textStyle, fontSize: "10px", background: showInprocessPanel ? "#000" : "transparent", color: showInprocessPanel ? "#fff" : "#000" }}
+                      >
+                        INPROCESS
+                      </button>
+                      <button
+                        onClick={() => setShowPinataPanel((v) => !v)}
+                        className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
+                        style={{ ...textStyle, fontSize: "10px", background: showPinataPanel ? "#000" : "transparent", color: showPinataPanel ? "#fff" : "#000" }}
+                      >
+                        PINATA FILES
+                      </button>
+                      <button
+                        onClick={() => setShowPlaylistPanel((v) => !v)}
+                        className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 text-left"
+                        style={{ ...textStyle, fontSize: "10px", background: showPlaylistPanel ? "#000" : "transparent", color: showPlaylistPanel ? "#fff" : "#000" }}
+                      >
+                        PLAYLIST DOWNLOADER
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
           {/* inprocess.world minting (admin only) */}
-          {isAdmin && adminMenuOpen && (
+          {isAdmin && showInprocessPanel && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>INPROCESS</span>
@@ -818,7 +846,7 @@ function GalleryContent() {
           )}
 
           {/* All Pinata Files (admin only) */}
-          {isAdmin && adminMenuOpen && (
+          {isAdmin && showPinataPanel && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>
@@ -899,7 +927,7 @@ function GalleryContent() {
           )}
 
           {/* Playlist Downloader (admin only) */}
-          {isAdmin && adminMenuOpen && (
+          {isAdmin && showPlaylistPanel && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>
                 PLAYLIST DOWNLOADER
