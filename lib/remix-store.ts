@@ -726,11 +726,11 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
         r.gain *= Math.min(TARGET_RMS / rms, MAX_GAIN_BOOST);
       }
     }
-    // After gated leveling, give the instrumental side (Deck A) +4 dB so the
+    // After gated leveling, give the instrumental side (Deck A) +7 dB so the
     // foundation sits clearly present and the vocals don't drown it.
     // renders[0] is always Deck A here because the deck render loop iterates
     // [deckA, deckB] in order, and we only enter this block when both rendered.
-    renders[0].gain *= Math.pow(10, 4 / 20);
+    renders[0].gain *= Math.pow(10, 7 / 20);
   }
 
   const sr = renders[0].sr;
