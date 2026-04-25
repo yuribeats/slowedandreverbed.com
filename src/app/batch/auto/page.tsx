@@ -17,7 +17,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRemixStore } from "../../../../lib/remix-store";
-import { artistKey, BatchStyle } from "../../../../lib/batch-presets";
+import { BatchStyle } from "../../../../lib/batch-presets";
 import { generateCover } from "../../../../lib/cover-generator";
 
 type AutomashResult =
@@ -69,7 +69,7 @@ export default function AutoBatchPage() {
       return;
     }
 
-    const computedArtist = `${artistKey(instArtist)}x${artistKey(acapArtist)}`;
+    const computedArtist = `${instArtist} x ${acapArtist}`;
     const computedTitle = `${instTitle} / ${acapTitle}`;
 
     (async () => {
