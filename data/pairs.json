@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "cursor": 4,
+  "paused": false,
+  "pairs": [
+    {
+      "id": "df87a225-f59f-4102-8671-406cf0b8059d",
+      "instArtist": "Wings",
+      "instTitle": "Silly Love Songs - 2014 Remaster",
+      "acapArtist": "Sleepy Hallow, Doechii",
+      "acapTitle": "ANXIETY (feat. Doechii)",
+      "instBpm": 124.95,
+      "instKey": "C Major",
+      "acapBpm": 128.9,
+      "acapKey": "C Major",
+      "style": "mashup",
+      "cursorAtRun": 3,
+      "createdAt": "2026-04-25T01:02:02.543Z",
+      "status": "error",
+      "error": "Unexpected token '\u0000', \"\u0000\u0000\u0000 ftypis\"... is not valid JSON"
+    }
+  ]
+}

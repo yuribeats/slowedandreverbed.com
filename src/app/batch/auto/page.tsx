@@ -80,6 +80,38 @@ export default function AutoBatchPage() {
           loadDeck("B", acapArtist, acapTitle),
         ]);
 
+        // Mirror the canonical /-page armed condition: bothLoaded && bothStems
+        // && bothDownbeat. loadDeck fires off separateStems + detectDownbeat in
+        // the background and returns early — we have to poll the store until
+        // both finish, otherwise renderToBlob runs against the full mix.
+        setStatus("AWAITING_STEMS_AND_DOWNBEATS");
+        const STEM_TIMEOUT_MS = 10 * 60 * 1000;
+        const start = Date.now();
+        const ready = () => {
+          const s = useRemixStore.getState();
+          return (
+            !!s.deckA.stemBuffers &&
+            !!s.deckB.stemBuffers &&
+            s.deckA.firstDownbeatMs !== null &&
+            s.deckB.firstDownbeatMs !== null
+          );
+        };
+        while (!ready()) {
+          if (Date.now() - start > STEM_TIMEOUT_MS) {
+            const s = useRemixStore.getState();
+            const missing = [
+              !s.deckA.stemBuffers && "A.stems",
+              !s.deckB.stemBuffers && "B.stems",
+              s.deckA.firstDownbeatMs === null && "A.downbeat",
+              s.deckB.firstDownbeatMs === null && "B.downbeat",
+            ].filter(Boolean);
+            throw new Error(`Timed out waiting for: ${missing.join(", ")}`);
+          }
+          if (useRemixStore.getState().deckA.stemError) throw new Error(`A stems failed: ${useRemixStore.getState().deckA.stemError}`);
+          if (useRemixStore.getState().deckB.stemError) throw new Error(`B stems failed: ${useRemixStore.getState().deckB.stemError}`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+
         setStatus("APPLYING_STYLE");
         applyStylePreset(style);
 

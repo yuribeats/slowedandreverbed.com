@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+worker/node_modules
+data/.worker.lock
 /.pnp
 .pnp.js
 .yarn/install-state.gz
