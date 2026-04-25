@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   const audioPath = join(tmp, `${id}-audio${audioExt}`);
   const imgPath = join(tmp, `${id}-cover.png`);
   const outPath = join(tmp, `${id}-output.mp4`);
-  const watermarkPath = join(process.cwd(), "public", "watermark.mp3");
+  const watermarkPath = join(process.cwd(), "public", "watermark.m4a");
 
   try {
     // Get audio bytes: prefer direct upload, fall back to Pinata CID for back-compat
@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
     args.push(
       "-filter_complex",
       watermark
-        // watermark plays at +6dB; track fades in from 0.4 → 1.0 over the watermark length (~3.55s)
-        ? "[2:a]volume=6dB[wm];[1:a]volume='if(lt(t,3.55),0.4,if(lt(t,4.05),0.4+0.6*(t-3.55)/0.5,1))':eval=frame[track];[wm][track]amix=inputs=2:duration=longest:normalize=0[aout];[0:v]scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p[vout]"
+        // watermark plays at +6dB; track ducked at 0.4 for tag duration (~1.9s), then ramps 0.4→1.0 over 0.5s
+        ? "[2:a]volume=6dB[wm];[1:a]volume='if(lt(t,1.9),0.4,if(lt(t,2.4),0.4+0.6*(t-1.9)/0.5,1))':eval=frame[track];[wm][track]amix=inputs=2:duration=longest:normalize=0[aout];[0:v]scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p[vout]"
         : "[0:v]scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p[vout];[1:a]anull[aout]",
       "-map", "[vout]",
       "-map", "[aout]",
