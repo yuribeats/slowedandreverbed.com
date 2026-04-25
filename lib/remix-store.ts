@@ -696,25 +696,41 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 
   if (renders.length === 0) return null;
 
-  // Per-deck RMS leveling so tracks mastered at different loudness levels
-  // (e.g. '70s rock vs modern pop) hit the same target before mixing. Cap the
-  // boost so a near-silent track doesn't get amplified into noise.
+  // Per-deck gated RMS leveling. Plain RMS over the whole buffer is biased
+  // low for vocal stems (lots of silent gaps between phrases) — that boosted
+  // vocals louder than instrumentals. Instead, find each deck's peak, set a
+  // gate at peak × 0.1 (-20 dB), compute RMS only over samples above the
+  // gate. That captures "loudness when audible", which matches perception.
   if (renders.length === 2) {
     const TARGET_RMS = 0.18;
-    const MAX_GAIN_BOOST = 4;
+    const MAX_GAIN_BOOST = 6;
     for (const r of renders) {
       const ch = r.data[0];
+      let peak = 0;
+      for (let i = 0; i < ch.length; i += 100) {
+        const a = Math.abs(ch[i]);
+        if (a > peak) peak = a;
+      }
+      const gate = peak * 0.1;
       let sumSq = 0;
       let n = 0;
       for (let i = 0; i < ch.length; i += 100) {
-        sumSq += ch[i] * ch[i];
-        n++;
+        const a = Math.abs(ch[i]);
+        if (a >= gate) {
+          sumSq += ch[i] * ch[i];
+          n++;
+        }
       }
       const rms = Math.sqrt(sumSq / Math.max(n, 1));
       if (rms > 1e-6) {
         r.gain *= Math.min(TARGET_RMS / rms, MAX_GAIN_BOOST);
       }
     }
+    // After gated leveling, give the instrumental side (Deck A) +4 dB so the
+    // foundation sits clearly present and the vocals don't drown it.
+    // renders[0] is always Deck A here because the deck render loop iterates
+    // [deckA, deckB] in order, and we only enter this block when both rendered.
+    renders[0].gain *= Math.pow(10, 4 / 20);
   }
 
   const sr = renders[0].sr;
