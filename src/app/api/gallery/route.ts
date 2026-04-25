@@ -50,12 +50,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ files });
     }
 
-    // A rename window tagged some exports as "automash-video"; query both so none are orphaned.
-    const [oldResult, newResult] = await Promise.all([
-      pinata.files.public.list().order("DESC").limit(100).keyvalues({ type: "driftwave-video" }),
-      pinata.files.public.list().order("DESC").limit(100).keyvalues({ type: "automash-video" }),
+    // A rename window tagged some exports as "automash-video"; query both so
+    // none are orphaned. Paginate each so we return EVERY mashup, not just
+    // the first 100.
+    const fetchAll = async (type: string) => {
+      const out: Awaited<ReturnType<typeof pinata.files.public.list>>["files"] = [];
+      let pageToken: string | undefined;
+      // Hard cap on iterations so a runaway never spins forever
+      for (let i = 0; i < 50; i++) {
+        let q = pinata.files.public.list().order("DESC").limit(1000).keyvalues({ type });
+        if (pageToken) q = q.pageToken(pageToken);
+        const r = await q;
+        out.push(...r.files);
+        if (!r.next_page_token || r.files.length === 0) break;
+        pageToken = r.next_page_token;
+      }
+      return out;
+    };
+    const [oldFiles, newFiles] = await Promise.all([
+      fetchAll("driftwave-video"),
+      fetchAll("automash-video"),
     ]);
-    const merged = [...oldResult.files, ...newResult.files];
+    const merged = [...oldFiles, ...newFiles];
     const seen = new Set<string>();
     const uniq = merged.filter((f) => (seen.has(f.id) ? false : (seen.add(f.id), true)));
     uniq.sort((a, b) => {
@@ -64,7 +80,7 @@ export async function GET(request: Request) {
       return bd - ad;
     });
 
-    const items = uniq.slice(0, 100).map((f) => ({
+    const items = uniq.map((f) => ({
       id: f.id,
       cid: f.cid,
       url: `https://${gateway}/files/${f.cid}`,
