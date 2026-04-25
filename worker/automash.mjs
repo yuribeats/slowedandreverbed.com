@@ -103,6 +103,31 @@ function pairKey(instArtist, instTitle, acapArtist, acapTitle) {
   return [a, b].sort().join("||");
 }
 
+/* ─── Artist + title canonicalization for dedup ─── */
+// Pull out individual collaborators: "Sleepy Hallow, Doechii" → ["sleepy hallow", "doechii"].
+// Catches comma, ampersand, "feat", "ft", " x ", " vs ".
+function expandArtists(artistField) {
+  return (artistField || "")
+    .toLowerCase()
+    .split(/,|&|\bfeat\b\.?|\bft\b\.?|\bx\b|\bvs\b/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// Strip "(feat. X)" suffixes and "- 2014 Remaster" tails so "ANXIETY (feat. Doechii)"
+// and "Anxiety" both collapse to the same key.
+function canonTitle(title) {
+  return (title || "")
+    .toLowerCase()
+    .replace(/\s*\((feat|ft|with)\.?[^)]*\)\s*/g, " ")
+    .replace(/\s*-\s*\d{0,4}\s*remaster.*$/i, "")
+    .replace(/\s*-\s*remaster.*$/i, "")
+    .replace(/\s*-\s*remix.*$/i, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /* ─── Lock ─── */
 async function acquireLock() {
   if (existsSync(LOCK_FILE)) {
@@ -284,6 +309,17 @@ async function main() {
     const usedDeckB = new Set(state.pairs.map(p =>
       `${p.acapArtist}::${p.acapTitle}`.toLowerCase()
     ));
+    // Stricter dedup: any artist who's appeared as Deck B (even as a
+    // collaborator) cannot appear again, and any title we've already
+    // mashed (canonicalized to drop "feat. X" / "- Remaster" tails)
+    // cannot repeat as Deck B regardless of which artist it's credited to.
+    const usedDeckBArtists = new Set();
+    const usedDeckBTitles = new Set();
+    for (const p of state.pairs) {
+      for (const name of expandArtists(p.acapArtist)) usedDeckBArtists.add(name);
+      const t = canonTitle(p.acapTitle);
+      if (t) usedDeckBTitles.add(t);
+    }
 
     // Find a usable Deck A: must have BPM+key in everysong, and have at least one
     // unpaired Deck B candidate. Advance cursor past failures.
@@ -319,6 +355,13 @@ async function main() {
         const cKey = `${c.artist}::${c.title}`.toLowerCase();
         if (usedDeckB.has(cKey)) return false;
         if (paired.has(pairKey(lookup.artist, lookup.title, c.artist, c.title))) return false;
+        // Any individual artist already used as Deck B (even as a feature)?
+        for (const a of expandArtists(c.artist)) {
+          if (usedDeckBArtists.has(a)) return false;
+        }
+        // Same canonical song title already used as Deck B?
+        const ct = canonTitle(c.title);
+        if (ct && usedDeckBTitles.has(ct)) return false;
         return true;
       };
       const TIERS = [25, 50, 100];
