@@ -18,17 +18,26 @@ function parseKey(keyStr: string): { noteIndex: number; mode: "major" | "minor" 
 }
 
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q");
-  const limit = parseInt(request.nextUrl.searchParams.get("limit") ?? "5", 10);
-  if (!q) return NextResponse.json({ error: "Missing q" }, { status: 400 });
+  const sp = request.nextUrl.searchParams;
+  const q = sp.get("q");
+  const artist = sp.get("artist");
+  const title = sp.get("title");
+  const popMin = sp.get("popMin");
+  const limit = parseInt(sp.get("limit") ?? "5", 10);
+  if (!q && !artist && !title) {
+    return NextResponse.json({ error: "Missing q or artist/title" }, { status: 400 });
+  }
 
   const apiKey = process.env.EVERYSONG_API_KEY;
   const params = new URLSearchParams({
-    q,
     limit: String(limit),
     sort: "popularity",
     dir: "desc",
   });
+  if (q) params.set("q", q);
+  if (artist) params.set("artist", artist);
+  if (title) params.set("title", title);
+  if (popMin) params.set("popMin", popMin);
   if (apiKey) params.set("api_key", apiKey);
   const url = `https://everysong.site/api/search?${params}`;
 
