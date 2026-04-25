@@ -696,42 +696,12 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 
   if (renders.length === 0) return null;
 
-  // Per-deck gated RMS leveling with ASYMMETRIC targets — instrumental side
-  // hits a hot target, vocal side hits a quieter target. The asymmetry is
-  // baked in at the leveling step rather than as a post-mix boost so the
-  // master-bus compressor + limiter don't squash it back. renders[0] is
-  // always Deck A (instrumental) and renders[1] is Deck B (vocal) because
-  // the deck render loop above iterates [deckA, deckB] and we only enter
-  // this block when both rendered.
+  // Pull Deck B (vocal) down 6 dB before the mix. Deck A keeps its natural
+  // level. The master-bus compressor + limiter then do their thing on the
+  // resulting balance instead of fighting against an artificially-boosted
+  // vocal stem.
   if (renders.length === 2) {
-    const TARGET_A = 0.28; // instrumental ≈ -11 dBFS gated RMS
-    const TARGET_B = 0.10; // vocal ≈ -20 dBFS gated RMS (~9 dB below A)
-    const MAX_GAIN_BOOST = 8;
-    const targets = [TARGET_A, TARGET_B];
-    for (let idx = 0; idx < renders.length; idx++) {
-      const r = renders[idx];
-      const target = targets[idx];
-      const ch = r.data[0];
-      let peak = 0;
-      for (let i = 0; i < ch.length; i += 100) {
-        const a = Math.abs(ch[i]);
-        if (a > peak) peak = a;
-      }
-      const gate = peak * 0.1;
-      let sumSq = 0;
-      let n = 0;
-      for (let i = 0; i < ch.length; i += 100) {
-        const a = Math.abs(ch[i]);
-        if (a >= gate) {
-          sumSq += ch[i] * ch[i];
-          n++;
-        }
-      }
-      const rms = Math.sqrt(sumSq / Math.max(n, 1));
-      if (rms > 1e-6) {
-        r.gain *= Math.min(target / rms, MAX_GAIN_BOOST);
-      }
-    }
+    renders[1].gain *= 0.5;
   }
 
   const sr = renders[0].sr;
