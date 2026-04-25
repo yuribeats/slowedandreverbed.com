@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
     args.push(
       "-filter_complex",
       watermark
-        // watermark plays at -3dB; track ducked at 0.4 for tag duration (~1.9s), then ramps 0.4→1.0 over 0.5s
-        ? "[2:a]volume=-3dB[wm];[1:a]volume='if(lt(t,1.9),0.4,if(lt(t,2.4),0.4+0.6*(t-1.9)/0.5,1))':eval=frame[track];[wm][track]amix=inputs=2:duration=longest:normalize=0[aout];[0:v]scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p[vout]"
+        // watermark plays at -5dB; track ducked at 0.4 for tag duration (~1.9s), then ramps 0.4→1.0 over 0.5s
+        ? "[2:a]volume=-5dB[wm];[1:a]volume='if(lt(t,1.9),0.4,if(lt(t,2.4),0.4+0.6*(t-1.9)/0.5,1))':eval=frame[track];[wm][track]amix=inputs=2:duration=longest:normalize=0[aout];[0:v]scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p[vout]"
         : "[0:v]scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p[vout];[1:a]anull[aout]",
       "-map", "[vout]",
       "-map", "[aout]",

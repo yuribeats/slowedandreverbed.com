@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 8,
+  "cursor": 9,
   "paused": false,
   "pairs": [
     {
@@ -68,6 +68,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeigvsjgcbmqytcixxi4tepwuvidernz2ojf3meizbsjotvfbnhzqze"
+    },
+    {
+      "id": "fd393bbd-f122-4a3e-bdeb-5b17cce38cf9",
+      "instArtist": "Kim Carnes",
+      "instTitle": "Bette Davis Eyes",
+      "acapArtist": "Ariana Grande",
+      "acapTitle": "we can't be friends (wait for your love)",
+      "instBpm": 116.62,
+      "instKey": "F Major",
+      "acapBpm": 115.8,
+      "acapKey": "F Major",
+      "style": "mashup",
+      "cursorAtRun": 8,
+      "createdAt": "2026-04-25T04:01:36.811Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeiarupybxjlnaqbyc5cmishiof2g3yy2fxjoc445xkns4nd64znl7e"
     }
   ]
 }
