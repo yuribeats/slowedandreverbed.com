@@ -696,6 +696,27 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 
   if (renders.length === 0) return null;
 
+  // Per-deck RMS leveling so tracks mastered at different loudness levels
+  // (e.g. '70s rock vs modern pop) hit the same target before mixing. Cap the
+  // boost so a near-silent track doesn't get amplified into noise.
+  if (renders.length === 2) {
+    const TARGET_RMS = 0.18;
+    const MAX_GAIN_BOOST = 4;
+    for (const r of renders) {
+      const ch = r.data[0];
+      let sumSq = 0;
+      let n = 0;
+      for (let i = 0; i < ch.length; i += 100) {
+        sumSq += ch[i] * ch[i];
+        n++;
+      }
+      const rms = Math.sqrt(sumSq / Math.max(n, 1));
+      if (rms > 1e-6) {
+        r.gain *= Math.min(TARGET_RMS / rms, MAX_GAIN_BOOST);
+      }
+    }
+  }
+
   const sr = renders[0].sr;
   const nch = Math.max(...renders.map((r) => r.nch));
   const maxLen = Math.max(...renders.map((r) => r.data[0].length));
