@@ -696,12 +696,28 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 
   if (renders.length === 0) return null;
 
-  // Pull Deck B (vocal) down ~10 dB before the mix. Deck A keeps its natural
-  // level. The master-bus compressor + limiter then do their thing on the
-  // resulting balance instead of fighting against an artificially-boosted
-  // vocal stem.
+  // Cap Deck B's effective peak at 50% of Deck A's effective peak. Hot vocal
+  // masters (K-pop) get attenuated harder than quieter ones (older tracks),
+  // without measuring loudness — just peaks. Floor at 0.5 (-6 dB) so we
+  // never RAISE Deck B above its natural level even if Deck A peaks higher.
   if (renders.length === 2) {
-    renders[1].gain *= 0.3;
+    const peakOf = (ch: Float32Array) => {
+      let p = 0;
+      for (let i = 0; i < ch.length; i += 100) {
+        const a = Math.abs(ch[i]);
+        if (a > p) p = a;
+      }
+      return p;
+    };
+    const peakA = peakOf(renders[0].data[0]);
+    const peakB = peakOf(renders[1].data[0]);
+    const aOut = peakA * renders[0].gain;
+    const bOut = peakB * renders[1].gain;
+    const targetBOut = aOut * 0.3;
+    if (bOut > 1e-6) {
+      const factor = Math.min(0.5, targetBOut / bOut);
+      renders[1].gain *= factor;
+    }
   }
 
   const sr = renders[0].sr;
