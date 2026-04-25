@@ -263,7 +263,7 @@ const defaultMasterBus: MasterBusParams = {
   eqLow: 0,
   eqMid: 0,
   eqHigh: 0,
-  compAmount: 0.25,
+  compAmount: 0.15,
   limiterAmount: 0.1,
 };
 

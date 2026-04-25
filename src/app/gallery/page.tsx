@@ -708,21 +708,35 @@ function GalleryContent() {
                   {isAdmin && (
                     <>
                       <button
-                        onClick={() => setShowInprocessPanel((v) => !v)}
+                        onClick={() => {
+                          const next = !showInprocessPanel;
+                          setShowInprocessPanel(next);
+                          setShowInprocess(next);
+                          setAdminMenuOpen(false);
+                        }}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
                         style={{ ...textStyle, fontSize: "10px", background: showInprocessPanel ? "#000" : "transparent", color: showInprocessPanel ? "#fff" : "#000" }}
                       >
                         INPROCESS
                       </button>
                       <button
-                        onClick={() => setShowPinataPanel((v) => !v)}
+                        onClick={() => {
+                          const next = !showPinataPanel;
+                          setShowPinataPanel(next);
+                          setShowAllFiles(next);
+                          if (next && allFiles.length === 0) loadAllFiles();
+                          setAdminMenuOpen(false);
+                        }}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
                         style={{ ...textStyle, fontSize: "10px", background: showPinataPanel ? "#000" : "transparent", color: showPinataPanel ? "#fff" : "#000" }}
                       >
                         PINATA FILES
                       </button>
                       <button
-                        onClick={() => setShowPlaylistPanel((v) => !v)}
+                        onClick={() => {
+                          setShowPlaylistPanel((v) => !v);
+                          setAdminMenuOpen(false);
+                        }}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 text-left"
                         style={{ ...textStyle, fontSize: "10px", background: showPlaylistPanel ? "#000" : "transparent", color: showPlaylistPanel ? "#fff" : "#000" }}
                       >
