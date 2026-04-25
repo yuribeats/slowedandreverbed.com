@@ -718,6 +718,8 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
       const factor = Math.min(0.5, targetBOut / bOut);
       renders[1].gain *= factor;
     }
+    // +2 dB lift on vocals applied uniformly after the peak-cap.
+    renders[1].gain *= Math.pow(10, 2 / 20);
   }
 
   const sr = renders[0].sr;
