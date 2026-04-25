@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Usage: node scripts/seed-status.mjs
-// Reads data/seed_billboard.csv, reorders rank-first, queries everysong for
-// each (artist, title), reports coverage of BPM + key.
+// Reads data/seed_billboard.csv, reorders rank-first, queries automash.xyz/api/everysong
+// for each (artist, title), reports coverage of BPM + key.
 // Writes data/seed_status.csv with per-row hit/miss + bpm/key.
 
 import { readFile, writeFile } from "node:fs/promises";
@@ -9,13 +9,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-
-async function loadEnvKey() {
-  const env = await readFile(join(ROOT, ".env.local"), "utf8");
-  const m = env.match(/^EVERYSONG_API_KEY=(.+)$/m);
-  if (!m) throw new Error("EVERYSONG_API_KEY missing in .env.local");
-  return m[1].trim().replace(/^["']|["']$/g, "");
-}
+const API_BASE = process.env.AUTOMASH_BASE ?? "https://automash.xyz";
 
 // Minimal RFC4180 CSV parser: handles quoted fields and embedded commas.
 function parseCsv(text) {
@@ -40,18 +34,16 @@ function parseCsv(text) {
 }
 
 async function main() {
-  const apiKey = await loadEnvKey();
   const csv = await readFile(join(ROOT, "data/seed_billboard.csv"), "utf8");
   const rows = parseCsv(csv).filter(r => r.length >= 5 && r[0] && r[1]);
-  // Header row has empty first two cells (",,song,singer,urls"); skip it
   const data = rows.filter(r => /^\d+$/.test(r[0]));
 
-  // Rank-first order: sort by rank ascending, year ascending as tiebreak
+  // Rank-first order: rank ascending, year ascending as tiebreak
   data.sort((a, b) => parseInt(a[1]) - parseInt(b[1]) || parseInt(a[0]) - parseInt(b[0]));
 
-  console.log(`Loaded ${data.length} rows. Querying everysong...`);
+  console.log(`Loaded ${data.length} rows. Querying ${API_BASE}/api/everysong ...`);
 
-  const out = [["year", "rank", "song", "singer", "url", "found", "bpm", "key", "spotifyTitle", "spotifyArtist"]];
+  const out = new Array(data.length);
   let hit = 0, withBpmKey = 0;
 
   const CONCURRENCY = 6;
@@ -62,35 +54,26 @@ async function main() {
     while (cursor < data.length) {
       const i = cursor++;
       const [year, rank, song, singer, url] = data[i];
-      const params = new URLSearchParams({
-        artist: singer,
-        title: song,
-        limit: "1",
-        api_key: apiKey,
-        popMin: "1",
-        sort: "popularity",
-        dir: "desc",
-      });
+      const params = new URLSearchParams({ artist: singer, title: song });
       let found = false, bpm = "", key = "", spotTitle = "", spotArtist = "";
       try {
-        const res = await fetch(`https://everysong.site/api/search?${params}`);
+        const res = await fetch(`${API_BASE}/api/everysong?${params}`, {
+          signal: AbortSignal.timeout(15000),
+        });
         if (res.ok) {
           const json = await res.json();
-          const t = (json.tracks ?? [])[0];
-          if (t) {
+          if (json.found) {
             found = true;
             hit++;
-            bpm = t.bpm ?? "";
-            key = t.key ?? "";
-            spotTitle = t.title ?? "";
-            spotArtist = t.artist ?? "";
+            bpm = json.bpm ?? "";
+            key = json.key ?? "";
+            spotTitle = json.title ?? "";
+            spotArtist = json.artist ?? "";
             if (bpm && key) withBpmKey++;
           }
         }
-      } catch (e) {
-        // network error — leave found=false
-      }
-      out[i + 1] = [year, rank, song, singer, url, found ? "1" : "0", bpm, key, spotTitle, spotArtist];
+      } catch {/* network/timeout — leave found=false */}
+      out[i] = [year, rank, song, singer, url, found ? "1" : "0", bpm, key, spotTitle, spotArtist];
       completed++;
       if (completed % 100 === 0) {
         console.log(`  ${completed}/${data.length}  hit=${hit}  bpm+key=${withBpmKey}`);
@@ -100,9 +83,8 @@ async function main() {
 
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
-  // Stable order in output
-  const ordered = [out[0], ...data.map((_, i) => out[i + 1])];
-  const csvOut = ordered.map(r => r.map(v => {
+  const header = ["year", "rank", "song", "singer", "url", "found", "bpm", "key", "spotifyTitle", "spotifyArtist"];
+  const csvOut = [header, ...out].map(r => r.map(v => {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }).join(",")).join("\n");
