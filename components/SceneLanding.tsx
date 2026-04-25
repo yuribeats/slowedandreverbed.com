@@ -73,17 +73,75 @@ export default function SceneLanding() {
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-[520px]">
         <div className="console flex flex-col gap-5 boot-stagger boot-delay-1">
-          {/* Header */}
-          <div className="flex items-center gap-4 px-3">
-<span
-              className="text-2xl sm:text-3xl tracking-[2px] uppercase"
-              style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
+          {/* CRT display header */}
+          <div className="flex items-stretch gap-3 px-3">
+            <div
+              style={{
+                flex: 1,
+                background: "var(--crt-bg)",
+                borderRadius: "6px",
+                padding: "18px 24px 14px",
+                position: "relative",
+                overflow: "hidden",
+                boxShadow: "inset 0 0 28px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.4)",
+              }}
             >
-              AUTO MASH
-            </span>
+              {/* Scanlines */}
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage:
+                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 1px, transparent 3px)",
+                  pointerEvents: "none",
+                  mixBlendMode: "multiply",
+                }}
+              />
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "clamp(28px, 6vw, 38px)",
+                  color: "var(--crt-bright)",
+                  letterSpacing: "4px",
+                  lineHeight: 1,
+                  textShadow:
+                    "0 0 4px var(--crt-bright), 0 0 14px var(--crt-bright), 0 0 26px var(--crt-dim)",
+                  position: "relative",
+                }}
+              >
+                AUTOMASH
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-crt)",
+                  fontSize: "16px",
+                  color: "var(--crt-bright)",
+                  letterSpacing: "2px",
+                  marginTop: "10px",
+                  textShadow: "0 0 3px var(--crt-bright), 0 0 8px var(--crt-dim)",
+                  position: "relative",
+                }}
+              >
+                v0.3.1 - READY
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-crt)",
+                  fontSize: "13px",
+                  color: "var(--crt-dim)",
+                  letterSpacing: "2px",
+                  marginTop: "2px",
+                  textShadow: "0 0 2px var(--crt-dim)",
+                  position: "relative",
+                }}
+              >
+                MILLENIAL CRINGE MASHUP SLOP
+              </div>
+            </div>
             <a
               href="/gallery"
-              className="ml-auto text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2"
+              className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2 self-start"
               style={{
                 fontFamily: "var(--font-tech)",
                 fontWeight: 700,
