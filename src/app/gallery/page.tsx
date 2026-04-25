@@ -687,7 +687,7 @@ function GalleryContent() {
               {adminMenuOpen && (
                 <div
                   className="absolute right-0 top-full mt-1 flex flex-col border-2 border-black"
-                  style={{ background: "#fff", minWidth: "200px", zIndex: 50 }}
+                  style={{ background: "#fff", minWidth: "360px", maxWidth: "min(560px, 90vw)", zIndex: 50 }}
                 >
                   <a
                     href="https://www.youtube.com/@automashdotxyz/"
@@ -712,36 +712,234 @@ function GalleryContent() {
                           const next = !showInprocessPanel;
                           setShowInprocessPanel(next);
                           setShowInprocess(next);
-                          setAdminMenuOpen(false);
                         }}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
                         style={{ ...textStyle, fontSize: "10px", background: showInprocessPanel ? "#000" : "transparent", color: showInprocessPanel ? "#fff" : "#000" }}
                       >
                         INPROCESS
                       </button>
+                      {showInprocessPanel && (
+                        <div className="flex flex-col gap-3 px-3 py-3 border-b border-black" style={{ background: "#fff" }}>
+                          {ipAuthStep === "done" && ipSession ? (
+                            <>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", color: "#228B22" }}>
+                                  LOGGED IN AS {ipSession.username}
+                                </span>
+                                <button
+                                  onClick={ipLogout}
+                                  className="text-[9px] uppercase tracking-wider border border-black px-2 py-1 ml-auto"
+                                  style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
+                                >
+                                  LOGOUT
+                                </button>
+                              </div>
+                              {ipCollections.length === 0 ? (
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>NO COLLECTIONS</span>
+                                  <a href="https://www.inprocess.world" target="_blank" rel="noopener noreferrer" className="text-[9px] uppercase tracking-wider border border-black px-2 py-1 self-start" style={{ ...textStyle, fontSize: "9px", background: "transparent" }}>
+                                    CREATE AT INPROCESS.WORLD
+                                  </a>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>COLLECTION:</span>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {ipCollections.map((c) => (
+                                      <button
+                                        key={c.address}
+                                        onClick={() => setIpSelectedCollection(c)}
+                                        className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                                        style={{
+                                          ...textStyle, fontSize: "9px",
+                                          background: ipSelectedCollection?.address === c.address ? "#000" : "transparent",
+                                          color: ipSelectedCollection?.address === c.address ? "#fff" : "#000",
+                                        }}
+                                      >
+                                        {c.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              {ipAuthStep === "email" && (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    value={ipEmail}
+                                    onChange={(e) => setIpEmail(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && ipSendCode()}
+                                    placeholder="EMAIL"
+                                    className="border-2 border-black px-3 py-1 text-[10px] uppercase tracking-wider flex-1"
+                                    style={{ ...textStyle, fontSize: "10px", background: "transparent", outline: "none" }}
+                                  />
+                                  <button
+                                    onClick={ipSendCode}
+                                    disabled={ipAuthLoading}
+                                    className="text-[9px] uppercase tracking-wider border-2 border-black px-3 py-1"
+                                    style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: ipAuthLoading ? 0.4 : 1 }}
+                                  >
+                                    {ipAuthLoading ? "..." : "SEND CODE"}
+                                  </button>
+                                </div>
+                              )}
+                              {ipAuthStep === "code" && (
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>CODE SENT TO {ipEmail}</span>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      value={ipCode}
+                                      onChange={(e) => setIpCode(e.target.value)}
+                                      onKeyDown={(e) => e.key === "Enter" && ipVerifyCode()}
+                                      placeholder="CODE"
+                                      className="border-2 border-black px-3 py-1 text-[10px] uppercase tracking-wider flex-1"
+                                      style={{ ...textStyle, fontSize: "10px", background: "transparent", outline: "none" }}
+                                    />
+                                    <button
+                                      onClick={ipVerifyCode}
+                                      disabled={ipAuthLoading}
+                                      className="text-[9px] uppercase tracking-wider border-2 border-black px-3 py-1"
+                                      style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: ipAuthLoading ? 0.4 : 1 }}
+                                    >
+                                      {ipAuthLoading ? "..." : "VERIFY"}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              {ipAuthError && (
+                                <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>{ipAuthError}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <button
                         onClick={() => {
                           const next = !showPinataPanel;
                           setShowPinataPanel(next);
                           setShowAllFiles(next);
                           if (next && allFiles.length === 0) loadAllFiles();
-                          setAdminMenuOpen(false);
                         }}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
                         style={{ ...textStyle, fontSize: "10px", background: showPinataPanel ? "#000" : "transparent", color: showPinataPanel ? "#fff" : "#000" }}
                       >
                         PINATA FILES
                       </button>
+                      {showPinataPanel && (
+                        <div className="flex flex-col gap-2 px-3 py-3 border-b border-black" style={{ background: "#fff" }}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={loadAllFiles}
+                              disabled={allFilesLoading}
+                              className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                              style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: allFilesLoading ? 0.4 : 1 }}
+                            >
+                              {allFilesLoading ? "..." : "REFRESH"}
+                            </button>
+                            <button
+                              onClick={() => downloadFiles(allFiles)}
+                              disabled={downloading || allFiles.length === 0}
+                              className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                              style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: (downloading || allFiles.length === 0) ? 0.4 : 1 }}
+                            >
+                              {downloading ? `${downloadProgress.current}/${downloadProgress.total}` : "DOWNLOAD ALL"}
+                            </button>
+                            <button
+                              onClick={() => { const nf = getNewFiles(); if (nf.length > 0) downloadFiles(nf); }}
+                              disabled={downloading || allFiles.length === 0}
+                              className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                              style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: (downloading || allFiles.length === 0) ? 0.4 : 1 }}
+                            >
+                              {`NEW (${getNewFiles().length})`}
+                            </button>
+                          </div>
+                          <div className="flex flex-col border border-black divide-y divide-black max-h-[280px] overflow-y-auto">
+                            {allFilesLoading && (
+                              <div className="px-2 py-1.5 text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", opacity: 0.5 }}>LOADING...</div>
+                            )}
+                            {!allFilesLoading && allFiles.length === 0 && (
+                              <div className="px-2 py-1.5 text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", opacity: 0.5 }}>NO FILES</div>
+                            )}
+                            {allFiles.map((f) => (
+                              <div key={f.id} className="flex items-center gap-2 px-2 py-1.5">
+                                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                                  <span className="text-[9px] uppercase tracking-wider truncate" style={{ ...textStyle, fontSize: "9px" }}>{f.name}</span>
+                                  <span className="text-[8px] uppercase tracking-wider opacity-40" style={{ ...textStyle, fontSize: "8px" }}>
+                                    {f.type || f.mimeType || "—"} · {f.size ? `${(f.size / 1024 / 1024).toFixed(1)}MB` : "—"} · {new Date(f.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
+                                  </span>
+                                </div>
+                                <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-[8px] uppercase tracking-wider border border-black px-1.5 py-0.5 shrink-0" style={{ ...textStyle, fontSize: "8px", background: "transparent" }}>OPEN</a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <button
-                        onClick={() => {
-                          setShowPlaylistPanel((v) => !v);
-                          setAdminMenuOpen(false);
-                        }}
+                        onClick={() => setShowPlaylistPanel((v) => !v)}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 text-left"
                         style={{ ...textStyle, fontSize: "10px", background: showPlaylistPanel ? "#000" : "transparent", color: showPlaylistPanel ? "#fff" : "#000" }}
                       >
                         PLAYLIST DOWNLOADER
                       </button>
+                      {showPlaylistPanel && (
+                        <div className="flex flex-col gap-2 px-3 py-3" style={{ background: "#fff", borderTop: "1px solid #000" }}>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={playlistUrl}
+                              onChange={(e) => setPlaylistUrl(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && fetchPlaylist()}
+                              placeholder="PASTE YOUTUBE PLAYLIST URL"
+                              className="flex-1 px-2 py-1 border-2 border-black text-[10px] uppercase tracking-wider outline-none"
+                              style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
+                            />
+                            <button
+                              onClick={fetchPlaylist}
+                              disabled={playlistFetching || !playlistUrl.trim()}
+                              className="px-3 py-1 border-2 border-black text-[10px] uppercase tracking-wider"
+                              style={{ ...textStyle, fontSize: "10px", background: playlistFetching ? "#000" : "transparent", color: playlistFetching ? "#fff" : "#000", opacity: !playlistUrl.trim() ? 0.3 : 1 }}
+                            >
+                              {playlistFetching ? "..." : "FETCH"}
+                            </button>
+                          </div>
+                          {playlistError && (
+                            <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>{playlistError}</span>
+                          )}
+                          {playlistTracks.length > 0 && (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", opacity: 0.5 }}>
+                                  {playlistTracks.length} TRACKS{plDoneCount > 0 && ` / ${plDoneCount} DONE`}{plErrorCount > 0 && ` / ${plErrorCount} FAILED`}
+                                </span>
+                                <button
+                                  onClick={downloadAllTracks}
+                                  disabled={playlistDownloading || plDoneCount === playlistTracks.length}
+                                  className="ml-auto px-2 py-1 border border-black text-[9px] uppercase tracking-wider"
+                                  style={{ ...textStyle, fontSize: "9px", background: playlistDownloading ? "#000" : "transparent", color: playlistDownloading ? "#fff" : "#000", opacity: plDoneCount === playlistTracks.length ? 0.3 : 1 }}
+                                >
+                                  {playlistDownloading ? `${playlistProgress.current}/${playlistProgress.total}` : plDoneCount > 0 && plDoneCount < playlistTracks.length ? "DL REMAINING" : "DL ALL"}
+                                </button>
+                              </div>
+                              <div className="flex flex-col border border-black divide-y divide-black max-h-[240px] overflow-y-auto">
+                                {playlistTracks.map((track, i) => (
+                                  <div key={track.videoId} className="flex items-center gap-2 px-2 py-1" style={{ background: track.status === "done" ? "#f0f0f0" : track.status === "error" ? "#fff5f5" : "transparent" }}>
+                                    <span className="text-[9px] uppercase tracking-wider shrink-0 w-5 text-right" style={{ ...textStyle, fontSize: "9px", opacity: 0.3 }}>{i + 1}</span>
+                                    <span className="text-[9px] uppercase tracking-wider truncate flex-1" style={{ ...textStyle, fontSize: "9px", opacity: track.status === "done" ? 0.4 : 1 }}>{track.title}</span>
+                                    <span className="text-[8px] uppercase tracking-wider shrink-0" style={{ ...textStyle, fontSize: "8px", color: track.status === "done" ? "#228B22" : track.status === "error" ? "#c82828" : track.status === "downloading" ? "#000" : "transparent" }}>
+                                      {track.status === "downloading" ? "..." : track.status === "done" ? "DONE" : track.status === "error" ? (track.error || "FAILED") : ""}
+                                    </span>
+                                    {track.status === "error" && !playlistDownloading && (
+                                      <button onClick={() => downloadTrack(i)} className="text-[8px] uppercase tracking-wider border border-black px-1.5 py-0.5 shrink-0" style={{ ...textStyle, fontSize: "8px", background: "transparent" }}>RETRY</button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -749,118 +947,8 @@ function GalleryContent() {
             </div>
           </div>
 
-          {/* inprocess.world minting (admin only) */}
-          {isAdmin && showInprocessPanel && (
-            <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>INPROCESS</span>
-                <button
-                  onClick={() => setShowInprocess(!showInprocess)}
-                  className="text-[10px] uppercase tracking-[0.15em] px-3 py-1 border-2 border-black ml-auto"
-                  style={{ ...textStyle, fontSize: "10px", background: showInprocess ? "#000" : "transparent", color: showInprocess ? "#fff" : "#000" }}
-                >
-                  {showInprocess ? "HIDE" : "SHOW"}
-                </button>
-              </div>
-              {showInprocess && (
-                <div className="flex flex-col gap-3">
-                  {ipAuthStep === "done" && ipSession ? (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", color: "#228B22" }}>
-                          LOGGED IN AS {ipSession.username}
-                        </span>
-                        <button
-                          onClick={ipLogout}
-                          className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
-                          style={{ ...textStyle, fontSize: "9px", background: "transparent" }}
-                        >
-                          LOGOUT
-                        </button>
-                      </div>
-                      {/* Collection picker */}
-                      {ipCollections.length === 0 ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>NO COLLECTIONS</span>
-                          <a href="https://www.inprocess.world" target="_blank" rel="noopener noreferrer" className="text-[9px] uppercase tracking-wider border border-black px-2 py-1" style={{ ...textStyle, fontSize: "9px", background: "transparent" }}>
-                            CREATE AT INPROCESS.WORLD
-                          </a>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>COLLECTION:</span>
-                          {ipCollections.map((c) => (
-                            <button
-                              key={c.address}
-                              onClick={() => setIpSelectedCollection(c)}
-                              className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
-                              style={{
-                                ...textStyle, fontSize: "9px",
-                                background: ipSelectedCollection?.address === c.address ? "#000" : "transparent",
-                                color: ipSelectedCollection?.address === c.address ? "#fff" : "#000",
-                              }}
-                            >
-                              {c.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {ipAuthStep === "email" && (
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={ipEmail}
-                            onChange={(e) => setIpEmail(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && ipSendCode()}
-                            placeholder="EMAIL"
-                            className="border-2 border-black px-3 py-1 text-[10px] uppercase tracking-wider flex-1"
-                            style={{ ...textStyle, fontSize: "10px", background: "transparent", outline: "none" }}
-                          />
-                          <button
-                            onClick={ipSendCode}
-                            disabled={ipAuthLoading}
-                            className="text-[9px] uppercase tracking-wider border-2 border-black px-3 py-1"
-                            style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: ipAuthLoading ? 0.4 : 1 }}
-                          >
-                            {ipAuthLoading ? "..." : "SEND CODE"}
-                          </button>
-                        </div>
-                      )}
-                      {ipAuthStep === "code" && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "10px", opacity: 0.5 }}>CODE SENT TO {ipEmail}</span>
-                          <input
-                            value={ipCode}
-                            onChange={(e) => setIpCode(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && ipVerifyCode()}
-                            placeholder="CODE"
-                            className="border-2 border-black px-3 py-1 text-[10px] uppercase tracking-wider w-[100px]"
-                            style={{ ...textStyle, fontSize: "10px", background: "transparent", outline: "none" }}
-                          />
-                          <button
-                            onClick={ipVerifyCode}
-                            disabled={ipAuthLoading}
-                            className="text-[9px] uppercase tracking-wider border-2 border-black px-3 py-1"
-                            style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: ipAuthLoading ? 0.4 : 1 }}
-                          >
-                            {ipAuthLoading ? "..." : "VERIFY"}
-                          </button>
-                        </div>
-                      )}
-                      {ipAuthError && (
-                        <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>{ipAuthError}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* All Pinata Files (admin only) */}
-          {isAdmin && showPinataPanel && (
+          {/* All Pinata Files (admin only) — moved into menu */}
+          {false && isAdmin && showPinataPanel && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>
@@ -940,8 +1028,8 @@ function GalleryContent() {
             </div>
           )}
 
-          {/* Playlist Downloader (admin only) */}
-          {isAdmin && showPlaylistPanel && (
+          {/* Playlist Downloader (admin only) — moved into menu */}
+          {false && isAdmin && showPlaylistPanel && (
             <div className="flex flex-col gap-3 px-3 py-4 border-2 border-black">
               <span className="text-[11px] uppercase tracking-[0.15em]" style={textStyle}>
                 PLAYLIST DOWNLOADER
