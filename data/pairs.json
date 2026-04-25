@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 4,
+  "cursor": 5,
   "paused": false,
   "pairs": [
     {
@@ -16,6 +16,22 @@
       "style": "mashup",
       "cursorAtRun": 3,
       "createdAt": "2026-04-25T01:02:02.543Z",
+      "status": "error",
+      "error": "Unexpected token '\u0000', \"\u0000\u0000\u0000 ftypis\"... is not valid JSON"
+    },
+    {
+      "id": "5141aa14-e3b6-45e1-9097-db4acba66f9f",
+      "instArtist": "Rod Stewart",
+      "instTitle": "Tonight's the Night (Gonna Be Alright) - 2009 Remaster",
+      "acapArtist": "Teddy Swims",
+      "acapTitle": "The Door",
+      "instBpm": 136.547,
+      "instKey": "B Major",
+      "acapBpm": 127.9,
+      "acapKey": "Ab Minor",
+      "style": "mashup",
+      "cursorAtRun": 4,
+      "createdAt": "2026-04-25T01:52:01.242Z",
       "status": "error",
       "error": "Unexpected token '\u0000', \"\u0000\u0000\u0000 ftypis\"... is not valid JSON"
     }

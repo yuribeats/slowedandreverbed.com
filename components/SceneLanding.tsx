@@ -78,12 +78,14 @@ export default function SceneLanding() {
             <div
               style={{
                 flex: 1,
-                background: "var(--crt-bg)",
+                background: "radial-gradient(ellipse at center, #25391e 0%, var(--crt-bg) 70%, #16221b 100%)",
                 borderRadius: "6px",
-                padding: "18px 24px 14px",
+                padding: "36px 28px 28px",
                 position: "relative",
                 overflow: "hidden",
-                boxShadow: "inset 0 0 28px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.4)",
+                boxShadow:
+                  "inset 0 0 60px rgba(0,0,0,0.65), 0 2px 10px rgba(0,0,0,0.5)",
+                textAlign: "center",
               }}
             >
               {/* Scanlines */}
@@ -93,7 +95,7 @@ export default function SceneLanding() {
                   position: "absolute",
                   inset: 0,
                   backgroundImage:
-                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 1px, transparent 3px)",
+                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0px, rgba(0,0,0,0.28) 1px, transparent 1px, transparent 3px)",
                   pointerEvents: "none",
                   mixBlendMode: "multiply",
                 }}
@@ -101,42 +103,21 @@ export default function SceneLanding() {
               <div
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(28px, 6vw, 38px)",
+                  fontSize: "clamp(36px, 8vw, 56px)",
                   color: "var(--crt-bright)",
-                  letterSpacing: "4px",
+                  letterSpacing: "6px",
                   lineHeight: 1,
-                  textShadow:
-                    "0 0 4px var(--crt-bright), 0 0 14px var(--crt-bright), 0 0 26px var(--crt-dim)",
+                  textShadow: [
+                    "0 0 2px var(--crt-bright)",
+                    "0 0 8px var(--crt-bright)",
+                    "0 0 18px var(--crt-bright)",
+                    "0 0 36px rgba(117,204,70,0.7)",
+                    "0 0 60px rgba(117,204,70,0.4)",
+                  ].join(", "),
                   position: "relative",
                 }}
               >
                 AUTOMASH
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-crt)",
-                  fontSize: "16px",
-                  color: "var(--crt-bright)",
-                  letterSpacing: "2px",
-                  marginTop: "10px",
-                  textShadow: "0 0 3px var(--crt-bright), 0 0 8px var(--crt-dim)",
-                  position: "relative",
-                }}
-              >
-                v0.3.1 - READY
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-crt)",
-                  fontSize: "13px",
-                  color: "var(--crt-dim)",
-                  letterSpacing: "2px",
-                  marginTop: "2px",
-                  textShadow: "0 0 2px var(--crt-dim)",
-                  position: "relative",
-                }}
-              >
-                MILLENIAL CRINGE MASHUP SLOP
               </div>
             </div>
             <a
