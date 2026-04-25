@@ -696,12 +696,12 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 
   if (renders.length === 0) return null;
 
-  // Pull Deck B (vocal) down 6 dB before the mix. Deck A keeps its natural
+  // Pull Deck B (vocal) down ~10 dB before the mix. Deck A keeps its natural
   // level. The master-bus compressor + limiter then do their thing on the
   // resulting balance instead of fighting against an artificially-boosted
   // vocal stem.
   if (renders.length === 2) {
-    renders[1].gain *= 0.5;
+    renders[1].gain *= 0.3;
   }
 
   const sr = renders[0].sr;
