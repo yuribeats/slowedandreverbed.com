@@ -709,7 +709,7 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
   // Shorter deck dictates the mix length. The longer deck fades out over the
   // last FADE_SEC seconds before that point, so the mix ends together cleanly.
   const FADE_SEC = 4;
-  const fadeSamples = Math.floor(FADE_SEC * sr);
+  const crossFadeSamples = Math.floor(FADE_SEC * sr);
   const minLen = Math.min(...renders.map((r) => r.data[0].length));
   const maxLen = minLen;
 
@@ -732,8 +732,8 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
         // Linear fade-out on the longer deck during the last FADE_SEC seconds.
         let fadeMul = 1;
         if (isLonger) {
-          const fadeStart = maxLen - fadeSamples;
-          if (i >= fadeStart) fadeMul = Math.max(0, 1 - (i - fadeStart) / fadeSamples);
+          const fadeStart = maxLen - crossFadeSamples;
+          if (i >= fadeStart) fadeMul = Math.max(0, 1 - (i - fadeStart) / crossFadeSamples);
         }
         mixed[c][i] += ch[i] * r.gain * autoVal * fadeMul;
       }
