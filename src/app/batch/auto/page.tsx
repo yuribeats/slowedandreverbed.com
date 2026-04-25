@@ -112,53 +112,6 @@ export default function AutoBatchPage() {
           await new Promise(r => setTimeout(r, 1000));
         }
 
-        // Phase-align deck B to deck A's downbeat grid.
-        // Both decks default to their own first drum-derived downbeat as the
-        // in-point. With BPM matched, that *should* keep them in time, but if
-        // Modal flagged a sub-bar beat as "first downbeat" on either side, the
-        // two will start out of phase. Walk B's grid, compute each candidate's
-        // phase offset from A's first downbeat modulo one bar, pick the
-        // candidate with the smallest circular distance.
-        setStatus("PHASE_ALIGN");
-        {
-          const sA = useRemixStore.getState().deckA;
-          const sB = useRemixStore.getState().deckB;
-          const gridA = sA.downbeatGrid ?? [];
-          const gridB = sB.downbeatGrid ?? [];
-          const inA = (sA.firstDownbeatMs ?? 0) / 1000;
-          if (gridA.length >= 2 && gridB.length >= 2) {
-            // Median bar length from deck A's grid (guards against outliers)
-            const diffsA = gridA.slice(1).map((t, i) => t - gridA[i]).sort((a, b) => a - b);
-            const barA = diffsA[Math.floor(diffsA.length / 2)];
-
-            console.log(`[align] A in=${inA.toFixed(3)}s  barA=${barA.toFixed(3)}s`);
-            console.log(`[align] gridA[0..7]=${gridA.slice(0, 8).map(t => t.toFixed(2)).join(", ")}`);
-            console.log(`[align] gridB[0..7]=${gridB.slice(0, 8).map(t => t.toFixed(2)).join(", ")}`);
-
-            const CANDIDATES = Math.min(8, gridB.length);
-            let best = { idx: 0, dist: Infinity, phase: 0, b: gridB[0] };
-            for (let i = 0; i < CANDIDATES; i++) {
-              const b = gridB[i];
-              const gap = b - inA;
-              const phase = ((gap % barA) + barA) % barA;          // [0, barA)
-              const dist = Math.min(phase, barA - phase);            // [0, barA/2]
-              if (dist < best.dist) best = { idx: i, dist, phase, b };
-            }
-            console.log(`[align] picked B[${best.idx}]=${best.b.toFixed(3)}s  phase=${best.phase.toFixed(3)}s  dist=${best.dist.toFixed(3)}s`);
-
-            // Only override if our pick differs from B's existing in-point
-            const currentInB = sB.regionStart;
-            if (Math.abs(best.b - currentInB) > 0.001) {
-              useRemixStore.getState().setRegion("B", best.b, 0);
-              console.log(`[align] B in-point ${currentInB.toFixed(3)}s → ${best.b.toFixed(3)}s`);
-            } else {
-              console.log(`[align] B already at chosen in-point`);
-            }
-          } else {
-            console.log(`[align] skipped — gridA.length=${gridA.length} gridB.length=${gridB.length}`);
-          }
-        }
-
         setStatus("APPLYING_STYLE");
         applyStylePreset(style);
 
