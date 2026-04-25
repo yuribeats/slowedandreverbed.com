@@ -719,26 +719,36 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 
   const sr = renders[0].sr;
   const nch = Math.max(...renders.map((r) => r.nch));
-  const maxLen = Math.max(...renders.map((r) => r.data[0].length));
+  // Shorter deck dictates the mix length. The longer deck fades out over the
+  // last FADE_SEC seconds before that point, so the mix ends together cleanly.
+  const FADE_SEC = 4;
+  const fadeSamples = Math.floor(FADE_SEC * sr);
+  const minLen = Math.min(...renders.map((r) => r.data[0].length));
+  const maxLen = minLen;
 
-  // Mix all renders together (with automation applied per-sample)
-  // Shorter decks loop to fill the longer deck's duration
   const mixed: Float32Array[] = [];
   for (let c = 0; c < nch; c++) mixed.push(new Float32Array(maxLen));
   for (const r of renders) {
     const hasAuto = r.autoPoints.length > 0;
     const rLen = r.data[0].length;
+    const isLonger = rLen > minLen;
     for (let c = 0; c < nch; c++) {
       const ch = c < r.data.length ? r.data[c] : r.data[0];
       for (let i = 0; i < maxLen; i++) {
-        const si = i % rLen;
+        if (i >= rLen) break;
         let autoVal = 1;
         if (hasAuto) {
           const realTime = i / r.sr;
           const sourceTime = r.rStart + realTime * r.rate;
           autoVal = getAutomationValue(r.autoPoints, sourceTime);
         }
-        mixed[c][i] += ch[si] * r.gain * autoVal;
+        // Linear fade-out on the longer deck during the last FADE_SEC seconds.
+        let fadeMul = 1;
+        if (isLonger) {
+          const fadeStart = maxLen - fadeSamples;
+          if (i >= fadeStart) fadeMul = Math.max(0, 1 - (i - fadeStart) / fadeSamples);
+        }
+        mixed[c][i] += ch[i] * r.gain * autoVal * fadeMul;
       }
     }
   }
