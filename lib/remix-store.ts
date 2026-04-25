@@ -823,53 +823,6 @@ const deckGeneration: Record<string, number> = { A: 0, B: 0 };
 
 /* ─── Store ─── */
 
-/* ─── Persist whitelist ─── */
-// Only the identity + tuning fields that let us re-fetch the track. AudioBuffers,
-// Files, Blobs, MediaRecorder refs, playback flags, and anything else transient
-// stays out of localStorage — the store is large and iOS Safari discards tabs
-// regularly, so we only persist what's needed to cold-restart to the same state.
-type PersistedDeck = Pick<
-  DeckState,
-  | "artist"
-  | "title"
-  | "sourceFilename"
-  | "sourceUrl"
-  | "sourceCdnUrl"
-  | "baseKey"
-  | "baseMode"
-  | "calculatedBPM"
-  | "params"
-  | "regionStart"
-  | "regionEnd"
-  | "firstDownbeatMs"
-  | "downbeatGrid"
-  | "manualUpload"
->;
-interface PersistedState {
-  deckA: PersistedDeck;
-  deckB: PersistedDeck;
-  crossfader: number;
-  masterBus: MasterBusParams;
-}
-function pickDeck(d: DeckState): PersistedDeck {
-  return {
-    artist: d.artist,
-    title: d.title,
-    sourceFilename: d.sourceFilename,
-    sourceUrl: d.sourceUrl,
-    sourceCdnUrl: d.sourceCdnUrl,
-    baseKey: d.baseKey,
-    baseMode: d.baseMode,
-    calculatedBPM: d.calculatedBPM,
-    params: d.params,
-    regionStart: d.regionStart,
-    regionEnd: d.regionEnd,
-    firstDownbeatMs: d.firstDownbeatMs,
-    downbeatGrid: d.downbeatGrid,
-    manualUpload: d.manualUpload,
-  };
-}
-
 export const useRemixStore = create<RemixStore>()((set, get) => ({
   deckA: defaultDeck(),
   deckB: defaultDeck(),

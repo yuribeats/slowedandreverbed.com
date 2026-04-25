@@ -184,7 +184,6 @@ function GalleryContent() {
       return cleaned;
     } catch { return {}; }
   });
-  const [showInprocess, setShowInprocess] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [showInprocessPanel, setShowInprocessPanel] = useState(false);
   const [showPinataPanel, setShowPinataPanel] = useState(false);
@@ -708,11 +707,7 @@ function GalleryContent() {
                   {isAdmin && (
                     <>
                       <button
-                        onClick={() => {
-                          const next = !showInprocessPanel;
-                          setShowInprocessPanel(next);
-                          setShowInprocess(next);
-                        }}
+                        onClick={() => setShowInprocessPanel((v) => !v)}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
                         style={{ ...textStyle, fontSize: "10px", background: showInprocessPanel ? "#000" : "transparent", color: showInprocessPanel ? "#fff" : "#000" }}
                       >
