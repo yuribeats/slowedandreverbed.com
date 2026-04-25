@@ -801,7 +801,9 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
   src.start(0);
   const rendered = await offCtx.startRendering();
 
-  // Normalize peaks
+  // Peak-normalize: every render lands at 0.99 (-0.09 dBFS) so output level
+  // is consistent across mashups regardless of how loud the source mix came
+  // out of the master bus.
   let peak = 0;
   for (let c = 0; c < rendered.numberOfChannels; c++) {
     const ch = rendered.getChannelData(c);
@@ -810,7 +812,7 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
       if (abs > peak) peak = abs;
     }
   }
-  if (peak > 1) {
+  if (peak > 1e-6) {
     const scale = 0.99 / peak;
     for (let c = 0; c < rendered.numberOfChannels; c++) {
       const ch = rendered.getChannelData(c);
