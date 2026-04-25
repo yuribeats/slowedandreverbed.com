@@ -101,25 +101,31 @@ export default function SceneLanding() {
                   mixBlendMode: "multiply",
                 }}
               />
-              <div
+              <svg
+                viewBox="0 0 800 100"
+                preserveAspectRatio="xMidYMid meet"
                 style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "clamp(24px, 6vw, 40px)",
-                  color: "var(--crt-bright)",
-                  letterSpacing: "2px",
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                  textShadow: [
-                    "0 0 2px var(--crt-bright)",
-                    "0 0 6px var(--crt-bright)",
-                    "0 0 14px rgba(117,204,70,0.7)",
-                    "0 0 26px rgba(117,204,70,0.4)",
-                  ].join(", "),
+                  display: "block",
+                  width: "100%",
+                  height: "auto",
                   position: "relative",
+                  filter:
+                    "drop-shadow(0 0 2px var(--crt-bright)) drop-shadow(0 0 6px var(--crt-bright)) drop-shadow(0 0 14px rgba(117,204,70,0.6))",
                 }}
               >
-                AUTOMASH
-              </div>
+                <text
+                  x="50%"
+                  y="50%"
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="var(--crt-bright)"
+                  fontFamily="var(--font-display)"
+                  fontSize="78"
+                  letterSpacing="4"
+                >
+                  AUTOMASH
+                </text>
+              </svg>
             </div>
             <a
               href="/gallery"
