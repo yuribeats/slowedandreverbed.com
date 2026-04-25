@@ -134,10 +134,16 @@ export default function AutoBatchPage() {
         fd.append("watermark", "true");
         const vidRes = await fetch("/api/generate-video", { method: "POST", body: fd });
         if (!vidRes.ok) {
+          // Error path: route returns JSON with { error: ... } on failure
           const e = await vidRes.json().catch(() => ({}));
           throw new Error(e.error || `generate-video failed (${vidRes.status})`);
         }
-        const { url: galleryUrl } = await vidRes.json();
+        // Success path: route returns the MP4 binary directly. The Pinata
+        // upload happens server-side via waitUntil, so the file lands in the
+        // gallery shortly even though we don't get a URL back here. Drain the
+        // body so the browser releases it.
+        await vidRes.arrayBuffer().catch(() => null);
+        const galleryUrl = ""; // not returned by current route shape
 
         const r: AutomashResult = { ok: true, galleryUrl, audioCid, artist: computedArtist, title: computedTitle };
         window.__automashResult = r;
