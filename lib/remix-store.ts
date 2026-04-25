@@ -135,40 +135,6 @@ function mixStemBuffers(stems: StemType[], stemBuffers: Partial<Record<StemType,
   return mixed;
 }
 
-// Find the first downbeat where the audio is loud (not silence/quiet intro)
-// Scans for the first sample exceeding 50% of peak amplitude, snaps to nearest downbeat
-function findFirstLoudDownbeat(downbeatsMs: number[], buf: AudioBuffer): number {
-  if (downbeatsMs.length === 0) return 0;
-  const ch0 = buf.getChannelData(0);
-  const sr = buf.sampleRate;
-
-  let peak = 0;
-  for (let i = 0; i < ch0.length; i += 100) {
-    const a = Math.abs(ch0[i]);
-    if (a > peak) peak = a;
-  }
-  if (peak <= 0) return downbeatsMs[0];
-
-  const threshold = peak * 0.5;
-  let firstLoudSample = 0;
-  for (let i = 0; i < ch0.length; i++) {
-    if (Math.abs(ch0[i]) >= threshold) {
-      firstLoudSample = i;
-      break;
-    }
-  }
-  const firstLoudMs = (firstLoudSample / sr) * 1000;
-
-  let best = downbeatsMs[0];
-  for (const ms of downbeatsMs) {
-    if (ms <= firstLoudMs + 50) best = ms;
-    else break;
-  }
-
-  console.log(`[downbeat] peak=${peak.toFixed(4)}, threshold=${(threshold).toFixed(4)}, firstLoud=${(firstLoudMs/1000).toFixed(3)}s, snapped=${(best/1000).toFixed(3)}s`);
-  return best;
-}
-
 interface AutomationPoint {
   time: number;   // seconds into source buffer
   value: number;  // 0–1 volume
@@ -1360,24 +1326,13 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
     };
 
     try {
-      let requestBody: Record<string, unknown>;
-      // Prefer the isolated drum stem — ML transient detection is significantly more
-      // accurate on drums alone than on the full mix. Falls back to full-track sources
-      // when stems haven't finished separating yet.
-      if (deck.stemUrls?.drums) {
-        requestBody = { audioUrl: deck.stemUrls.drums };
-      } else if (deck.sourceUrl?.includes("youtube")) {
-        // Prefer re-fetching a fresh CDN link server-side — the cached sourceCdnUrl
-        // from RapidAPI expires within minutes, and Modal's download-side fetch
-        // will 404 if we hand it a stale link.
-        requestBody = { youtubeUrl: deck.sourceUrl };
-      } else if (deck.sourceCdnUrl) {
-        requestBody = { cdnUrl: deck.sourceCdnUrl };
-      } else if (deck.sourceUrl) {
-        requestBody = { audioUrl: deck.sourceUrl };
-      } else {
-        return fail("No audio source — reload the track and try again");
+      // Strict: only run on the isolated drum stem. ML transient detection
+      // against the full mix is materially less accurate, so refuse to run
+      // until stems have separated. Callers must wait for drums first.
+      if (!deck.stemUrls?.drums) {
+        return fail("Drum stem not ready — wait for stems before requesting downbeat");
       }
+      const requestBody: Record<string, unknown> = { audioUrl: deck.stemUrls.drums };
 
       const res = await fetch("/api/downbeat", {
         method: "POST",
@@ -1398,12 +1353,8 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
       // Store downbeat grid (seconds)
       const downbeatGrid = ((data.downbeats_ms as number[] | null) ?? []).map((ms) => ms / 1000);
 
-      const downbeatsMs = (data.downbeats_ms as number[] | null) ?? [firstDownbeatMs];
-      const targetDownbeatMs = deck.sourceBuffer
-        ? findFirstLoudDownbeat(downbeatsMs, deck.sourceBuffer)
-        : firstDownbeatMs;
-
-      const inPoint = targetDownbeatMs / 1000;
+      // In-point is the first drum-derived downbeat. No first-loud heuristic.
+      const inPoint = firstDownbeatMs / 1000;
 
       set((s) => ({
         [dk]: {
@@ -1886,18 +1837,9 @@ export const useRemixStore = create<RemixStore>()(persist<RemixStore>((set, get)
         [dk]: { ...s[dk], stemBuffers: stems, stemUrls: stemUrlMap, isStemLoading: false, activeStem: stemTarget[0] ?? null, activeStems: stemTarget, mixedStemBuffer: mixed, sourceFile: null },
       }));
 
-      // Now that the drum stem URL is available, run downbeat detection against it
-      // in the background. detectDownbeat reads stemUrls.drums first.
-      get().detectDownbeat(id).then(() => {
-        // Re-snap in-point using vocal stem once the drum-based grid is in state.
-        const vocalBuf = stems.vocals;
-        const freshDeck = getDeck(get(), id);
-        if (vocalBuf && freshDeck.downbeatGrid && freshDeck.downbeatGrid.length > 0) {
-          const downbeatsMs = freshDeck.downbeatGrid.map((s) => s * 1000);
-          const vocalInMs = findFirstLoudDownbeat(downbeatsMs, vocalBuf);
-          get().setRegion(id, vocalInMs / 1000, 0);
-        }
-      });
+      // Drum-based downbeat detection. Whatever inPoint detectDownbeat sets is
+      // the final value — no second pass.
+      get().detectDownbeat(id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Stem separation failed";
       console.error("[stems] Error:", msg);
