@@ -184,6 +184,7 @@ function GalleryContent() {
       return cleaned;
     } catch { return {}; }
   });
+  const [tweetState, setTweetState] = useState<Record<string, "POSTING" | { url: string } | { error: string }>>({});
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [showInprocessPanel, setShowInprocessPanel] = useState(false);
   const [showPinataPanel, setShowPinataPanel] = useState(false);
@@ -346,6 +347,28 @@ function GalleryContent() {
     setIpSession(null);
     setIpAuthStep("email");
   };
+
+  async function handleTweet(item: GalleryItem) {
+    const id = item.id;
+    setTweetState((p) => ({ ...p, [id]: "POSTING" }));
+    try {
+      const res = await fetch("/api/twitter/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoUrl: item.url,
+          artist: item.artist,
+          title: item.title,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Tweet failed (${res.status})`);
+      setTweetState((p) => ({ ...p, [id]: { url: data.tweetUrl } }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Tweet failed";
+      setTweetState((p) => ({ ...p, [id]: { error: msg } }));
+    }
+  }
 
   async function handleMint(item: GalleryItem) {
     if (!ipSession || !ipSelectedCollection) return;
@@ -1145,6 +1168,42 @@ function GalleryContent() {
                     <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, opacity: 0.4 }}>
                       {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
                     </span>
+                  </div>
+                  <div className="mt-1 flex gap-2 flex-wrap items-center">
+                    {/* Tweet — posts the video directly via Twitter API */}
+                    {(() => {
+                      const s = tweetState[item.id];
+                      if (s && typeof s === "object" && "url" in s) {
+                        return (
+                          <a
+                            href={s.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                            style={{ ...textStyle, fontSize: "9px", background: "transparent", color: "#228B22", textDecoration: "none" }}
+                          >
+                            TWEETED
+                          </a>
+                        );
+                      }
+                      if (s && typeof s === "object" && "error" in s) {
+                        return (
+                          <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }} title={s.error}>
+                            TWEET FAILED
+                          </span>
+                        );
+                      }
+                      return (
+                        <button
+                          onClick={() => handleTweet(item)}
+                          disabled={s === "POSTING"}
+                          className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                          style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: s === "POSTING" ? 0.4 : 1 }}
+                        >
+                          {s === "POSTING" ? "POSTING..." : "TWEET"}
+                        </button>
+                      );
+                    })()}
                   </div>
                   {isAdmin && (
                     <div className="mt-1 flex gap-2 flex-wrap items-center">
