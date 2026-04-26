@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 269,
+  "cursor": 270,
   "paused": false,
   "pairs": [
     {
@@ -4390,6 +4390,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeibhr67t26mmjt57y5daj3r7e5bm3xipsrnpuir5rktbkjrr7xdbai"
+    },
+    {
+      "id": "d542ad1e-ad84-4cf3-b992-efac5146b870",
+      "instArtist": "Eric Clapton",
+      "instTitle": "Tears in Heaven",
+      "acapArtist": "Matheus & Kauan, Ana Castela",
+      "acapTitle": "Ilusão De Ótica - Ao Vivo",
+      "instBpm": 153.744,
+      "instKey": "A Major",
+      "acapBpm": 163,
+      "acapKey": "A Major",
+      "style": "mashup",
+      "cursorAtRun": 269,
+      "createdAt": "2026-04-26T00:54:55.582Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeif5tiikbgbkbzw4haa5ca6vhwf73zjmextg7fjusvv63nksbupzju"
     }
   ]
 }

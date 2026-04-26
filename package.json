@@ -24,7 +24,6 @@
     "react-dom": "^18",
     "rubberband-web": "^0.2.1",
     "soundtouchjs": "^0.3.0",
-    "twitter-api-v2": "^1.29.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
