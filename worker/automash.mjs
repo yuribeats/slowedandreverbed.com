@@ -315,10 +315,17 @@ async function main() {
     // cannot repeat as Deck B regardless of which artist it's credited to.
     const usedDeckBArtists = new Set();
     const usedDeckBTitles = new Set();
+    // Deck A also gets deduped: Billboard's top-50 contains the same song
+    // across multiple years (e.g. "Stayin' Alive" #1 in '78 chart, then #2
+    // in '79 chart). Without this we'd mash the same instrumental twice
+    // against different Deck Bs.
+    const usedDeckATitles = new Set();
     for (const p of state.pairs) {
       for (const name of expandArtists(p.acapArtist)) usedDeckBArtists.add(name);
-      const t = canonTitle(p.acapTitle);
-      if (t) usedDeckBTitles.add(t);
+      const tb = canonTitle(p.acapTitle);
+      if (tb) usedDeckBTitles.add(tb);
+      const ta = canonTitle(p.instTitle);
+      if (ta) usedDeckATitles.add(ta);
     }
 
     // Find a usable Deck A: must have BPM+key in everysong, and have at least one
@@ -336,6 +343,14 @@ async function main() {
       const lookup = await lookupTrack(candidate.artist, candidate.title);
       if (!lookup || !lookup.bpm || !lookup.key) {
         console.log(`[seek] no BPM/key for Deck A, advancing`);
+        state.cursor++;
+        continue;
+      }
+      // Skip Deck A if its canonical title was already mashed before
+      // (Billboard repeats the same song across multiple years).
+      const lookupTitle = canonTitle(lookup.title);
+      if (lookupTitle && usedDeckATitles.has(lookupTitle)) {
+        console.log(`[seek] Deck A "${lookup.title}" already mashed in a prior pair, advancing`);
         state.cursor++;
         continue;
       }
