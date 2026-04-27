@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 600,
+  "cursor": 601,
   "paused": false,
   "pairs": [
     {
@@ -8743,6 +8743,22 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeifndgogeo5gfvuonpg7bysvvnnppfna4um7xlmo7lviqzmi6kc2oi"
+    },
+    {
+      "id": "2581d78e-94f7-4e11-bd6c-59a91146c40c",
+      "instArtist": "Stories",
+      "instTitle": "Brother Louie",
+      "acapArtist": "Hans Zimmer",
+      "acapTitle": "Cornfield Chase",
+      "instBpm": 103.77,
+      "instKey": "A Minor",
+      "acapBpm": 94.1,
+      "acapKey": "A Minor",
+      "style": "mashup",
+      "cursorAtRun": 600,
+      "createdAt": "2026-04-27T23:35:45.901Z",
+      "status": "error",
+      "error": "A network error occurred."
     }
   ]
 }
