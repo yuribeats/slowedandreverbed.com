@@ -309,23 +309,21 @@ async function main() {
     const usedDeckB = new Set(state.pairs.map(p =>
       `${p.acapArtist}::${p.acapTitle}`.toLowerCase()
     ));
-    // Stricter dedup: any artist who's appeared as Deck B (even as a
-    // collaborator) cannot appear again, and any title we've already
-    // mashed (canonicalized to drop "feat. X" / "- Remaster" tails)
-    // cannot repeat as Deck B regardless of which artist it's credited to.
-    const usedDeckBArtists = new Set();
-    const usedDeckBTitles = new Set();
-    // Deck A also gets deduped: Billboard's top-50 contains the same song
-    // across multiple years (e.g. "Stayin' Alive" #1 in '78 chart, then #2
-    // in '79 chart). Without this we'd mash the same instrumental twice
-    // against different Deck Bs.
-    const usedDeckATitles = new Set();
+    // Cross-deck dedup: any artist or title that's appeared in EITHER deck
+    // cannot appear again on either side. Catches:
+    //   - same artist as Deck B in two different pairs
+    //   - same Billboard song mashed twice across charts
+    //   - song that was Deck A appearing as Deck B in a later pair
+    //   - song that was Deck B getting mashed as Deck A
+    const usedArtists = new Set();
+    const usedTitles = new Set();
     for (const p of state.pairs) {
-      for (const name of expandArtists(p.acapArtist)) usedDeckBArtists.add(name);
+      for (const name of expandArtists(p.acapArtist)) usedArtists.add(name);
+      for (const name of expandArtists(p.instArtist)) usedArtists.add(name);
       const tb = canonTitle(p.acapTitle);
-      if (tb) usedDeckBTitles.add(tb);
+      if (tb) usedTitles.add(tb);
       const ta = canonTitle(p.instTitle);
-      if (ta) usedDeckATitles.add(ta);
+      if (ta) usedTitles.add(ta);
     }
 
     // Find a usable Deck A: must have BPM+key in everysong, and have at least one
@@ -346,11 +344,17 @@ async function main() {
         state.cursor++;
         continue;
       }
-      // Skip Deck A if its canonical title was already mashed before
-      // (Billboard repeats the same song across multiple years).
+      // Skip Deck A if its canonical title or any of its artists has been
+      // used in EITHER deck before.
       const lookupTitle = canonTitle(lookup.title);
-      if (lookupTitle && usedDeckATitles.has(lookupTitle)) {
-        console.log(`[seek] Deck A "${lookup.title}" already mashed in a prior pair, advancing`);
+      if (lookupTitle && usedTitles.has(lookupTitle)) {
+        console.log(`[seek] Deck A "${lookup.title}" title already used (either deck), advancing`);
+        state.cursor++;
+        continue;
+      }
+      const lookupArtists = expandArtists(lookup.artist);
+      if (lookupArtists.some(a => usedArtists.has(a))) {
+        console.log(`[seek] Deck A artist "${lookup.artist}" already used (either deck), advancing`);
         state.cursor++;
         continue;
       }
@@ -370,13 +374,15 @@ async function main() {
         const cKey = `${c.artist}::${c.title}`.toLowerCase();
         if (usedDeckB.has(cKey)) return false;
         if (paired.has(pairKey(lookup.artist, lookup.title, c.artist, c.title))) return false;
-        // Any individual artist already used as Deck B (even as a feature)?
+        // Any individual artist already used in EITHER deck (even as a feature)?
         for (const a of expandArtists(c.artist)) {
-          if (usedDeckBArtists.has(a)) return false;
+          if (usedArtists.has(a)) return false;
+          if (lookupArtists.includes(a)) return false; // same Deck A artist as Deck B
         }
-        // Same canonical song title already used as Deck B?
+        // Canonical title already used in either deck (or matches Deck A's title)?
         const ct = canonTitle(c.title);
-        if (ct && usedDeckBTitles.has(ct)) return false;
+        if (ct && usedTitles.has(ct)) return false;
+        if (ct && ct === lookupTitle) return false;
         return true;
       };
       const TIERS = [25, 50, 100];
