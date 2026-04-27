@@ -1,0 +1,52 @@
+name: automash worker
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: automash-worker
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install worker deps
+        working-directory: worker
+        run: npm install --no-audit --no-fund
+
+      - name: Run one tick
+        working-directory: worker
+        env:
+          AUTOMASH_BASE: https://automash.xyz
+          AUTOMASH_HEADLESS: 'true'
+          AUTOMASH_TICK_TIMEOUT_MS: '600000'
+        run: node automash.mjs
+
+      - name: Commit state if changed
+        run: |
+          git config user.name 'automash-bot'
+          git config user.email 'automash-bot@users.noreply.github.com'
+          if [ -n "$(git status --porcelain data/)" ]; then
+            git add data/
+            git commit -m 'automash: tick state update [skip ci]'
+            git pull --rebase origin main || true
+            git push
+          else
+            echo 'no state changes'
+          fi
