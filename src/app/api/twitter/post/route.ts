@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
     const mediaId = await client.v1.uploadMedia(videoBuffer, {
       mimeType: "video/mp4",
       target: "tweet",
+      longVideo: true,
     });
 
     const text = `${artist} / ${title}`;
