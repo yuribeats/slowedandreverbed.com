@@ -1192,21 +1192,6 @@ function GalleryContent() {
                       {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
                     </span>
                   </div>
-                  <div className="mt-1 flex gap-2 flex-wrap items-center">
-                    {/* Tweet — opens X compose with video URL + automash.xyz mention */}
-                    <a
-                      href={`https://twitter.com/intent/tweet?${new URLSearchParams({
-                        text: `${item.artist} / ${item.title} — made with automash.xyz`,
-                        url: item.url,
-                      })}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
-                      style={{ ...textStyle, fontSize: "9px", background: "transparent", textDecoration: "none" }}
-                    >
-                      TWEET
-                    </a>
-                  </div>
                   {isAdmin && (
                     <div className="mt-1 flex gap-2 flex-wrap items-center">
                       {/* YouTube */}
