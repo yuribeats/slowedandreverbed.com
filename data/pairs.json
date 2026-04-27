@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 601,
+  "cursor": 602,
   "paused": false,
   "pairs": [
     {
@@ -8757,6 +8757,22 @@
       "style": "mashup",
       "cursorAtRun": 600,
       "createdAt": "2026-04-27T23:35:45.901Z",
+      "status": "error",
+      "error": "A network error occurred."
+    },
+    {
+      "id": "952c47cd-f9b5-4222-9d64-9199566a0559",
+      "instArtist": "Maria Muldaur",
+      "instTitle": "Midnight at the Oasis",
+      "acapArtist": "Tyler Braden",
+      "acapTitle": "DEVIL YOU KNOW",
+      "instBpm": 98.686,
+      "instKey": "Db Major",
+      "acapBpm": 93.2,
+      "acapKey": "Db Major",
+      "style": "mashup",
+      "cursorAtRun": 601,
+      "createdAt": "2026-04-27T23:46:05.187Z",
       "status": "error",
       "error": "A network error occurred."
     }
