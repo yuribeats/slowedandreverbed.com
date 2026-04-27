@@ -263,7 +263,7 @@ const defaultMasterBus: MasterBusParams = {
   eqLow: 0,
   eqMid: 0,
   eqHigh: 0,
-  compAmount: 0.15,
+  compAmount: 0.07,
   limiterAmount: 0.1,
 };
 
@@ -718,8 +718,8 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
       const factor = Math.min(0.5, targetBOut / bOut);
       renders[1].gain *= factor;
     }
-    // +4 dB lift on vocals applied uniformly after the peak-cap.
-    renders[1].gain *= Math.pow(10, 4 / 20);
+    // +3 dB lift on vocals applied uniformly after the peak-cap.
+    renders[1].gain *= Math.pow(10, 3 / 20);
   }
 
   const sr = renders[0].sr;
