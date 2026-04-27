@@ -92,6 +92,7 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const waveformWrapRef = useRef<HTMLDivElement>(null);
   const [showEQ, setShowEQ] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
+  const [looping, setLooping] = useState(false);
 
   const rate = 1.0 + deck.params.speed;
   const isTrackLoading = deck.isLoading || deck.downbeatDetecting || deck.isStemLoading;
@@ -194,8 +195,18 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
   const handleStart = useCallback(async () => {
     const ctx = getAudioContext();
     await ctx.resume();
-    play(id);
-  }, [play, id]);
+    play(id, looping);
+  }, [play, id, looping]);
+
+  const handleLoopToggle = useCallback(async () => {
+    const next = !looping;
+    setLooping(next);
+    if (deck.isPlaying) {
+      const ctx = getAudioContext();
+      await ctx.resume();
+      play(id, next);
+    }
+  }, [looping, deck.isPlaying, play, id]);
 
   const handleSkip = useCallback(async (delta: number) => {
     if (!deck.sourceBuffer) return;
@@ -530,6 +541,15 @@ function Deck({ id, onHide }: { id: DeckId; onHide?: () => void }) {
             <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>FF</span>
             <button onClick={() => handleSkip(5)} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
               <div className="w-1.5 h-1.5 rounded-full border-2 border-[#555]" />
+            </button>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="label" style={{ margin: 0, fontSize: "12px", marginBottom: "4px" }}>LOOP</span>
+            <button onClick={handleLoopToggle} disabled={!deckReady} className="rocker-switch" style={{ width: "44px", height: "44px" }}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{
+                background: looping ? "var(--led-green-on, #22c55e)" : undefined,
+                border: looping ? "none" : "2px solid #555",
+              }} />
             </button>
           </div>
         </div>
