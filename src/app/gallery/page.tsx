@@ -706,6 +706,24 @@ function GalleryContent() {
                   </Link>
                   {isAdmin && (
                     <>
+                      <a
+                        href="http://127.0.0.1:8765/automash-loop-events.log"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
+                        style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
+                      >
+                        LOOP EVENTS LOG
+                      </a>
+                      <a
+                        href="http://127.0.0.1:8765/automash-loop.log"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"
+                        style={{ ...textStyle, fontSize: "10px", background: "transparent" }}
+                      >
+                        LOOP TICK LOG
+                      </a>
                       <button
                         onClick={() => setShowInprocessPanel((v) => !v)}
                         className="text-[10px] uppercase tracking-[0.15em] px-3 py-2 border-b border-black text-left"

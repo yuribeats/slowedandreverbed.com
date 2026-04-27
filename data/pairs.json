@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 509,
+  "cursor": 510,
   "paused": false,
   "pairs": [
     {
@@ -8258,6 +8258,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeiej2dojiy5qzpglwvsfl3qwdq5qisjyeyfa7uitfnqtut6y3o4orq"
+    },
+    {
+      "id": "fbff025b-150b-4a79-be48-bc839332f85a",
+      "instArtist": "Soft Cell",
+      "instTitle": "Tainted Love",
+      "acapArtist": "The Cure",
+      "acapTitle": "Friday I'm In Love",
+      "instBpm": 144.438,
+      "instKey": "C Minor",
+      "acapBpm": 136.2,
+      "acapKey": "C Minor",
+      "style": "mashup",
+      "cursorAtRun": 509,
+      "createdAt": "2026-04-27T16:52:27.874Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeido2rxyt7x4si2fxlgzjibm4tlvomhhhggru3rrsg6iqigrx4su2y"
     }
   ]
 }
