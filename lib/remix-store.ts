@@ -696,10 +696,10 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
 
   if (renders.length === 0) return null;
 
-  // Cap Deck B's effective peak at 50% of Deck A's effective peak. Hot vocal
-  // masters (K-pop) get attenuated harder than quieter ones (older tracks),
-  // without measuring loudness — just peaks. Floor at 0.5 (-6 dB) so we
-  // never RAISE Deck B above its natural level even if Deck A peaks higher.
+  // Level Deck B against Deck A using the mean of two scale factors:
+  //   peakScale: makes Deck B's peak equal Deck A's peak.
+  //   rmsScale:  makes Deck B's RMS  equal Deck A's RMS.
+  // Final factor = (peakScale + rmsScale) / 2. No cap in either direction.
   if (renders.length === 2) {
     const peakOf = (ch: Float32Array) => {
       let p = 0;
@@ -709,17 +709,29 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
       }
       return p;
     };
+    const rmsOf = (ch: Float32Array) => {
+      let sum = 0;
+      let n = 0;
+      for (let i = 0; i < ch.length; i += 100) {
+        sum += ch[i] * ch[i];
+        n++;
+      }
+      return n > 0 ? Math.sqrt(sum / n) : 0;
+    };
     const peakA = peakOf(renders[0].data[0]);
     const peakB = peakOf(renders[1].data[0]);
-    const aOut = peakA * renders[0].gain;
-    const bOut = peakB * renders[1].gain;
-    const targetBOut = aOut * 0.55;
-    if (bOut > 1e-6) {
-      const factor = Math.min(0.5, targetBOut / bOut);
-      renders[1].gain *= factor;
+    const rmsA = rmsOf(renders[0].data[0]);
+    const rmsB = rmsOf(renders[1].data[0]);
+    const aPeakOut = peakA * renders[0].gain;
+    const bPeakOut = peakB * renders[1].gain;
+    const aRmsOut = rmsA * renders[0].gain;
+    const bRmsOut = rmsB * renders[1].gain;
+    if (bPeakOut > 1e-6 && bRmsOut > 1e-6) {
+      const peakScale = aPeakOut / bPeakOut;
+      const rmsScale = aRmsOut / bRmsOut;
+      const meanScale = (peakScale + rmsScale) / 2;
+      renders[1].gain *= meanScale;
     }
-    // +3 dB lift on vocals applied uniformly after the peak-cap.
-    renders[1].gain *= Math.pow(10, 3 / 20);
   }
 
   const sr = renders[0].sr;
@@ -1396,7 +1408,7 @@ export const useRemixStore = create<RemixStore>()((set, get) => ({
     if (deckA.manualUpload || deckB.manualUpload) return;
     const rateA = 1.0 + deckA.params.speed;
     const targetRateB = (deckA.calculatedBPM * rateA) / deckB.calculatedBPM;
-    const newSpeed = Math.max(-0.5, Math.min(0.5, targetRateB - 1.0));
+    const newSpeed = targetRateB - 1.0;
     get().setParam("B", "speed", newSpeed);
     if (deckB.params.pitchSpeedLinked ?? true) {
       get().setParam("B", "pitch", 12 * Math.log2(1.0 + newSpeed));
