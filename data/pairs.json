@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 507,
+  "cursor": 509,
   "paused": false,
   "pairs": [
     {
@@ -8224,6 +8224,40 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeihm226fokvy3k72exkn7gbxtaado65vqdmcnspw5azatkld3j3bva"
+    },
+    {
+      "id": "00c422ca-e911-499f-a6e0-dd451b0b5c38",
+      "instArtist": "Rupert Holmes",
+      "instTitle": "Escape (The Pina Colada Song)",
+      "acapArtist": "Bryan Adams",
+      "acapTitle": "Heaven",
+      "instBpm": 138.711,
+      "instKey": "C Major",
+      "acapBpm": 140.1,
+      "acapKey": "A Minor",
+      "style": "mashup",
+      "cursorAtRun": 507,
+      "createdAt": "2026-04-27T01:39:28.372Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeif5jmxi2uxktd4ndnxae5odu4fa42fftwweac63byddyt7qrpmngq"
+    },
+    {
+      "id": "ddfda7bd-4bff-4b56-859d-e60edd191878",
+      "instArtist": "Joey Scarbury",
+      "instTitle": "Believe It or Not (Theme from \"Greatest American Hero\")",
+      "acapArtist": "SB19",
+      "acapTitle": "DAM",
+      "instBpm": 117.1,
+      "instKey": "D Major",
+      "acapBpm": 110,
+      "acapKey": "D Major",
+      "style": "mashup",
+      "cursorAtRun": 508,
+      "createdAt": "2026-04-27T01:44:29.329Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeiej2dojiy5qzpglwvsfl3qwdq5qisjyeyfa7uitfnqtut6y3o4orq"
     }
   ]
 }

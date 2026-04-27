@@ -1285,17 +1285,30 @@ function HomeInner() {
 }
 
 function SceneMatchBrowser() {
+  const router = useRouter();
   return (
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-[1100px] flex flex-col gap-5">
         <div className="console flex flex-col gap-5">
-          <div className="flex items-center gap-4 px-3 boot-stagger boot-delay-1">
-<span
+          <div className="flex items-center justify-between gap-4 px-3 boot-stagger boot-delay-1">
+            <span
               className="text-2xl sm:text-3xl tracking-[2px] uppercase"
               style={{ color: "var(--text-dark)", fontFamily: "var(--font-display)" }}
             >
               AUTO MASH
             </span>
+            <button
+              onClick={() => router.push("/mix?solo=1")}
+              className="text-[11px] uppercase tracking-[1px] px-3 py-1 border"
+              style={{
+                fontFamily: "var(--font-tech)",
+                color: "var(--text-dark)",
+                background: "transparent",
+                borderColor: "#777",
+              }}
+            >
+              SKIP DECK B
+            </button>
           </div>
           <div className="zone-inset boot-stagger boot-delay-2">
             <Deck id="A" />
@@ -1315,6 +1328,7 @@ function SceneRouter() {
   const searchParams = useSearchParams();
 
   const hasUrlParams = !!(searchParams.get("a_artist") || searchParams.get("s"));
+  const soloMode = searchParams.get("solo") === "1";
   const deckAReady = !!deckA.sourceBuffer && (deckA.baseKey !== null || deckA.calculatedBPM !== null);
   const deckBReady = !!deckB.sourceBuffer;
 
@@ -1337,11 +1351,12 @@ function SceneRouter() {
 
   // Render what the URL says. Fallback to landing if prerequisite state is missing.
   if (pathname === "/mix") {
-    if (hasUrlParams || (deckAReady && deckBReady)) return <HomeInner />;
+    if (hasUrlParams || (deckAReady && deckBReady) || (deckAReady && soloMode)) return <HomeInner />;
     if (deckAReady) return <SceneMatchBrowser />;
     return <SceneLanding />;
   }
   if (pathname === "/match") {
+    if (deckAReady && soloMode) return <HomeInner />;
     if (deckAReady) return <SceneMatchBrowser />;
     return <SceneLanding />;
   }
