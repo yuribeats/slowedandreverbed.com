@@ -111,6 +111,11 @@ function GalleryContent() {
     try { return JSON.parse(localStorage.getItem("automash_yt_uploads") || "{}"); } catch { return {}; }
   });
 
+  const [xPosting, setXPosting] = useState<string | null>(null);
+  const [xPostResult, setXPostResult] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("automash_x_posts") || "{}"); } catch { return {}; }
+  });
+
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [playlistTracks, setPlaylistTracks] = useState<PlaylistTrack[]>([]);
   const [playlistFetching, setPlaylistFetching] = useState(false);
@@ -578,6 +583,29 @@ function GalleryContent() {
       setUploadResult((prev) => ({ ...prev, [item.id]: clean }));
     }
     setUploading(null);
+  }
+
+  async function handleXPost(item: GalleryItem) {
+    setXPosting(item.id);
+    try {
+      const res = await fetch("/api/twitter/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoUrl: item.url, artist: item.artist, title: item.title }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "POST FAILED");
+      setXPostResult((prev) => {
+        const next = { ...prev, [item.id]: data.tweetUrl };
+        localStorage.setItem("automash_x_posts", JSON.stringify(next));
+        return next;
+      });
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "FAILED";
+      const clean = raw.replace(/[{}"\\]/g, "").replace(/\s+/g, " ").trim().slice(0, 40).toUpperCase() || "FAILED";
+      setXPostResult((prev) => ({ ...prev, [item.id]: clean }));
+    }
+    setXPosting(null);
   }
 
   async function handleDelete(id: string) {
@@ -1196,6 +1224,31 @@ function GalleryContent() {
                           style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: uploading === item.id ? 0.4 : 1 }}
                         >
                           {uploading === item.id ? "..." : "YOUTUBE"}
+                        </button>
+                      )}
+                      {/* X post (admin) */}
+                      {xPostResult[item.id] ? (
+                        xPostResult[item.id].startsWith("http") ? (
+                          <a
+                            href={xPostResult[item.id]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] uppercase tracking-wider"
+                            style={{ ...textStyle, fontSize: "9px", color: "#228B22", textDecoration: "none" }}
+                          >
+                            X
+                          </a>
+                        ) : (
+                          <span className="text-[9px] uppercase tracking-wider" style={{ ...textStyle, fontSize: "9px", color: "#c82828" }}>{xPostResult[item.id]}</span>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => handleXPost(item)}
+                          disabled={xPosting === item.id}
+                          className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
+                          style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: xPosting === item.id ? 0.4 : 1 }}
+                        >
+                          {xPosting === item.id ? "..." : "POST X"}
                         </button>
                       )}
                       {/* Mint */}
