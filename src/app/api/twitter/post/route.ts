@@ -75,7 +75,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ tweetUrl, id: tweet.data.id });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Tweet failed";
-    console.error("twitter/post error:", e);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // twitter-api-v2 errors carry .code, .data (Twitter's body), .errors
+    const detail = (e && typeof e === "object")
+      ? {
+          code: (e as { code?: number }).code,
+          data: (e as { data?: unknown }).data,
+          errors: (e as { errors?: unknown }).errors,
+        }
+      : undefined;
+    console.error("twitter/post error:", JSON.stringify(detail) || e);
+    return NextResponse.json({ error: msg, detail }, { status: 500 });
   }
 }
