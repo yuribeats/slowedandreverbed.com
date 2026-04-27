@@ -1483,6 +1483,15 @@ export const useRemixStore = create<RemixStore>()((set, get) => ({
     // Schedule the "other" deck to fade out when whichever deck ends first, so the mix ends together.
     const otherId: DeckId = id === "A" ? "B" : "A";
     const otherDeck = getDeck(get(), otherId);
+
+    // When this deck is looping, cancel any pending fade ramp on the other
+    // deck's fadeGain — it may carry a stale cross-deck fade from a prior
+    // one-shot playthrough. A looping deck has no end, so no fade should fire.
+    if (shouldLoop && otherDeck.nodes) {
+      otherDeck.nodes.fadeGain.gain.cancelScheduledValues(ctx.currentTime);
+      otherDeck.nodes.fadeGain.gain.setValueAtTime(1.0, ctx.currentTime);
+    }
+
     if (otherDeck.isPlaying && otherDeck.nodes && nodes.wallEndTime !== undefined && otherDeck.nodes.wallEndTime !== undefined) {
       scheduleCrossDeckFade(ctx, nodes, otherDeck.nodes);
       // Stop the later-ending deck shortly after the earlier one ends — no need to keep playing silent audio.
