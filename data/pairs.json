@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 575,
+  "cursor": 600,
   "paused": false,
   "pairs": [
     {
@@ -8726,6 +8726,23 @@
       "createdAt": "2026-04-27T22:27:34.854Z",
       "status": "error",
       "error": "Protocol error (Runtime.callFunctionOn): Target closed"
+    },
+    {
+      "id": "4acdc013-41b9-4f9e-b81d-14a8d20d5a5c",
+      "instArtist": "Lizzo",
+      "instTitle": "About Damn Time",
+      "acapArtist": "Olly, Juli",
+      "acapTitle": "Balorda nostalgia",
+      "instBpm": 108.965,
+      "instKey": "Bb Minor",
+      "acapBpm": 109.9,
+      "acapKey": "Db Major",
+      "style": "mashup",
+      "cursorAtRun": 599,
+      "createdAt": "2026-04-27T22:31:17.156Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeifndgogeo5gfvuonpg7bysvvnnppfna4um7xlmo7lviqzmi6kc2oi"
     }
   ]
 }
