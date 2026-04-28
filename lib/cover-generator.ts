@@ -8,27 +8,6 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// Archivo Black is the closest open webfont to Arial Black. Loading it
-// explicitly removes the system-font dependency so covers render identically
-// on the user's Mac, on Vercel, and on the GitHub Actions Ubuntu runner.
-let coverFontPromise: Promise<void> | null = null;
-function ensureCoverFont(): Promise<void> {
-  if (coverFontPromise) return coverFontPromise;
-  coverFontPromise = (async () => {
-    if (typeof document === "undefined") return;
-    const face = new FontFace(
-      "AutomashCover",
-      "url(https://fonts.gstatic.com/s/archivoblack/v21/HTxqL289NzCGg4MzN6KJ7eW6OYuP_x7yx3A.woff2) format('woff2')",
-      { weight: "900", style: "normal", display: "block" },
-    );
-    await face.load();
-    document.fonts.add(face);
-    // Belt-and-suspenders: wait for the canvas-readable state.
-    await document.fonts.load("900 80px AutomashCover");
-  })();
-  return coverFontPromise;
-}
-
 export async function generateCover(
   artist: string,
   title: string,
@@ -38,8 +17,6 @@ export async function generateCover(
   const PADDING = 60;
   const TEXT_HEIGHT = 80;
   const GAP = 30;
-
-  await ensureCoverFont();
 
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
@@ -57,7 +34,7 @@ export async function generateCover(
 
   // Artist text (top) — stretched like museum's SVG
   ctx.fillStyle = "#000000";
-  ctx.font = "900 " + TEXT_HEIGHT + "px AutomashCover, 'Arial Black', Arial, sans-serif";
+  ctx.font = "900 " + TEXT_HEIGHT + "px Arial Black, Arial, sans-serif";
   ctx.textBaseline = "top";
 
   const textWidth = SIZE - PADDING * 2;
@@ -100,7 +77,7 @@ export async function generateCover(
   const titleY = imageY + imageHeight + GAP;
 
   ctx.fillStyle = "#000000";
-  ctx.font = "900 " + TEXT_HEIGHT + "px AutomashCover, 'Arial Black', Arial, sans-serif";
+  ctx.font = "900 " + TEXT_HEIGHT + "px Arial Black, Arial, sans-serif";
   ctx.textBaseline = "top";
 
   ctx.save();
