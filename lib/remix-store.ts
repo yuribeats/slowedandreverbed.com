@@ -732,6 +732,8 @@ async function renderMixToWAV(get: () => RemixStore, forVideo = false): Promise<
       const meanScale = (peakScale + rmsScale) / 2;
       renders[1].gain *= meanScale;
     }
+    // -2 dB on Deck B after level-matching.
+    renders[1].gain *= Math.pow(10, -2 / 20);
   }
 
   const sr = renders[0].sr;
