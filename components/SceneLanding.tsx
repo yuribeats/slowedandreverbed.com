@@ -119,9 +119,9 @@ export default function SceneLanding() {
                   textAnchor="middle"
                   dominantBaseline="central"
                   fill="var(--crt-bright)"
-                  fontFamily="var(--font-display)"
-                  fontSize="78"
-                  letterSpacing="4"
+                  fontFamily="var(--font-crt)"
+                  fontSize="86"
+                  letterSpacing="6"
                 >
                   AUTOMASH
                 </text>

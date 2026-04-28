@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 679,
+  "cursor": 685,
   "paused": false,
   "pairs": [
     {
@@ -9346,6 +9346,40 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeiam33ohrzh4ui6nrspx4rsqgdtuul5abnjwdqenroooicxfl4q73y"
+    },
+    {
+      "id": "cbc53704-9b11-4660-90ac-7308a2eb6189",
+      "instArtist": "Cassie",
+      "instTitle": "Me & U",
+      "acapArtist": "TOKYOPHILE",
+      "acapTitle": "Montagem Lunar Celestia 1.0 (SLOWED)",
+      "instBpm": 99.99,
+      "instKey": "Ab Minor",
+      "acapBpm": 109.3,
+      "acapKey": "B Major",
+      "style": "mashup",
+      "cursorAtRun": 683,
+      "createdAt": "2026-04-28T03:29:38.594Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeigzphifss5rap2ozs5nhn2j6pa46g4xdrbblsu6ijueqqlsx6one4"
+    },
+    {
+      "id": "d3a6af40-837a-4bd8-95a0-a4abb737d6eb",
+      "instArtist": "SHOP BOYZ, Choppa Dunks",
+      "instTitle": "Party Like A Rockstar - (Choppa Dunks Remix)",
+      "acapArtist": "Megan Moroney",
+      "acapTitle": "Tennessee Orange",
+      "instBpm": 150.068,
+      "instKey": "Gb Minor",
+      "acapBpm": 156,
+      "acapKey": "A Major",
+      "style": "mashup",
+      "cursorAtRun": 684,
+      "createdAt": "2026-04-28T03:32:54.406Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeigvozfgnoqqozunrjwd5n767ox56puiaqhp7ilbvwliqmciwaykzq"
     }
   ]
 }
