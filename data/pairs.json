@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 605,
+  "cursor": 607,
   "paused": false,
   "pairs": [
     {
@@ -8808,6 +8808,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeiauqh5ihnb2y4ht2jqs5gdx4nyl75tyctka5wyksz3eig2ql3gkky"
+    },
+    {
+      "id": "c9e1e282-f21d-4b11-a32e-f48a20d4f30f",
+      "instArtist": "Dr. Hook",
+      "instTitle": "When You're In Love With A Beautiful Woman",
+      "acapArtist": "Alek Olsen",
+      "acapTitle": "someday i'll get it",
+      "instBpm": 109.623,
+      "instKey": "Ab Major",
+      "acapBpm": 102.7,
+      "acapKey": "Ab Major",
+      "style": "mashup",
+      "cursorAtRun": 606,
+      "createdAt": "2026-04-28T00:44:13.015Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeig5t53cibf4r6h54fhihrrfncekcn6mbaor3yc3jzpka7oti4d2nm"
     }
   ]
 }
