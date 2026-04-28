@@ -98,7 +98,7 @@ export default function SceneLanding() {
                   height: "auto",
                   position: "relative",
                   filter:
-                    "drop-shadow(0 0 3px var(--crt-bright)) drop-shadow(0 0 10px var(--crt-bright)) drop-shadow(0 0 22px rgba(117,204,70,0.85)) drop-shadow(0 0 40px rgba(117,204,70,0.5))",
+                    "drop-shadow(0 0 4px var(--crt-bright)) drop-shadow(0 0 14px var(--crt-bright)) drop-shadow(0 0 32px rgba(117,204,70,1)) drop-shadow(0 0 60px rgba(117,204,70,0.7))",
                 }}
               >
                 <text
@@ -108,12 +108,12 @@ export default function SceneLanding() {
                   dominantBaseline="central"
                   fill="var(--crt-bright)"
                   stroke="var(--crt-bright)"
-                  strokeWidth="6"
+                  strokeWidth="14"
                   paintOrder="stroke"
                   strokeLinejoin="round"
                   fontFamily="var(--font-display)"
-                  fontSize="78"
-                  letterSpacing="4"
+                  fontSize="86"
+                  letterSpacing="6"
                 >
                   AUTOMASH
                 </text>
@@ -125,7 +125,7 @@ export default function SceneLanding() {
                   position: "absolute",
                   inset: 0,
                   backgroundImage:
-                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.55) 0px, rgba(0,0,0,0.55) 2px, transparent 2px, transparent 5px)",
+                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.7) 0px, rgba(0,0,0,0.7) 3px, transparent 3px, transparent 6px)",
                   pointerEvents: "none",
                   mixBlendMode: "multiply",
                 }}
