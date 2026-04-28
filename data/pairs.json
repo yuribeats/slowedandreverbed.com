@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 604,
+  "cursor": 605,
   "paused": false,
   "pairs": [
     {
@@ -8791,6 +8791,23 @@
       "createdAt": "2026-04-27T23:51:24.954Z",
       "status": "error",
       "error": "A network error occurred."
+    },
+    {
+      "id": "db9b5a14-7027-4767-8566-188c97a7ec1e",
+      "instArtist": "Leo Sayer",
+      "instTitle": "You Make Me Feel Like Dancing - Remastered",
+      "acapArtist": "Gigi Perez",
+      "acapTitle": "Sailor Song",
+      "instBpm": 95.922,
+      "instKey": "Ab Minor",
+      "acapBpm": 94.9,
+      "acapKey": "B Major",
+      "style": "mashup",
+      "cursorAtRun": 604,
+      "createdAt": "2026-04-28T00:02:45.835Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeiauqh5ihnb2y4ht2jqs5gdx4nyl75tyctka5wyksz3eig2ql3gkky"
     }
   ]
 }
