@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 685,
+  "cursor": 698,
   "paused": false,
   "pairs": [
     {
@@ -9380,6 +9380,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeigvozfgnoqqozunrjwd5n767ox56puiaqhp7ilbvwliqmciwaykzq"
+    },
+    {
+      "id": "8048cea3-3488-4b13-97b7-dbf2aa674b10",
+      "instArtist": "Tones And I",
+      "instTitle": "Dance Monkey",
+      "acapArtist": "La Oreja de Van Gogh",
+      "acapTitle": "Rosas",
+      "instBpm": 98.027,
+      "instKey": "Gb Minor",
+      "acapBpm": 107,
+      "acapKey": "A Major",
+      "style": "mashup",
+      "cursorAtRun": 697,
+      "createdAt": "2026-04-28T03:37:58.469Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeif4zmrrat5lgrnkdxztjj7gsiwjezldwjdskubccciyzbhgdslmja"
     }
   ]
 }

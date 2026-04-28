@@ -101,31 +101,21 @@ export default function SceneLanding() {
                   mixBlendMode: "multiply",
                 }}
               />
-              <svg
-                viewBox="0 0 800 100"
-                preserveAspectRatio="xMidYMid meet"
+              <div
                 style={{
-                  display: "block",
-                  width: "100%",
-                  height: "auto",
                   position: "relative",
-                  filter:
-                    "drop-shadow(0 0 2px var(--crt-bright)) drop-shadow(0 0 6px var(--crt-bright)) drop-shadow(0 0 14px rgba(117,204,70,0.6))",
+                  fontFamily: "var(--font-crt)",
+                  color: "var(--crt-bright)",
+                  fontSize: "clamp(48px, 9vw, 88px)",
+                  letterSpacing: "0.1em",
+                  lineHeight: 1,
+                  textAlign: "center",
+                  textShadow:
+                    "0 0 2px var(--crt-bright), 0 0 6px var(--crt-bright), 0 0 14px rgba(117,204,70,0.6)",
                 }}
               >
-                <text
-                  x="50%"
-                  y="50%"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill="var(--crt-bright)"
-                  fontFamily="var(--font-crt)"
-                  fontSize="86"
-                  letterSpacing="6"
-                >
-                  AUTOMASH
-                </text>
-              </svg>
+                AUTOMASH
+              </div>
             </div>
           </div>
 
