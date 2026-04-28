@@ -98,7 +98,7 @@ export default function SceneLanding() {
                   height: "auto",
                   position: "relative",
                   filter:
-                    "drop-shadow(0 0 3px var(--crt-bright)) drop-shadow(0 0 10px var(--crt-bright)) drop-shadow(0 0 22px rgba(117,204,70,0.85)) drop-shadow(0 0 40px rgba(117,204,70,0.5))",
+                    "drop-shadow(0 0 2px var(--crt-bright)) drop-shadow(0 0 6px var(--crt-bright)) drop-shadow(0 0 14px rgba(117,204,70,0.6))",
                 }}
               >
                 <text
@@ -108,7 +108,7 @@ export default function SceneLanding() {
                   dominantBaseline="central"
                   fill="var(--crt-bright)"
                   stroke="var(--crt-bright)"
-                  strokeWidth="6"
+                  strokeWidth="3"
                   paintOrder="stroke"
                   strokeLinejoin="round"
                   fontFamily="var(--font-display)"
@@ -118,14 +118,14 @@ export default function SceneLanding() {
                   AUTOMASH
                 </text>
               </svg>
-              {/* Scanlines — drawn ABOVE the SVG so they slice the glyphs */}
+              {/* Scanlines — drawn ABOVE the SVG, light enough to keep text legible */}
               <div
                 aria-hidden
                 style={{
                   position: "absolute",
                   inset: 0,
                   backgroundImage:
-                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.55) 0px, rgba(0,0,0,0.55) 2px, transparent 2px, transparent 5px)",
+                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 1px, transparent 1px, transparent 4px)",
                   pointerEvents: "none",
                   mixBlendMode: "multiply",
                 }}
