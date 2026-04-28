@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 607,
+  "cursor": 608,
   "paused": false,
   "pairs": [
     {
@@ -8825,6 +8825,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeig5t53cibf4r6h54fhihrrfncekcn6mbaor3yc3jzpka7oti4d2nm"
+    },
+    {
+      "id": "921ab3fd-de1f-4bd8-9c1b-c992a4881452",
+      "instArtist": "Smokey Robinson",
+      "instTitle": "Cruisin'",
+      "acapArtist": "Rony Parulian",
+      "acapTitle": "Tak Ada Ujungnya",
+      "instBpm": 169.115,
+      "instKey": "Gb Minor",
+      "acapBpm": 163.8,
+      "acapKey": "A Major",
+      "style": "mashup",
+      "cursorAtRun": 607,
+      "createdAt": "2026-04-28T00:46:06.758Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeidcyd4rhn5rmssvlnm2ncox4tr56xl65yianm4tba67hwwnqcgxz4"
     }
   ]
 }

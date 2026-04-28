@@ -20,7 +20,7 @@ import { TwitterApi } from "twitter-api-v2";
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  const { videoUrl, artist, title } = await req.json();
+  const { videoUrl } = await req.json();
   if (!videoUrl) {
     return NextResponse.json({ error: "videoUrl required" }, { status: 400 });
   }
