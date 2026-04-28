@@ -125,7 +125,7 @@ export default function SceneLanding() {
                   position: "absolute",
                   inset: 0,
                   backgroundImage:
-                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 1px, transparent 1px, transparent 4px)",
+                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 6px)",
                   pointerEvents: "none",
                   mixBlendMode: "multiply",
                 }}
