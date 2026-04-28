@@ -112,8 +112,8 @@ export default function SceneLanding() {
                   paintOrder="stroke"
                   strokeLinejoin="round"
                   fontFamily="var(--font-display)"
-                  fontSize="78"
-                  letterSpacing="4"
+                  fontSize="92"
+                  letterSpacing="20"
                 >
                   AUTOMASH
                 </text>
