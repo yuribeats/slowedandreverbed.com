@@ -127,22 +127,6 @@ export default function SceneLanding() {
                 </text>
               </svg>
             </div>
-            <a
-              href="/gallery"
-              className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em] sm:tracking-[0.15em] px-2 sm:px-3 py-0.5 sm:py-1 border-2 self-start"
-              style={{
-                fontFamily: "var(--font-tech)",
-                fontWeight: 700,
-                color: "var(--panel-light)",
-                background: "var(--control-base)",
-                borderColor: "#1a1a1a",
-                borderRadius: "4px",
-                boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)",
-                textDecoration: "none",
-              }}
-            >
-              GALLERY
-            </a>
           </div>
 
           {/* Deck A input */}

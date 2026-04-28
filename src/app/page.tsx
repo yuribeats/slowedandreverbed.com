@@ -1188,16 +1188,6 @@ function HomeInner() {
                       <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
                     </button>
                   </div>
-                  <div className="flex flex-col items-center" data-tooltip="BROWSE EXPORTED MIXES">
-                    <span className="label" style={labelStyle}>GALLERY</span>
-                    <button
-                      onClick={() => { if (typeof window !== "undefined") window.location.href = "/gallery"; }}
-                      className="rocker-switch"
-                      style={rockerStyle}
-                    >
-                      <div className="w-2 h-2 rounded-full border-2 border-[#555]" />
-                    </button>
-                  </div>
                   <div className="flex flex-col items-center" data-tooltip="RELOAD THE APP FROM SCRATCH">
                     <span className="label" style={labelStyle}>RESTART</span>
                     <button

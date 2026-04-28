@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 678,
+  "cursor": 679,
   "paused": false,
   "pairs": [
     {
@@ -9329,6 +9329,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeiatobobxsafk65a2zp3i3oaxctdzct6mqbvacujs3cdzri2j5shku"
+    },
+    {
+      "id": "e9db6ec7-4fe0-40ba-965a-1a2552db819c",
+      "instArtist": "Staind",
+      "instTitle": "It's Been Awhile",
+      "acapArtist": "BABYMONSTER",
+      "acapTitle": "DRIP",
+      "instBpm": 116.529,
+      "instKey": "Gb Major",
+      "acapBpm": 120,
+      "acapKey": "Gb Major",
+      "style": "mashup",
+      "cursorAtRun": 678,
+      "createdAt": "2026-04-28T03:25:32.652Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeiam33ohrzh4ui6nrspx4rsqgdtuul5abnjwdqenroooicxfl4q73y"
     }
   ]
 }
