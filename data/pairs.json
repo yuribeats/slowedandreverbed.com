@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 701,
+  "cursor": 702,
   "paused": false,
   "pairs": [
     {
@@ -9414,6 +9414,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeiaw4zplajwhbdp4c2pk5nlkzcp7g6rclcgqfie62smnleukqlfcha"
+    },
+    {
+      "id": "6544d5a2-585d-4e3d-966e-f9e049c12bbf",
+      "instArtist": "Al Wilson",
+      "instTitle": "Show and Tell",
+      "acapArtist": "Dr. Dog",
+      "acapTitle": "Where'd All the Time Go?",
+      "instBpm": 173.554,
+      "instKey": "D Major",
+      "acapBpm": 166.3,
+      "acapKey": "D Major",
+      "style": "mashup",
+      "cursorAtRun": 701,
+      "createdAt": "2026-04-28T03:46:42.213Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeie2w2och6sodlzog3vjexvi5r4lcpkir3tv4thtswfcle4tfevcpe"
     }
   ]
 }
