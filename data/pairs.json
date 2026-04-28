@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "cursor": 698,
+  "cursor": 701,
   "paused": false,
   "pairs": [
     {
@@ -9397,6 +9397,23 @@
       "status": "ok",
       "galleryUrl": "",
       "audioCid": "bafybeif4zmrrat5lgrnkdxztjj7gsiwjezldwjdskubccciyzbhgdslmja"
+    },
+    {
+      "id": "72aaf986-056f-4c49-abbe-423788f70760",
+      "instArtist": "Billy Paul",
+      "instTitle": "Me and Mrs. Jones",
+      "acapArtist": "Memo Boy",
+      "acapTitle": "Brian is the Most Beautiful",
+      "instBpm": 200.813,
+      "instKey": "Ab Major",
+      "acapBpm": 192.1,
+      "acapKey": "F Minor",
+      "style": "mashup",
+      "cursorAtRun": 700,
+      "createdAt": "2026-04-28T03:42:24.517Z",
+      "status": "ok",
+      "galleryUrl": "",
+      "audioCid": "bafybeiaw4zplajwhbdp4c2pk5nlkzcp7g6rclcgqfie62smnleukqlfcha"
     }
   ]
 }
