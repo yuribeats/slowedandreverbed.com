@@ -89,18 +89,6 @@ export default function SceneLanding() {
                 textAlign: "center",
               }}
             >
-              {/* Scanlines */}
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage:
-                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0px, rgba(0,0,0,0.28) 1px, transparent 1px, transparent 3px)",
-                  pointerEvents: "none",
-                  mixBlendMode: "multiply",
-                }}
-              />
               <svg
                 viewBox="0 0 800 100"
                 preserveAspectRatio="xMidYMid meet"
@@ -110,7 +98,7 @@ export default function SceneLanding() {
                   height: "auto",
                   position: "relative",
                   filter:
-                    "drop-shadow(0 0 2px var(--crt-bright)) drop-shadow(0 0 6px var(--crt-bright)) drop-shadow(0 0 14px rgba(117,204,70,0.6))",
+                    "drop-shadow(0 0 3px var(--crt-bright)) drop-shadow(0 0 10px var(--crt-bright)) drop-shadow(0 0 22px rgba(117,204,70,0.85)) drop-shadow(0 0 40px rgba(117,204,70,0.5))",
                 }}
               >
                 <text
@@ -119,6 +107,10 @@ export default function SceneLanding() {
                   textAnchor="middle"
                   dominantBaseline="central"
                   fill="var(--crt-bright)"
+                  stroke="var(--crt-bright)"
+                  strokeWidth="6"
+                  paintOrder="stroke"
+                  strokeLinejoin="round"
                   fontFamily="var(--font-display)"
                   fontSize="78"
                   letterSpacing="4"
@@ -126,6 +118,18 @@ export default function SceneLanding() {
                   AUTOMASH
                 </text>
               </svg>
+              {/* Scanlines — drawn ABOVE the SVG so they slice the glyphs */}
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage:
+                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.55) 0px, rgba(0,0,0,0.55) 2px, transparent 2px, transparent 5px)",
+                  pointerEvents: "none",
+                  mixBlendMode: "multiply",
+                }}
+              />
             </div>
           </div>
 
