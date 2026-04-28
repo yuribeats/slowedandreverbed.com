@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       longVideo: true,
     });
 
-    const text = `${artist} / ${title}`;
+    const text = `${artist} / ${title}\n\nAUTO MASH DOT XYZ`;
     const tweet = await client.v2.tweet({
       text,
       media: { media_ids: [mediaId] },
