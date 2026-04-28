@@ -1233,7 +1233,7 @@ function GalleryContent() {
                           className="text-[9px] uppercase tracking-wider border border-black px-2 py-1"
                           style={{ ...textStyle, fontSize: "9px", background: "transparent", opacity: xPosting === item.id ? 0.4 : 1 }}
                         >
-                          {xPosting === item.id ? "..." : "POST X"}
+                          {xPosting === item.id ? "..." : "TWEET"}
                         </button>
                       )}
                       {/* Mint */}
