@@ -108,7 +108,7 @@ export default function SceneLanding() {
                   dominantBaseline="central"
                   fill="var(--crt-bright)"
                   stroke="var(--crt-bright)"
-                  strokeWidth="14"
+                  strokeWidth="20"
                   paintOrder="stroke"
                   strokeLinejoin="round"
                   fontFamily="var(--font-display)"
@@ -125,7 +125,7 @@ export default function SceneLanding() {
                   position: "absolute",
                   inset: 0,
                   backgroundImage:
-                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.7) 0px, rgba(0,0,0,0.7) 3px, transparent 3px, transparent 6px)",
+                    "repeating-linear-gradient(0deg, rgba(0,0,0,0.62) 0px, rgba(0,0,0,0.62) 2px, transparent 2px, transparent 5px)",
                   pointerEvents: "none",
                   mixBlendMode: "multiply",
                 }}
